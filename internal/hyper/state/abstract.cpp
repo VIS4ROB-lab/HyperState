@@ -4,7 +4,6 @@
 #include <glog/logging.h>
 
 #include "hyper/state/abstract.hpp"
-#include "hyper/state/policies/abstract.hpp"
 
 namespace hyper {
 
