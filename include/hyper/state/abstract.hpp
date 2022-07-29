@@ -18,45 +18,46 @@ class AbstractState {
  public:
   // Definitions.
   using Range = hyper::Range<Stamp, BoundaryPolicy::LOWER_INCLUSIVE_ONLY>;
-  using Variable = std::unique_ptr<AbstractStamped<Scalar>>;
+  using Parameter = AbstractStamped<Scalar>;
+  using Element = std::unique_ptr<Parameter>;
 
-  struct VariableCompare {
+  struct ElementCompare {
     using is_transparent = std::true_type;
-    auto operator()(const Variable& lhs, const Variable& rhs) const -> bool {
+    auto operator()(const Element& lhs, const Element& rhs) const -> bool {
       return lhs->stamp() < rhs->stamp();
     }
-    auto operator()(const Variable& lhs, const Stamp& rhs) const -> bool {
+    auto operator()(const Element& lhs, const Stamp& rhs) const -> bool {
       return lhs->stamp() < rhs;
     }
-    auto operator()(const Stamp& lhs, const Variable& rhs) const -> bool {
+    auto operator()(const Stamp& lhs, const Element& rhs) const -> bool {
       return lhs < rhs->stamp();
     }
   };
 
-  using Variables = std::set<Variable, VariableCompare>;
-  // using Variables = boost::container::flat_set<Variable, VariableCompare>;
-  // using Variables = absl::btree_set<Variable, VariableCompare>;
+  using Elements = std::set<Element, ElementCompare>;
+  // using Elements = boost::container::flat_set<Element, ElementCompare>;
+  // using Elements = absl::btree_set<Element, ElementCompare>;
 
   /// Constructor from interpolator and policy.
   /// \param interpolator Input interpolator.
   /// \param policy Input policy.
   explicit AbstractState(std::unique_ptr<AbstractInterpolator>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
 
-  /// Variable accessor.
-  /// \return Variables.
-  [[nodiscard]] auto variables() const -> const Variables&;
+  /// Elements accessor.
+  /// \return Elements.
+  [[nodiscard]] auto elements() const -> const Elements&;
 
-  /// Variable modifier.
-  /// \return Variables.
-  auto variables() -> Variables&;
+  /// Elements modifier.
+  /// \return Elements.
+  auto elements() -> Elements&;
 
-  /// Collects the memory blocks.
-  /// \return Memory blocks.
-  [[nodiscard]] auto memoryBlocks() const -> MemoryBlocks<Scalar>;
+  /// Parameters accessor.
+  /// \return Parameters.
+  [[nodiscard]] auto parameters() const -> Pointers<Parameter>;
 
-  /// Collects the memory blocks (stamp-based).
-  /// \return Memory blocks.
-  [[nodiscard]] auto memoryBlocks(const Stamp& stamp) const -> MemoryBlocks<Scalar>;
+  /// Parameters accessor (stamp-based).
+  /// \return Parameters.
+  [[nodiscard]] auto parameters(const Stamp& stamp) const -> Pointers<Parameter>;
 
   /// Evaluates the temporal range.
   /// \return Temporal range.
@@ -90,7 +91,7 @@ class AbstractState {
   [[nodiscard]] auto evaluate(const StateQuery& state_query, const Scalar* const* raw_values) const -> StateResult;
 
  private:
-  Variables variables_;                                ///< Variables.
+  Elements elements_;                                  ///< Elements.
   std::unique_ptr<AbstractInterpolator> interpolator_; ///< Interpolator.
   std::unique_ptr<AbstractPolicy> policy_;             ///< Policy.
 };

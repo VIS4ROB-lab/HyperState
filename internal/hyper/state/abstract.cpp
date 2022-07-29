@@ -7,62 +7,79 @@
 
 namespace hyper {
 
+namespace {
+
+/// Converts parameter pointers to raw pointers.
+/// \tparam TScalar Scalar type.
+/// \tparam TParameter Parameter type.
+/// \param parameters Input parameters.
+/// \return Converted pointers
+template <typename TScalar, typename TParameter>
+auto convertPointers(const Pointers<TParameter>& parameters) -> Pointers<TScalar> {
+  Pointers<TScalar> pointers;
+  pointers.reserve(parameters.size());
+  std::transform(parameters.begin(), parameters.end(), std::back_inserter(pointers), [](const auto& arg) { return arg->memory().address; });
+  return pointers;
+}
+
+} // namespace
+
 AbstractState::AbstractState(std::unique_ptr<AbstractInterpolator>&& interpolator, std::unique_ptr<AbstractPolicy>&& policy)
-    : variables_{},
+    : elements_{},
       interpolator_{std::move(interpolator)},
       policy_{std::move(policy)} {}
 
-auto AbstractState::variables() const -> const Variables& {
-  return variables_;
+auto AbstractState::elements() const -> const Elements& {
+  return elements_;
 }
 
-auto AbstractState::variables() -> Variables& {
-  return const_cast<Variables&>(std::as_const(*this).variables());
+auto AbstractState::elements() -> Elements& {
+  return const_cast<Elements&>(std::as_const(*this).elements());
 }
 
-auto AbstractState::memoryBlocks() const -> MemoryBlocks<Scalar> {
-  MemoryBlocks<Scalar> memory_blocks;
-  memory_blocks.reserve(variables_.size());
-  std::transform(variables_.begin(), variables_.end(), std::back_inserter(memory_blocks), [](const auto& arg) { return arg->memory(); });
-  return memory_blocks;
+auto AbstractState::parameters() const -> Pointers<Parameter> {
+  Pointers<Parameter> pointers;
+  pointers.reserve(elements_.size());
+  std::transform(elements_.begin(), elements_.end(), std::back_inserter(pointers), [](const auto& arg) { return arg.get(); });
+  return pointers;
 }
 
-auto AbstractState::memoryBlocks(const Stamp& stamp) const -> MemoryBlocks<Scalar> {
+auto AbstractState::parameters(const Stamp& stamp) const -> Pointers<Parameter> {
   DCHECK(range().contains(stamp)) << "State range does not contain stamp.";
   if (interpolator_) {
     const auto outer = interpolator_->layout().outer;
-    const auto num_variables = outer.size() + 1;
-    DCHECK_LE(num_variables, variables_.size());
+    const auto num_elements = outer.size() + 1;
+    DCHECK_LE(num_elements, elements_.size());
 
-    const auto itr = variables_.upper_bound(stamp);
+    const auto itr = elements_.upper_bound(stamp);
     const auto begin = std::next(itr, outer.lower - 1);
     const auto end = std::next(itr, outer.upper - 1);
 
-    MemoryBlocks<Scalar> memory_blocks;
-    memory_blocks.reserve(num_variables);
-    std::transform(begin, end, std::back_inserter(memory_blocks), [](const auto& arg) { return arg->memory(); });
-    return memory_blocks;
+    Pointers<Parameter> pointers;
+    pointers.reserve(num_elements);
+    std::transform(begin, end, std::back_inserter(pointers), [](const auto& arg) { return arg.get(); });
+    return pointers;
 
   } else {
-    const auto itr = variables_.find(stamp);
-    DCHECK(itr != variables_.cend()) << "State does not contain stamp.";
-    return {(*itr)->memory()};
+    const auto itr = elements_.find(stamp);
+    DCHECK(itr != elements_.cend()) << "State does not contain stamp.";
+    return {itr->get()};
   }
 }
 
 auto AbstractState::range() const -> Range {
   if (interpolator_) {
     const auto outer = interpolator_->layout().outer;
-    const auto num_variables = outer.size() + 1;
-    DCHECK_LE(num_variables, variables_.size());
-    const auto& v0 = *std::next(variables_.cbegin(), -outer.lowerBound());
-    const auto& vn = *std::next(variables_.cend(), -outer.upperBound());
+    const auto num_elements = outer.size() + 1;
+    DCHECK_LE(num_elements, elements_.size());
+    const auto& v0 = *std::next(elements_.cbegin(), -outer.lowerBound());
+    const auto& vn = *std::next(elements_.cend(), -outer.upperBound());
     DCHECK_LT(v0->stamp(), vn->stamp());
     return {v0->stamp(), vn->stamp()};
   } else {
-    DCHECK(!variables_.empty());
-    const auto& v0 = *variables_.cbegin();
-    const auto& vn = *variables_.crbegin();
+    DCHECK(!elements_.empty());
+    const auto& v0 = *elements_.cbegin();
+    const auto& vn = *elements_.crbegin();
     return {v0->stamp(), std::nextafter(vn->stamp(), std::numeric_limits<Scalar>::infinity())};
   }
 }
@@ -87,13 +104,13 @@ auto AbstractState::evaluate(const StateQuery& state_query) const -> StateResult
   DCHECK(policy_ != nullptr);
   if (interpolator_) {
     const auto layout = interpolator_->layout();
-    const auto pointers = memoryBlocks(state_query.stamp).addresses<const Scalar>();
+    const auto pointers = convertPointers<const Scalar>(parameters(state_query.stamp));
     const auto stamps = policy_->stamps(pointers);
     const auto weights = interpolator_->weights(state_query, stamps);
     const auto policy_query = PolicyQuery{layout, pointers, weights};
     return policy_->evaluate(state_query, policy_query);
   } else {
-    const auto pointers = memoryBlocks(state_query.stamp).addresses<const Scalar>();
+    const auto pointers = convertPointers<const Scalar>(parameters(state_query.stamp));
     const auto policy_query = PolicyQuery{{}, pointers, {}};
     return policy_->evaluate(state_query, policy_query);
   }
