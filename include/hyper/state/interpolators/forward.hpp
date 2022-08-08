@@ -14,6 +14,8 @@ struct InterpolatorLayout {
 
 class AbstractInterpolator;
 
+class PolynomialInterpolator;
+
 class BasisInterpolator;
 
 } // namespace hyper

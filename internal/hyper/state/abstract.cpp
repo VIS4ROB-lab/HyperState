@@ -106,7 +106,7 @@ auto AbstractState::evaluate(const StateQuery& state_query) const -> StateResult
     const auto layout = interpolator_->layout();
     const auto pointers = convertPointers<const Scalar>(parameters(state_query.stamp));
     const auto stamps = policy_->stamps(pointers);
-    const auto weights = interpolator_->weights(state_query, stamps);
+    const auto weights = interpolator_->weights(state_query.stamp, stamps, state_query.derivative);
     const auto policy_query = PolicyQuery{layout, pointers, weights};
     return policy_->evaluate(state_query, policy_query);
   } else {
@@ -122,7 +122,7 @@ auto AbstractState::evaluate(const StateQuery& state_query, const Scalar* const*
     const auto layout = interpolator_->layout();
     const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer.size() + 1};
     const auto stamps = policy_->stamps(pointers);
-    const auto weights = interpolator_->weights(state_query, stamps);
+    const auto weights = interpolator_->weights(state_query.stamp, stamps, state_query.derivative);
     const auto policy_query = PolicyQuery{layout, pointers, weights};
     return policy_->evaluate(state_query, policy_query);
   } else {

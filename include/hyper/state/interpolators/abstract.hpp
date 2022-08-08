@@ -21,10 +21,11 @@ class AbstractInterpolator {
   [[nodiscard]] virtual auto layout() const -> InterpolatorLayout = 0;
 
   /// Evaluates the weights.
-  /// \param state_query State query.
+  /// \param stamp Query stamp.
   /// \param stamps Stamps of the variables.
+  /// \param derivative Highest requested derivative.
   /// \return Weights.
-  [[nodiscard]] virtual auto weights(const StateQuery& state_query, const Stamps& stamps) const -> Matrix = 0;
+  [[nodiscard]] virtual auto weights(const Stamp& stamp, const Stamps& stamps, Index derivative) const -> Matrix = 0;
 };
 
 } // namespace hyper
