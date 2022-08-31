@@ -47,17 +47,18 @@ auto AbstractState::parameters() const -> Pointers<Parameter> {
 auto AbstractState::parameters(const Stamp& stamp) const -> Pointers<Parameter> {
   DCHECK(range().contains(stamp)) << "State range does not contain stamp.";
   if (interpolator_) {
-    const auto outer = interpolator_->layout().outer;
-    const auto num_elements = outer.size() + 1;
-    DCHECK_LE(num_elements, elements_.size());
+    const auto layout = interpolator_->layout();
+    DCHECK_LE(layout.outer.size, elements_.size());
 
     const auto itr = elements_.upper_bound(stamp);
-    const auto begin = std::next(itr, outer.lower - 1);
-    const auto end = std::next(itr, outer.upper - 1);
+    const auto [left_padding, right_padding] = layout.outerPadding();
+    const auto begin = std::prev(itr, left_padding);
+    const auto end = std::next(itr, right_padding);
 
     Pointers<Parameter> pointers;
-    pointers.reserve(num_elements);
+    pointers.reserve(layout.outer.size);
     std::transform(begin, end, std::back_inserter(pointers), [](const auto& arg) { return arg.get(); });
+    DCHECK_EQ(pointers.size(), layout.outer.size);
     return pointers;
 
   } else {
@@ -69,11 +70,11 @@ auto AbstractState::parameters(const Stamp& stamp) const -> Pointers<Parameter> 
 
 auto AbstractState::range() const -> Range {
   if (interpolator_) {
-    const auto outer = interpolator_->layout().outer;
-    const auto num_elements = outer.size() + 1;
-    DCHECK_LE(num_elements, elements_.size());
-    const auto& v0 = *std::next(elements_.cbegin(), -outer.lowerBound());
-    const auto& vn = *std::next(elements_.cend(), -outer.upperBound());
+    const auto layout = interpolator_->layout();
+    DCHECK_LE(layout.outer.size, elements_.size());
+    const auto [left_padding, right_padding] = layout.outerPadding();
+    const auto& v0 = *std::next(elements_.cbegin(), left_padding - 1);
+    const auto& vn = *std::next(elements_.crbegin(), right_padding - 1);
     DCHECK_LT(v0->stamp(), vn->stamp());
     return {v0->stamp(), vn->stamp()};
   } else {
@@ -120,7 +121,7 @@ auto AbstractState::evaluate(const StateQuery& state_query, const Scalar* const*
   DCHECK(policy_ != nullptr);
   if (interpolator_) {
     const auto layout = interpolator_->layout();
-    const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer.size() + 1};
+    const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer.size};
     const auto stamps = policy_->stamps(pointers);
     const auto weights = interpolator_->weights(state_query.stamp, stamps, state_query.derivative);
     const auto policy_query = PolicyQuery{layout, pointers, weights};

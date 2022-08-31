@@ -55,11 +55,10 @@ TEST(BasisInterpolatorTests, Duality) {
   constexpr auto kMaxDegree = 5;
   for (Index i = 0; i < kMaxDegree; ++i) {
     Interpolator interpolator{i, false};
-    const auto [outer, inner] = interpolator.layout();
-    const auto num_stamps = outer.size() + 1;
+    const auto layout = interpolator.layout();
 
-    Stamps stamps(num_stamps);
-    std::iota(stamps.begin(), stamps.end(), outer.lowerBound());
+    Stamps stamps(layout.outer.size);
+    std::iota(stamps.begin(), stamps.end(), 1 - layout.outerPadding().left);
 
     const auto M0 = Interpolator::Mixing(i + 1);
     const auto M1 = interpolator.mixing(stamps);

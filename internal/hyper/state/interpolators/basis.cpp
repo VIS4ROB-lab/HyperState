@@ -140,14 +140,12 @@ auto BasisInterpolator::setDegree(const Degree degree) -> void {
   polynomials_ = polynomials();
 }
 
-auto BasisInterpolator::layout() const -> InterpolatorLayout {
+auto BasisInterpolator::layout() const -> StateLayout {
   if (uniform_) {
-    const auto index = -(degree_ / 2);
-    return {{index, index + order_}, {0, order_}};
+    return {{0, order_}, {0, order_}};
   } else {
-    const auto index = -(degree_ - 1);
     const auto offset = (degree_ - 1) / 2;
-    return {{index, index + 2 * degree_}, {offset, offset + order_}};
+    return {{0, 2 * degree_}, {offset, offset + order_}};
   }
 }
 

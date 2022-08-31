@@ -9,11 +9,13 @@ namespace hyper {
 
 struct PolicyQuery {
   // Definitions.
+  using Layout = StateLayout;
+  using Inputs = Pointers<const Scalar>;
   using Weights = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
   // Members.
-  const InterpolatorLayout& layout;
-  const Pointers<const Scalar>& inputs;
+  const Layout& layout;
+  const Inputs& inputs;
   const Weights& weights;
 };
 

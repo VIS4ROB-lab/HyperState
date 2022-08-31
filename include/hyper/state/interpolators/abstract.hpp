@@ -16,9 +16,9 @@ class AbstractInterpolator {
   /// Default destructor.
   virtual ~AbstractInterpolator() = default;
 
-  /// Retrieves the interpolator layout.
-  /// \return Interpolator layout.
-  [[nodiscard]] virtual auto layout() const -> InterpolatorLayout = 0;
+  /// Retrieves the state layout.
+  /// \return State layout.
+  [[nodiscard]] virtual auto layout() const -> StateLayout = 0;
 
   /// Evaluates the weights.
   /// \param stamp Query stamp.
