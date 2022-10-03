@@ -18,7 +18,7 @@ template <typename TScalar, typename TParameter>
 auto convertPointers(const Pointers<TParameter>& parameters) -> Pointers<TScalar> {
   Pointers<TScalar> pointers;
   pointers.reserve(parameters.size());
-  std::transform(parameters.begin(), parameters.end(), std::back_inserter(pointers), [](const auto& arg) { return arg->memory().address; });
+  std::transform(parameters.begin(), parameters.end(), std::back_inserter(pointers), [](const auto& arg) { return arg->asVector().data(); });
   return pointers;
 }
 

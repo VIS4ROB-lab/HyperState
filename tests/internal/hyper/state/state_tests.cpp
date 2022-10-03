@@ -95,10 +95,9 @@ class CartesianStateTests : public testing::Test {
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
-        const auto memory_j = inputs[j]->memory();
-        auto input_j = Eigen::Map<Input>{memory_j.address};
+        auto input_j = Eigen::Map<Input>{inputs[j]->asVector().data()};
 
-        for (Index k = 0; k < memory_j.size - 1; ++k) {
+        for (Index k = 0; k < input_j.size() - 1; ++k) {
           const Input tmp = input_j;
           const Derivative tau = kNumericIncrement * Derivative::Unit(k);
           input_j.variable() += tau;
@@ -230,8 +229,7 @@ class ManifoldStateTests : public testing::Test {
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
-        const auto memory_j = inputs[j]->memory();
-        auto input_j = Eigen::Map<Input>{memory_j.address};
+        auto input_j = Eigen::Map<Input>{inputs[j]->asVector().data()};
 
         for (Index k = 0; k < Traits<Derivative>::kNumParameters; ++k) {
           const Input tmp = input_j;
@@ -254,7 +252,7 @@ class ManifoldStateTests : public testing::Test {
           input_j = tmp;
         }
 
-        Jn_i.template middleCols<Traits<Input>::kNumParameters - 1>(j * Traits<Input>::kNumParameters) = Jn_i.template middleCols<Traits<Derivative>::kNumParameters>(j * Traits<Input>::kNumParameters) * SE3JacobianAdapter(memory_j.address);
+        Jn_i.template middleCols<Traits<Input>::kNumParameters - 1>(j * Traits<Input>::kNumParameters) = Jn_i.template middleCols<Traits<Derivative>::kNumParameters>(j * Traits<Input>::kNumParameters) * SE3JacobianAdapter(inputs[j]->asVector().data());
       }
 
       // Compare Jacobians.

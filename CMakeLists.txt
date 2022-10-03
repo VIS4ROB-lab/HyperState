@@ -18,7 +18,7 @@ target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra -Wnon-virtual-dtor -
 target_compile_options(${PROJECT_NAME} PUBLIC -O3 -march=native -fconcepts)
 
 # Fetch (external) content.
-FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG 0c0c054bd53920b0bebeef94cb2af391cca99371)
+FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG 7650d026bc102f40accf83b6203e15fed07538cd)
 FetchContent_MakeAvailable(HyperVariables)
 
 # Find Eigen target if not present.
