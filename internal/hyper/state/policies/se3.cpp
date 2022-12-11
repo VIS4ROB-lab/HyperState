@@ -16,9 +16,9 @@ using Derivative = Tangent<Value>;
 using SE3Tangent = Tangent<SE3<Scalar>>;
 using SU2Tangent = Tangent<SU2<Scalar>>;
 
-constexpr auto kNumValueParameters = Traits<Value>::kNumParameters;
-constexpr auto kNumInputParameters = Traits<Input>::kNumParameters;
-constexpr auto kNumDerivativeParameters = Traits<Derivative>::kNumParameters;
+constexpr auto kNumValueParameters = Value::kNumParameters;
+constexpr auto kNumInputParameters = Input::kNumParameters;
+constexpr auto kNumDerivativeParameters = Derivative::kNumParameters;
 
 constexpr auto kValueIndex = 0;
 constexpr auto kVelocityIndex = 1;
@@ -154,7 +154,7 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
       const auto T_b = Eigen::Map<const Input>{inputs[i]}.variable();
       const auto w0_i = weights(i - start_idx, kValueIndex);
 
-      Jacobian<SU2Tangent> J_R_i_w_ab, J_d_ab_R_ab;
+      JacobianNM<SU2Tangent> J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
       const auto d_ab = R_ab.toTangent(J_d_ab_R_ab.data());
       const auto x_ab = Translation{T_b.translation() - T_a.translation()};
@@ -168,7 +168,7 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
       // Update left value Jacobian.
       const auto J_x_a = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
       RotationJacobian(jacobians[kValueIndex], i - 1).noalias() = -J_x_a * i_R_ab;
-      TranslationJacobian(jacobians[kValueIndex], i - 1).noalias() = -w0_i * Jacobian<Translation>::Identity();
+      TranslationJacobian(jacobians[kValueIndex], i - 1).noalias() = -w0_i * JacobianNM<Translation>::Identity();
 
       // Velocity update.
       if constexpr (kValueIndex < TDerivative) {
@@ -185,9 +185,9 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
 
         // Update velocity Jacobians.
         RotationJacobian(jacobians[kVelocityIndex], i - 1).noalias() = -J_v_a * i_R_ab;
-        TranslationJacobian(jacobians[kVelocityIndex], i - 1).noalias() = -w1_i * Jacobian<Translation>::Identity();
+        TranslationJacobian(jacobians[kVelocityIndex], i - 1).noalias() = -w1_i * JacobianNM<Translation>::Identity();
         RotationJacobian(jacobians[kVelocityIndex], i).noalias() += J_v_a + J_v_b * RotationJacobian(jacobians[kValueIndex], i);
-        TranslationJacobian(jacobians[kVelocityIndex], i).noalias() += w1_i * Jacobian<Translation>::Identity();
+        TranslationJacobian(jacobians[kVelocityIndex], i).noalias() += w1_i * JacobianNM<Translation>::Identity();
 
         // Propagate velocity updates.
         for (Index k = end_idx; i < k; --k) {
@@ -209,9 +209,9 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
 
           // Update acceleration Jacobians.
           RotationJacobian(jacobians[kAccelerationIndex], i - 1).noalias() = -J_a_a * i_R_ab + (w1_i_i_R_d_ab_x - v_x) * RotationJacobian(jacobians[kVelocityIndex], i - 1);
-          TranslationJacobian(jacobians[kAccelerationIndex], i - 1).noalias() = -w2_i * Jacobian<Translation>::Identity();
+          TranslationJacobian(jacobians[kAccelerationIndex], i - 1).noalias() = -w2_i * JacobianNM<Translation>::Identity();
           RotationJacobian(jacobians[kAccelerationIndex], i).noalias() += J_a_a + J_a_b * RotationJacobian(jacobians[kValueIndex], i) + (w1_i_i_R_d_ab_x - v_x) * RotationJacobian(jacobians[kVelocityIndex], i);
-          TranslationJacobian(jacobians[kAccelerationIndex], i).noalias() += w2_i * Jacobian<Translation>::Identity();
+          TranslationJacobian(jacobians[kAccelerationIndex], i).noalias() += w2_i * JacobianNM<Translation>::Identity();
 
           // Propagate acceleration updates.
           for (Index k = end_idx; i < k; --k) {
@@ -222,7 +222,7 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
 
       // Update right value Jacobian.
       RotationJacobian(jacobians[kValueIndex], i).noalias() += J_x_a;
-      TranslationJacobian(jacobians[kValueIndex], i).noalias() += w0_i * Jacobian<Translation>::Identity();
+      TranslationJacobian(jacobians[kValueIndex], i).noalias() += w0_i * JacobianNM<Translation>::Identity();
 
       // Value update.
       R = R_i * R;
@@ -231,15 +231,15 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
 
     const auto T_a = Eigen::Map<const Input>{inputs[start_idx]}.variable();
     RotationJacobian(jacobians[kValueIndex], start_idx).noalias() += R.groupInverse().matrix();
-    TranslationJacobian(jacobians[kValueIndex], start_idx).noalias() += Jacobian<Translation>::Identity();
+    TranslationJacobian(jacobians[kValueIndex], start_idx).noalias() += JacobianNM<Translation>::Identity();
 
     R = T_a.rotation() * R;
     x = T_a.translation() + x;
 
     for (Index i = start_idx; i <= end_idx; ++i) {
-      const auto adapter = SU2JacobianAdapter(inputs[i] + Traits<Input>::kVariableOffset + Traits<Value>::kRotationOffset);
+      const auto adapter = SU2JacobianAdapter(inputs[i] + Input::kVariableOffset + Value::kRotationOffset);
       for (auto& J : jacobians) {
-        RotationJacobian<Traits<SU2<Scalar>>::kNumParameters>(J, i) = RotationJacobian(J, i) * adapter;
+        RotationJacobian<SU2<Scalar>::kNumParameters>(J, i) = RotationJacobian(J, i) * adapter;
       }
     }
   }

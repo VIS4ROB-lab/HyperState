@@ -8,17 +8,20 @@ include(FetchContent)
 # Define projects.
 project(HyperState VERSION 22.07.01 DESCRIPTION "" HOMEPAGE_URL https://github.com/VIS4ROB-lab/HyperState LANGUAGES CXX)
 
+# Set properties.
+if(PROJECT_IS_TOP_LEVEL)
+    set(CMAKE_CXX_STANDARD 20)
+    set(CMAKE_CXX_STANDARD_REQUIRED YES)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -fconcepts -Wall -Wextra -Wnon-virtual-dtor -pedantic")
+endif()
+
 # Define libraries and aliases.
-add_library(${PROJECT_NAME} SHARED)
+file(GLOB_RECURSE PROJECT_SOURCE_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/internal/*.hpp ${PROJECT_SOURCE_DIR}/internal/*.cpp)
+add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCE_FILES})
 add_library(Hyper::State ALIAS ${PROJECT_NAME})
 
-# Set properties.
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES)
-target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra -Wnon-virtual-dtor -pedantic)
-target_compile_options(${PROJECT_NAME} PUBLIC -O3 -march=native -fconcepts)
-
 # Fetch (external) content.
-FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG b1ab9378ec4472791e8f97f59502aba7ba67d711)
+FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG 1ae7b73f317159d2a6791d8e0d667b58196cba7b)
 FetchContent_MakeAvailable(HyperVariables)
 
 # Find Eigen target if not present.
@@ -37,9 +40,7 @@ if (NOT TARGET glog::glog)
 endif ()
 
 # Add includes and link libraries.
-file(GLOB_RECURSE PROJECT_SOURCE_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/internal/*.hpp ${PROJECT_SOURCE_DIR}/internal/*.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC Hyper::Variables)
 
 # Build tests.

@@ -91,7 +91,7 @@ class CartesianStateTests : public testing::Test {
       // Allocate Jacobian.
       Jacobian Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Traits<Value>::kNumParameters, num_inputs * Traits<Input>::kNumParameters);
+      Jn_i.setZero(Value::kNumParameters, num_inputs * Input::kNumParameters);
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
@@ -104,7 +104,7 @@ class CartesianStateTests : public testing::Test {
 
           const auto d_query = StateQuery{stamp, i, false};
           const auto d_output = state_.evaluate(d_query);
-          Jn_i.col(j * Traits<Input>::kNumParameters + k) = (d_output.derivatives.at(i) - output.derivatives.at(i)).transpose() / kNumericIncrement;
+          Jn_i.col(j * Input::kNumParameters + k) = (d_output.derivatives.at(i) - output.derivatives.at(i)).transpose() / kNumericIncrement;
 
           input_j = tmp;
         }
@@ -225,13 +225,13 @@ class ManifoldStateTests : public testing::Test {
       // Allocate Jacobian.
       Jacobian Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Traits<Derivative>::kNumParameters, num_inputs * Traits<Input>::kNumParameters);
+      Jn_i.setZero(Derivative::kNumParameters, num_inputs * Input::kNumParameters);
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
         auto input_j = Eigen::Map<Input>{inputs[j]->asVector().data()};
 
-        for (Index k = 0; k < Traits<Derivative>::kNumParameters; ++k) {
+        for (Index k = 0; k < Derivative::kNumParameters; ++k) {
           const Input tmp = input_j;
           const Derivative tau = kNumericIncrement * Derivative::Unit(k);
           input_j.variable().rotation() *= tau.angular().toManifold();
@@ -243,16 +243,16 @@ class ManifoldStateTests : public testing::Test {
           if (i == 0) {
             const auto value = output.template derivativeAs<SE3<Scalar>>(0);
             const auto d_value = d_output.template derivativeAs<SE3<Scalar>>(0);
-            Jn_i.col(j * Traits<Input>::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
-            Jn_i.col(j * Traits<Input>::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
+            Jn_i.col(j * Input::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
+            Jn_i.col(j * Input::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
           } else {
-            Jn_i.col(j * Traits<Input>::kNumParameters + k) = (d_output.derivatives.at(i) - output.derivatives.at(i)) / kNumericIncrement;
+            Jn_i.col(j * Input::kNumParameters + k) = (d_output.derivatives.at(i) - output.derivatives.at(i)) / kNumericIncrement;
           }
 
           input_j = tmp;
         }
 
-        Jn_i.template middleCols<Traits<Input>::kNumParameters - 1>(j * Traits<Input>::kNumParameters) = Jn_i.template middleCols<Traits<Derivative>::kNumParameters>(j * Traits<Input>::kNumParameters) * SE3JacobianAdapter(inputs[j]->asVector().data());
+        Jn_i.template middleCols<Input::kNumParameters - 1>(j * Input::kNumParameters) = Jn_i.template middleCols<Derivative::kNumParameters>(j * Input::kNumParameters) * SE3JacobianAdapter(inputs[j]->asVector().data());
       }
 
       // Compare Jacobians.

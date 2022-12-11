@@ -107,9 +107,9 @@ class CartesianPolicy<Stamped<TVariable>> final : public AbstractPolicy {
 
  private:
   // Constants.
-  static constexpr auto kNumValueParameters = Traits<Value>::kNumParameters;
-  static constexpr auto kNumInputParameters = Traits<Input>::kNumParameters;
-  static constexpr auto kNumDerivativeParameters = Traits<Derivative>::kNumParameters;
+  static constexpr auto kNumValueParameters = Value::kNumParameters;
+  static constexpr auto kNumInputParameters = Input::kNumParameters;
+  static constexpr auto kNumDerivativeParameters = Derivative::kNumParameters;
 };
 
 } // namespace hyper
