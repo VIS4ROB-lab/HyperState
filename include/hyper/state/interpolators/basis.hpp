@@ -33,9 +33,9 @@ class BasisInterpolator final : public PolynomialInterpolator {
   [[nodiscard]] auto layout() const -> StateLayout final;
 
   /// Evaluates the (non-uniform) mixing matrix.
-  /// \param stamps Input stamps.
+  /// \param Times Input times.
   /// \return Interpolation matrix.
-  [[nodiscard]] auto mixing(const Stamps& stamps) const -> Matrix final;
+  [[nodiscard]] auto mixing(const Times& times) const -> Matrix final;
 };
 
 } // namespace hyper

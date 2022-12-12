@@ -32,16 +32,16 @@ class PolynomialInterpolator : public AbstractInterpolator {
   [[nodiscard]] auto layout() const -> StateLayout override = 0;
 
   /// Evaluates the (non-uniform) mixing matrix.
-  /// \param stamps Input stamps.
+  /// \param times Input times.
   /// \return Interpolation matrix.
-  [[nodiscard]] virtual auto mixing(const Stamps& stamps) const -> Matrix = 0;
+  [[nodiscard]] virtual auto mixing(const Times& times) const -> Matrix = 0;
 
   /// Evaluates the weights.
-  /// \param stamp Query stamp.
-  /// \param stamps Stamps of the variables.
+  /// \param time Query time.
+  /// \param times Times of the variables.
   /// \param derivative Highest requested derivative.
   /// \return Weights.
-  [[nodiscard]] auto weights(const Stamp& stamp, const Stamps& stamps, Index derivative) const -> Matrix final;
+  [[nodiscard]] auto weights(const Time& time, const Times& times, Index derivative) const -> Matrix final;
 
  protected:
   /// Constructor from uniformity flag.
@@ -53,10 +53,10 @@ class PolynomialInterpolator : public AbstractInterpolator {
   [[nodiscard]] auto polynomials() const -> Matrix;
 
   /// Polynomial derivatives of normalized stamp.
-  /// \param stamp Normalized stamp.
+  /// \param time Normalized time.
   /// \param i Derivative order.
   /// \return Polynomial derivatives.
-  [[nodiscard]] auto polynomial(const Stamp& stamp, Index i) const -> Matrix;
+  [[nodiscard]] auto polynomial(const Time& time, Index i) const -> Matrix;
 
   bool uniform_;       ///< Uniformity flag.
   Degree degree_;      ///< Degree.

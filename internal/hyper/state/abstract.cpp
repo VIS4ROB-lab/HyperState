@@ -44,13 +44,13 @@ auto AbstractState::parameters() const -> Pointers<Parameter> {
   return pointers;
 }
 
-auto AbstractState::parameters(const Stamp& stamp) const -> Pointers<Parameter> {
-  DCHECK(range().contains(stamp)) << "State range does not contain stamp.";
+auto AbstractState::parameters(const Time& time) const -> Pointers<Parameter> {
+  DCHECK(range().contains(time)) << "State range does not contain stamp.";
   if (interpolator_) {
     const auto layout = interpolator_->layout();
     DCHECK_LE(layout.outer.size, elements_.size());
 
-    const auto itr = elements_.upper_bound(stamp);
+    const auto itr = elements_.upper_bound(time);
     const auto [left_padding, right_padding] = layout.outerPadding();
     const auto begin = std::prev(itr, left_padding);
     const auto end = std::next(itr, right_padding);
@@ -62,7 +62,7 @@ auto AbstractState::parameters(const Stamp& stamp) const -> Pointers<Parameter> 
     return pointers;
 
   } else {
-    const auto itr = elements_.find(stamp);
+    const auto itr = elements_.find(time);
     DCHECK(itr != elements_.cend()) << "State does not contain stamp.";
     return {itr->get()};
   }
@@ -105,13 +105,13 @@ auto AbstractState::evaluate(const StateQuery& state_query) const -> StateResult
   DCHECK(policy_ != nullptr);
   if (interpolator_) {
     const auto layout = interpolator_->layout();
-    const auto pointers = convertPointers<const Scalar>(parameters(state_query.stamp));
-    const auto stamps = policy_->stamps(pointers);
-    const auto weights = interpolator_->weights(state_query.stamp, stamps, state_query.derivative);
+    const auto pointers = convertPointers<const Scalar>(parameters(state_query.time));
+    const auto stamps = policy_->times(pointers);
+    const auto weights = interpolator_->weights(state_query.time, stamps, state_query.derivative);
     const auto policy_query = PolicyQuery{layout, pointers, weights};
     return policy_->evaluate(state_query, policy_query);
   } else {
-    const auto pointers = convertPointers<const Scalar>(parameters(state_query.stamp));
+    const auto pointers = convertPointers<const Scalar>(parameters(state_query.time));
     const auto policy_query = PolicyQuery{{}, pointers, {}};
     return policy_->evaluate(state_query, policy_query);
   }
@@ -122,8 +122,8 @@ auto AbstractState::evaluate(const StateQuery& state_query, const Scalar* const*
   if (interpolator_) {
     const auto layout = interpolator_->layout();
     const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer.size};
-    const auto stamps = policy_->stamps(pointers);
-    const auto weights = interpolator_->weights(state_query.stamp, stamps, state_query.derivative);
+    const auto stamps = policy_->times(pointers);
+    const auto weights = interpolator_->weights(state_query.time, stamps, state_query.derivative);
     const auto policy_query = PolicyQuery{layout, pointers, weights};
     return policy_->evaluate(state_query, policy_query);
   } else {

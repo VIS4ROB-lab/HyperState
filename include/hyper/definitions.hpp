@@ -17,8 +17,8 @@ using Identifier = std::size_t;
 using Index = Eigen::Index;
 using IndexRange = Range<Index, BoundaryPolicy::LOWER_INCLUSIVE_ONLY>;
 
-using Stamp = Scalar;
-using Stamps = std::vector<Stamp>;
+using Time = Scalar;
+using Times = std::vector<Time>;
 
 template <typename T>
 using Pointers = std::vector<T*>;

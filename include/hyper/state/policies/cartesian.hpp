@@ -17,16 +17,16 @@ class CartesianPolicy<Stamped<TVariable>> final : public AbstractPolicy {
   using Input = Stamped<Value>;
   using Derivative = Value;
 
-  /// Collects the stamps.
-  /// \return Stamps.
-  [[nodiscard]] auto stamps(const Pointers<const Scalar>& pointers) const -> Stamps final {
-    Stamps stamps;
-    stamps.reserve(pointers.size());
+  /// Collects the times.
+  /// \return Times.
+  [[nodiscard]] auto times(const Pointers<const Scalar>& pointers) const -> Times final {
+    Times times;
+    times.reserve(pointers.size());
     for (const auto& pointer : pointers) {
       const auto stamped = Eigen::Map<const Input>{pointer};
-      stamps.emplace_back(stamped.stamp());
+      times.emplace_back(stamped.stamp());
     }
-    return stamps;
+    return times;
   }
 
   /// Evaluates a query.

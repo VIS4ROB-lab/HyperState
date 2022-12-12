@@ -14,16 +14,16 @@ namespace hyper {
 
 struct StateQuery {
   /// Constructor from query stamp and derivative requests.
-  /// \param stamp Query stamp.
+  /// \param time Query time.
   /// \param derivative Highest degree of requested derivatives.
   /// \param jacobian Jacobian flag (true if requested).
-  StateQuery(const Stamp& stamp, Index derivative = 0, const bool jacobian = false) // NOLINT
-      : stamp{stamp},
+  StateQuery(const Time& time, Index derivative = 0, const bool jacobian = false) // NOLINT
+      : time{time},
         derivative{derivative},
         jacobian{jacobian} {}
 
   // Members.
-  Stamp stamp;      ///< Stamp.
+  Time time;        ///< Time.
   Index derivative; ///< Highest degree of requested derivatives.
   bool jacobian;    ///< Jacobian flag.
 };

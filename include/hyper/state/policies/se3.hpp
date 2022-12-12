@@ -16,9 +16,9 @@ class ManifoldPolicy<Stamped<SE3<Scalar>>> final : public AbstractPolicy {
   using Input = Stamped<Value>;
   using Derivative = Tangent<Value>;
 
-  /// Collects the stamps.
-  /// \return Stamps.
-  [[nodiscard]] auto stamps(const Pointers<const Scalar>& pointers) const -> Stamps final;
+  /// Collects the times.
+  /// \return Times.
+  [[nodiscard]] auto times(const Pointers<const Scalar>& pointers) const -> Times final;
 
   /// Evaluates a query.
   /// \param state_query State query.

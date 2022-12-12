@@ -17,7 +17,7 @@ namespace hyper {
 class AbstractState {
  public:
   // Definitions.
-  using Range = hyper::Range<Stamp, BoundaryPolicy::LOWER_INCLUSIVE_ONLY>;
+  using Range = hyper::Range<Time, BoundaryPolicy::LOWER_INCLUSIVE_ONLY>;
   using Parameter = AbstractStamped<Scalar>;
   using Element = std::unique_ptr<Parameter>;
 
@@ -26,10 +26,10 @@ class AbstractState {
     auto operator()(const Element& lhs, const Element& rhs) const -> bool {
       return lhs->stamp() < rhs->stamp();
     }
-    auto operator()(const Element& lhs, const Stamp& rhs) const -> bool {
+    auto operator()(const Element& lhs, const Time& rhs) const -> bool {
       return lhs->stamp() < rhs;
     }
-    auto operator()(const Stamp& lhs, const Element& rhs) const -> bool {
+    auto operator()(const Time& lhs, const Element& rhs) const -> bool {
       return lhs < rhs->stamp();
     }
   };
@@ -57,7 +57,7 @@ class AbstractState {
 
   /// Parameters accessor (stamp-based).
   /// \return Parameters.
-  [[nodiscard]] auto parameters(const Stamp& stamp) const -> Pointers<Parameter>;
+  [[nodiscard]] auto parameters(const Time& time) const -> Pointers<Parameter>;
 
   /// Evaluates the temporal range.
   /// \return Temporal range.

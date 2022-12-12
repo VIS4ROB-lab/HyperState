@@ -57,11 +57,11 @@ TEST(BasisInterpolatorTests, Duality) {
     Interpolator interpolator{i, false};
     const auto layout = interpolator.layout();
 
-    Stamps stamps(layout.outer.size);
-    std::iota(stamps.begin(), stamps.end(), 1 - layout.outerPadding().left);
+    Times times(layout.outer.size);
+    std::iota(times.begin(), times.end(), 1 - layout.outerPadding().left);
 
     const auto M0 = Interpolator::Mixing(i + 1);
-    const auto M1 = interpolator.mixing(stamps);
+    const auto M1 = interpolator.mixing(times);
     EXPECT_TRUE(M0.isApprox(M1, kNumericTolerance));
   }
 }

@@ -60,29 +60,29 @@ auto equidistantRecursion(const Index k) -> Matrix { // NOLINT
 }
 
 /// Evaluates low-level coefficients.
-/// \param stamps Input stamps (i.e. times associated with variables).
+/// \param times Input times (i.e. times associated with variables).
 /// \param i Index.
 /// \param j Index.
 /// \return Coefficients.
-auto coefficient(const Stamps& stamps, const Index i, const Index j) -> std::pair<Scalar, Scalar> {
-  const auto tj0 = stamps[j - 2];
-  const auto tj1 = stamps[j - 1];
-  const auto ti = stamps[i];
-  const auto tij = stamps[i + j - 1];
+auto coefficient(const Times& times, const Index i, const Index j) -> std::pair<Scalar, Scalar> {
+  const auto tj0 = times[j - 2];
+  const auto tj1 = times[j - 1];
+  const auto ti = times[i];
+  const auto tij = times[i + j - 1];
   const auto inverse = Scalar{1} / (tij - ti);
   return {(tj0 - ti) * inverse, (tj1 - tj0) * inverse};
 }
 
 /// Evaluates low-level coefficient matrices.
-/// \param stamps Input stamps (i.e. times associated with variables).
+/// \param times Input times (i.e. times associated with variables).
 /// \param k Index.
 /// \return Coefficient matrices.
-auto coefficients(const Stamps& stamps, const Index k) -> std::pair<Matrix, Matrix> {
+auto coefficients(const Times& times, const Index k) -> std::pair<Matrix, Matrix> {
   Matrix Ak = Matrix::Zero(k, k - 1);
   Matrix Bk = Matrix::Zero(k, k - 1);
 
   for (Index i = 0; i < k - 1; ++i) {
-    const auto [a, b] = coefficient(stamps, i, k);
+    const auto [a, b] = coefficient(times, i, k);
     Ak(i, i) = Scalar{1} - a;
     Ak(i + 1, i) = a;
     Bk(i, i) = -b;
@@ -93,10 +93,10 @@ auto coefficients(const Stamps& stamps, const Index k) -> std::pair<Matrix, Matr
 }
 
 /// Evaluates the matrix precursor (i.e. non-cumulative matrix).
-/// \param stamps Input stamps (i.e. times associated with variables).
+/// \param times Input times (i.e. times associated with variables).
 /// \param k Index.
 /// \return Matrix precursor.
-auto recursion(const Stamps& stamps, const Index k) -> Matrix { // NOLINT
+auto recursion(const Times& times, const Index k) -> Matrix { // NOLINT
   if (k == 1) {
     Matrix matrix = Matrix::Ones(1, 1);
     return matrix;
@@ -112,8 +112,8 @@ auto recursion(const Stamps& stamps, const Index k) -> Matrix { // NOLINT
     Matrix AkMk, BkMk;
     AkMk.resize(k, k);
     BkMk.resize(k, k);
-    const auto [Ak, Bk] = coefficients(stamps, k);
-    const auto Mk = recursion(stamps, k - 1);
+    const auto [Ak, Bk] = coefficients(times, k);
+    const auto Mk = recursion(times, k - 1);
     AkMk.topLeftCorner(k, k - 1) = Ak * Mk;
     AkMk.col(k - 1).setZero();
     BkMk.col(0).setZero();
@@ -149,8 +149,8 @@ auto BasisInterpolator::layout() const -> StateLayout {
   }
 }
 
-auto BasisInterpolator::mixing(const Stamps& stamps) const -> Matrix {
-  return Matrix::Ones(order_, order_).triangularView<Eigen::Upper>() * recursion(stamps, order_);
+auto BasisInterpolator::mixing(const Times& times) const -> Matrix {
+  return Matrix::Ones(order_, order_).triangularView<Eigen::Upper>() * recursion(times, order_);
 }
 
 } // namespace hyper

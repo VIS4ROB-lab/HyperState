@@ -34,15 +34,15 @@ auto PolynomialInterpolator::setUniform(const bool uniform) -> void {
   uniform_ = uniform;
 }
 
-auto PolynomialInterpolator::weights(const Stamp& stamp, const Stamps& stamps, const Index derivative) const -> Matrix {
+auto PolynomialInterpolator::weights(const Time& time, const Times& times, const Index derivative) const -> Matrix {
   // Unpack state query.
-  const auto index = (stamps.size() - 1) / 2;
+  const auto index = (times.size() - 1) / 2;
 
   // Normalize time.
-  const auto t0 = stamps[index];
-  const auto t1 = stamps[index + 1];
+  const auto t0 = times[index];
+  const auto t1 = times[index + 1];
   const auto i_normalized_stamp = Scalar{1} / (t1 - t0);
-  const auto normalized_stamp = (stamp - t0) * i_normalized_stamp;
+  const auto normalized_stamp = (time - t0) * i_normalized_stamp;
 
   // Sanity checks.
   DCHECK_LE(0, normalized_stamp);
@@ -56,7 +56,7 @@ auto PolynomialInterpolator::weights(const Stamp& stamp, const Stamps& stamps, c
       weights.col(k).noalias() = mixing_ * polynomial(normalized_stamp, k) * power(i_normalized_stamp, k);
     }
   } else {
-    const auto M = mixing(stamps);
+    const auto M = mixing(times);
     for (Index k = 0; k <= derivative; ++k) {
       weights.col(k).noalias() = M * polynomial(normalized_stamp, k) * power(i_normalized_stamp, k);
     }
@@ -87,15 +87,15 @@ auto PolynomialInterpolator::polynomials() const -> Matrix {
   return matrix;
 }
 
-auto PolynomialInterpolator::polynomial(const Stamp& stamp, const Index i) const -> Matrix {
+auto PolynomialInterpolator::polynomial(const Time& time, const Index i) const -> Matrix {
   Matrix matrix = Matrix::Zero(order_, 1);
 
   if (i < order_) {
     matrix(i, 0) = polynomials_(i, i);
-    auto stamp_k = stamp;
+    auto stamp_k = time;
     for (Index j = i + 1; j < order_; ++j) {
       matrix(j, 0) = polynomials_(i, j) * stamp_k;
-      stamp_k *= stamp;
+      stamp_k *= time;
     }
   }
 

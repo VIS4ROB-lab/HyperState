@@ -257,14 +257,14 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
 
 } // namespace
 
-auto ManifoldPolicy<Stamped<SE3<Scalar>>>::stamps(const Pointers<const Scalar>& pointers) const -> Stamps {
-  Stamps stamps;
-  stamps.reserve(pointers.size());
+auto ManifoldPolicy<Stamped<SE3<Scalar>>>::times(const Pointers<const Scalar>& pointers) const -> Times {
+  Times times;
+  times.reserve(pointers.size());
   for (const auto& pointer : pointers) {
     const auto stamped = Eigen::Map<const Input>{pointer};
-    stamps.emplace_back(stamped.stamp());
+    times.emplace_back(stamped.stamp());
   }
-  return stamps;
+  return times;
 }
 
 auto ManifoldPolicy<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) const -> StateResult {

@@ -12,10 +12,10 @@ class AbstractPolicy {
   /// Default destructor.
   virtual ~AbstractPolicy() = default;
 
-  /// Collects the stamps.
+  /// Collects the times.
   /// \param pointers Input pointers.
-  /// \return Stamps.
-  [[nodiscard]] virtual auto stamps(const Pointers<const Scalar>& pointers) const -> Stamps = 0;
+  /// \return Times.
+  [[nodiscard]] virtual auto times(const Pointers<const Scalar>& pointers) const -> Times = 0;
 
   /// Evaluates a query.
   /// \param state_query State query.
