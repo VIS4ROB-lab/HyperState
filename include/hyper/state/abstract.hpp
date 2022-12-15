@@ -41,7 +41,7 @@ class AbstractState {
   /// Constructor from interpolator and policy.
   /// \param interpolator Input interpolator.
   /// \param policy Input policy.
-  explicit AbstractState(std::unique_ptr<AbstractInterpolator>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
+  explicit AbstractState(std::unique_ptr<AbstractInterpolator<Scalar>>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
 
   /// Elements accessor.
   /// \return Elements.
@@ -65,11 +65,11 @@ class AbstractState {
 
   /// Interpolator accessor.
   /// \return Interpolator.
-  [[nodiscard]] auto interpolator() const -> const std::unique_ptr<AbstractInterpolator>&;
+  [[nodiscard]] auto interpolator() const -> const std::unique_ptr<AbstractInterpolator<Scalar>>&;
 
   /// Interpolator modifier.
   /// \return Interpolator.
-  [[nodiscard]] auto interpolator() -> std::unique_ptr<AbstractInterpolator>&;
+  [[nodiscard]] auto interpolator() -> std::unique_ptr<AbstractInterpolator<Scalar>>&;
 
   /// Policy accessor.
   /// \return Policy.
@@ -91,9 +91,9 @@ class AbstractState {
   [[nodiscard]] auto evaluate(const StateQuery& state_query, const Scalar* const* raw_values) const -> StateResult;
 
  private:
-  Elements elements_;                                  ///< Elements.
-  std::unique_ptr<AbstractInterpolator> interpolator_; ///< Interpolator.
-  std::unique_ptr<AbstractPolicy> policy_;             ///< Policy.
+  Elements elements_;                                          ///< Elements.
+  std::unique_ptr<AbstractInterpolator<Scalar>> interpolator_; ///< Interpolator.
+  std::unique_ptr<AbstractPolicy> policy_;                     ///< Policy.
 };
 
 } // namespace hyper

@@ -34,11 +34,12 @@ auto PolynomialInterpolator::setUniform(const bool uniform) -> void {
   uniform_ = uniform;
 }
 
-auto PolynomialInterpolator::weights(const Time& time, const Times& times, const Index derivative) const -> Matrix {
-  // Unpack state query.
-  const auto index = (times.size() - 1) / 2;
+auto PolynomialInterpolator::evaluate(const Query& query) const -> bool {
+  // Unpack query.
+  const auto& [time, derivative, times, weights] = query;
 
   // Normalize time.
+  const auto index = (times.size() - 1) / 2;
   const auto t0 = times[index];
   const auto t1 = times[index + 1];
   const auto i_normalized_stamp = Scalar{1} / (t1 - t0);
@@ -49,20 +50,20 @@ auto PolynomialInterpolator::weights(const Time& time, const Times& times, const
   DCHECK_LE(normalized_stamp, 1);
 
   // Allocate weights.
-  Matrix weights{order_, derivative + 1};
+  auto W = Eigen::Map<Matrix>{weights, order_, derivative + 1};
 
   if (uniform_) {
-    for (Index k = 0; k <= derivative; ++k) {
-      weights.col(k).noalias() = mixing_ * polynomial(normalized_stamp, k) * power(i_normalized_stamp, k);
+    for (Index k = 0; k < derivative + 1; ++k) {
+      W.col(k).noalias() = mixing_ * polynomial(normalized_stamp, k) * power(i_normalized_stamp, k);
     }
   } else {
     const auto M = mixing(times);
-    for (Index k = 0; k <= derivative; ++k) {
-      weights.col(k).noalias() = M * polynomial(normalized_stamp, k) * power(i_normalized_stamp, k);
+    for (Index k = 0; k < derivative + 1; ++k) {
+      W.col(k).noalias() = M * polynomial(normalized_stamp, k) * power(i_normalized_stamp, k);
     }
   }
 
-  return weights;
+  return true;
 }
 
 PolynomialInterpolator::PolynomialInterpolator(const bool uniform)

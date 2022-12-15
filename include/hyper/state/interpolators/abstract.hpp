@@ -7,12 +7,13 @@
 
 namespace hyper {
 
-/// Abstract interface for interpolation methods.
+template <typename TScalar>
 class AbstractInterpolator {
  public:
   // Definitions.
+  using Scalar = TScalar;
   using Layout = TemporalInterpolatorLayout<Eigen::Index>;
-  using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+  using Query = TemporalInterpolatorQuery<TScalar, Eigen::Index>;
 
   /// Default destructor.
   virtual ~AbstractInterpolator() = default;
@@ -21,12 +22,10 @@ class AbstractInterpolator {
   /// \return Layout.
   [[nodiscard]] virtual auto layout() const -> Layout = 0;
 
-  /// Evaluates the weights.
-  /// \param time Query time.
-  /// \param times Times of the variables.
-  /// \param derivative Highest requested derivative.
-  /// \return Weights.
-  [[nodiscard]] virtual auto weights(const Time& time, const Times& times, Index derivative) const -> Matrix = 0;
+  /// Evaluates this.
+  /// \param query Query.
+  /// \return True on success.
+  [[nodiscard]] virtual auto evaluate(const Query& query) const -> bool = 0;
 };
 
 } // namespace hyper

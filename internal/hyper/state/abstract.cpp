@@ -3,6 +3,7 @@
 
 #include <glog/logging.h>
 
+#include "hyper/matrix.hpp"
 #include "hyper/state/abstract.hpp"
 
 namespace hyper {
@@ -24,7 +25,7 @@ auto convertPointers(const Pointers<TParameter>& parameters) -> Pointers<TScalar
 
 } // namespace
 
-AbstractState::AbstractState(std::unique_ptr<AbstractInterpolator>&& interpolator, std::unique_ptr<AbstractPolicy>&& policy)
+AbstractState::AbstractState(std::unique_ptr<AbstractInterpolator<Scalar>>&& interpolator, std::unique_ptr<AbstractPolicy>&& policy)
     : elements_{},
       interpolator_{std::move(interpolator)},
       policy_{std::move(policy)} {}
@@ -83,12 +84,12 @@ auto AbstractState::range() const -> Range {
   }
 }
 
-auto AbstractState::interpolator() const -> const std::unique_ptr<AbstractInterpolator>& {
+auto AbstractState::interpolator() const -> const std::unique_ptr<AbstractInterpolator<Scalar>>& {
   return interpolator_;
 }
 
-auto AbstractState::interpolator() -> std::unique_ptr<AbstractInterpolator>& {
-  return const_cast<std::unique_ptr<AbstractInterpolator>&>(std::as_const(*this).interpolator());
+auto AbstractState::interpolator() -> std::unique_ptr<AbstractInterpolator<Scalar>>& {
+  return const_cast<std::unique_ptr<AbstractInterpolator<Scalar>>&>(std::as_const(*this).interpolator());
 }
 
 auto AbstractState::policy() const -> const std::unique_ptr<AbstractPolicy>& {
@@ -105,7 +106,10 @@ auto AbstractState::evaluate(const StateQuery& state_query) const -> StateResult
     const auto layout = interpolator_->layout();
     const auto pointers = convertPointers<const Scalar>(parameters(state_query.time));
     const auto stamps = policy_->times(pointers);
-    const auto weights = interpolator_->weights(state_query.time, stamps, state_query.derivative);
+
+    MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
+    interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
+
     const auto policy_query = PolicyQuery{layout, pointers, weights};
     return policy_->evaluate(state_query, policy_query);
   } else {
@@ -121,7 +125,10 @@ auto AbstractState::evaluate(const StateQuery& state_query, const Scalar* const*
     const auto layout = interpolator_->layout();
     const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer_input_size};
     const auto stamps = policy_->times(pointers);
-    const auto weights = interpolator_->weights(state_query.time, stamps, state_query.derivative);
+
+    MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
+    interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
+
     const auto policy_query = PolicyQuery{layout, pointers, weights};
     return policy_->evaluate(state_query, policy_query);
   } else {

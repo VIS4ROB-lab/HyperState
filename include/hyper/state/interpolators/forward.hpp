@@ -7,13 +7,14 @@
 
 namespace hyper {
 
+template <typename TScalar>
 class AbstractInterpolator;
 
 class PolynomialInterpolator;
 
 class BasisInterpolator;
 
-template<typename TIndex>
+template <typename TIndex>
 struct TemporalInterpolatorLayout {
   const TIndex outer_input_size;
   const TIndex inner_input_size;
@@ -22,6 +23,14 @@ struct TemporalInterpolatorLayout {
   const TIndex left_input_padding;
   const TIndex right_input_padding;
   const TIndex output_size;
+};
+
+template <typename TScalar, typename TDerivative>
+struct TemporalInterpolatorQuery {
+  TScalar time;
+  TDerivative derivative;
+  const std::vector<TScalar>& times;
+  TScalar* weights;
 };
 
 } // namespace hyper

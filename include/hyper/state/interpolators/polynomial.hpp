@@ -13,11 +13,12 @@ namespace hyper {
 /// uniform and non-uniform separation between bases and
 /// arbitrary representation degree/order. We recommend using
 /// odd degree splines due to symmetry.
-class PolynomialInterpolator : public AbstractInterpolator {
+class PolynomialInterpolator : public AbstractInterpolator<Scalar> {
  public:
   // Definitions.
   using Degree = Index;
   using Order = Index;
+  using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
   /// Updates the uniformity flag.
   /// \param uniform Input flag.
@@ -32,12 +33,10 @@ class PolynomialInterpolator : public AbstractInterpolator {
   /// \return Interpolation matrix.
   [[nodiscard]] virtual auto mixing(const Times& times) const -> Matrix = 0;
 
-  /// Evaluates the weights.
-  /// \param time Query time.
-  /// \param times Times of the variables.
-  /// \param derivative Highest requested derivative.
-  /// \return Weights.
-  [[nodiscard]] auto weights(const Time& time, const Times& times, Index derivative) const -> Matrix final;
+  /// Evaluates this.
+  /// \param query Query.
+  /// \return True on success.
+  [[nodiscard]] auto evaluate(const Query& query) const -> bool final;
 
  protected:
   /// Constructor from uniformity flag.
