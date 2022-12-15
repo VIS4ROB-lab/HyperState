@@ -5,7 +5,7 @@
 
 #include "hyper/state/policies/forward.hpp"
 
-#include "hyper/state/interpolators/polynomial.hpp"
+#include "polynomial.hpp"
 
 namespace hyper {
 
@@ -30,7 +30,8 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   using Weights = typename Base::Weights;
 
   /// Default constructor.
-  BasisInterpolator();
+  /// \param order Order.
+  explicit BasisInterpolator(const Index& order);
 
   /// Order setter.
   /// \param order Order.

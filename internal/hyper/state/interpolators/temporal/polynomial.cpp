@@ -3,7 +3,7 @@
 
 #include <glog/logging.h>
 
-#include "hyper/state/interpolators/polynomial.hpp"
+#include "hyper/state/interpolators/temporal/polynomial.hpp"
 
 namespace hyper {
 
@@ -34,8 +34,13 @@ auto PolynomialInterpolator<TScalar, TOrder>::isUniform() const -> bool {
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::setUniform(const bool is_uniform) -> void {
-  is_uniform_ = is_uniform;
+auto PolynomialInterpolator<TScalar, TOrder>::setUniform() -> void {
+  is_uniform_ = true;
+}
+
+template <typename TScalar, int TOrder>
+auto PolynomialInterpolator<TScalar, TOrder>::setNonUniform() -> void {
+  is_uniform_ = false;
 }
 
 template <typename TScalar, int TOrder>
@@ -69,9 +74,9 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const
       W.col(k).noalias() = mixing_ * polynomial(ut, k) * power(i_ut, k);
     }
   } else {
-    const auto M = mixing(times);
+    const auto mixing = this->mixing(times);
     for (Index k = 0; k < derivative + 1; ++k) {
-      W.col(k).noalias() = M * polynomial(ut, k) * power(i_ut, k);
+      W.col(k).noalias() = mixing * polynomial(ut, k) * power(i_ut, k);
     }
   }
 
@@ -98,23 +103,24 @@ auto PolynomialInterpolator<TScalar, TOrder>::polynomials() const -> OrderMatrix
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::polynomial(const Time& time, const Index& i) const -> OrderVector {
+auto PolynomialInterpolator<TScalar, TOrder>::polynomial(const Time& ut, const Index& i) const -> OrderVector {
   const auto order = this->order();
 
   OrderVector v = OrderVector::Zero(order);
 
   if (i < order) {
     v(i, 0) = polynomials_(i, i);
-    auto stamp_j = time;
+    auto ut_j = ut;
     for (Index j = i + 1; j < order; ++j) {
-      v(j, 0) = polynomials_(i, j) * stamp_j;
-      stamp_j *= time;
+      v(j, 0) = polynomials_(i, j) * ut_j;
+      ut_j *= ut;
     }
   }
 
   return v;
 }
 
+template class PolynomialInterpolator<double, 4>;
 template class PolynomialInterpolator<double, Eigen::Dynamic>;
 
 } // namespace hyper

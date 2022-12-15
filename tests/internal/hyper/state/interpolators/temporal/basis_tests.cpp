@@ -6,7 +6,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include "hyper/state/interpolators/basis.hpp"
+#include "hyper/state/interpolators/temporal/basis.hpp"
 
 namespace hyper::tests {
 
@@ -54,9 +54,8 @@ TEST(BasisInterpolatorTests, Theory) {
 TEST(BasisInterpolatorTests, Duality) {
   constexpr auto kMaxDegree = 5;
   for (Index i = 0; i < kMaxDegree; ++i) {
-    Interpolator interpolator;
-    interpolator.setOrder(i + 1);
-    interpolator.setUniform(false);
+    Interpolator interpolator{i + 1};
+    interpolator.setNonUniform();
     const auto layout = interpolator.layout();
 
     Times times(layout.outer_input_size);

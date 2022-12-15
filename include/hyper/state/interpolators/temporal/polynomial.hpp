@@ -6,8 +6,8 @@
 #include "hyper/state/policies/forward.hpp"
 
 #include "hyper/matrix.hpp"
-#include "hyper/state/interpolators/abstract.hpp"
 #include "hyper/vector.hpp"
+#include "temporal.hpp"
 
 namespace hyper {
 
@@ -27,16 +27,15 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
 
   using Weights = Matrix<Scalar, TOrder, Eigen::Dynamic>;
 
-  // Constants.
-  static constexpr auto kOrder = TOrder;
-
   /// Uniformity flag accessor.
   /// \return Uniformity flag.
   [[nodiscard]] auto isUniform() const -> bool;
 
-  /// Uniformity flag setter.
-  /// \param is_uniform Input uniformity flag.
-  auto setUniform(bool is_uniform = true) -> void;
+  /// Set uniform.
+  auto setUniform() -> void;
+
+  /// Set non-uniform.
+  auto setNonUniform() -> void;
 
   /// Order accessor.
   /// \return Order.
@@ -62,10 +61,10 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   [[nodiscard]] auto polynomials() const -> OrderMatrix;
 
   /// Polynomial derivatives of normalized stamp.
-  /// \param time Normalized time.
+  /// \param ut Normalized time.
   /// \param i Derivative order.
   /// \return Polynomial derivatives.
-  [[nodiscard]] auto polynomial(const Time& time, const Index& i) const -> OrderVector;
+  [[nodiscard]] auto polynomial(const Time& ut, const Index& i) const -> OrderVector;
 
   bool is_uniform_{true}; ///< Uniformity flag.
 

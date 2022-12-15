@@ -3,26 +3,25 @@
 
 #include <glog/logging.h>
 
-#include "hyper/state/interpolators/basis.hpp"
+#include "hyper/state/interpolators/temporal/basis.hpp"
 #include "hyper/state/policies/abstract.hpp"
 
 namespace hyper {
 
 namespace {
 
-using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
-
 /// Evaluates low-level coefficients.
-/// \param k Interpolation order.
-/// \return Coefficients.
-auto equidistantCoefficients(const Index& k) -> std::pair<Matrix, Matrix> {
+template <typename TScalar, typename TIndex, int TRows, int TCols = TRows != Eigen::Dynamic ? (TRows - 1) : Eigen::Dynamic>
+auto uniformCoefficients(const TIndex& k) -> std::pair<Matrix<TScalar, TRows, TCols>, Matrix<TScalar, TRows, TCols>> {
+  using Matrix = Matrix<TScalar, TRows, TCols>;
+
   Matrix Ak = Matrix::Zero(k, k - 1);
   Matrix Bk = Matrix::Zero(k, k - 1);
 
-  for (Index i = 0; i < k - 1; ++i) {
-    const auto a_i = Scalar{1} / static_cast<Scalar>(k - 1);
-    Ak(i, i) = static_cast<Scalar>(i + 1) * a_i;
-    Ak(i + 1, i) = static_cast<Scalar>(k - 2 - i) * a_i;
+  for (TIndex i = 0; i < k - 1; ++i) {
+    const auto a_i = TScalar{1} / static_cast<TScalar>(k - 1);
+    Ak(i, i) = static_cast<TScalar>(i + 1) * a_i;
+    Ak(i + 1, i) = static_cast<TScalar>(k - 2 - i) * a_i;
     Bk(i, i) = -a_i;
     Bk(i + 1, i) = a_i;
   }
@@ -30,27 +29,26 @@ auto equidistantCoefficients(const Index& k) -> std::pair<Matrix, Matrix> {
   return {Ak, Bk};
 }
 
-/// Evaluates the matrix precursor (i.e. non-cumulative matrix).
-/// \param k Interpolation order.
-/// \return Matrix precursor.
-auto equidistantRecursion(const Index& k) -> Matrix { // NOLINT
+/// Evaluates the weight precursor (i.e. non-cumulative matrix).
+template <typename TScalar, typename TIndex, int K>
+auto uniformRecursion(const TIndex& k) -> Matrix<TScalar, K, K> { // NOLINT
+  using Matrix = Matrix<TScalar, K, K>;
+
   if (k == 1) {
     Matrix matrix = Matrix::Ones(1, 1);
     return matrix;
   } else if (k == 2) {
-    Matrix matrix;
-    matrix.resize(k, k);
-    matrix(0, 0) = Scalar{1};
-    matrix(1, 0) = Scalar{0};
-    matrix(0, 1) = Scalar{-1};
-    matrix(1, 1) = Scalar{1};
+    Matrix matrix{k, k};
+    matrix(0, 0) = TScalar{1};
+    matrix(1, 0) = TScalar{0};
+    matrix(0, 1) = TScalar{-1};
+    matrix(1, 1) = TScalar{1};
     return matrix;
   } else {
-    Matrix AkMk, BkMk;
-    AkMk.resize(k, k);
-    BkMk.resize(k, k);
-    const auto [Ak, Bk] = equidistantCoefficients(k);
-    const auto Mk = equidistantRecursion(k - 1);
+    const auto [Ak, Bk] = uniformCoefficients<TScalar, TIndex, K>(k);
+    const auto Mk = uniformRecursion<TScalar, TIndex, ((K > 1) ? (K - 1) : Eigen::Dynamic)>(k - 1);
+    Matrix AkMk{k, k};
+    Matrix BkMk{k, k};
     AkMk.topLeftCorner(k, k - 1) = Ak * Mk;
     AkMk.col(k - 1).setZero();
     BkMk.col(0).setZero();
@@ -60,30 +58,27 @@ auto equidistantRecursion(const Index& k) -> Matrix { // NOLINT
 }
 
 /// Evaluates low-level coefficients.
-/// \param times Input times (associated with variables).
-/// \param i Index.
-/// \param j Index.
-/// \return Coefficients.
-auto coefficient(const Times& times, const Index& i, const Index& j) -> std::pair<Scalar, Scalar> {
-  const auto tj0 = times[j - 2];
-  const auto tj1 = times[j - 1];
-  const auto ti = times[i];
-  const auto tij = times[i + j - 1];
-  const auto i_t = Scalar{1} / (tij - ti);
-  return {(tj0 - ti) * i_t, (tj1 - tj0) * i_t};
+template <typename TScalar, typename TIndex>
+auto coefficient(const std::vector<TScalar>& v, const TIndex& i, const TIndex& j) -> std::pair<TScalar, TScalar> {
+  const auto v2 = v[j - 2];
+  const auto v1 = v[j - 1];
+  const auto vi = v[i];
+  const auto vij = v[i + j - 1];
+  const auto i_t = TScalar{1} / (vij - vi);
+  return {(v2 - vi) * i_t, (v1 - v2) * i_t};
 }
 
 /// Evaluates low-level coefficient matrices.
-/// \param times Input times (i.e. times associated with variables).
-/// \param k Index.
-/// \return Coefficient matrices.
-auto coefficients(const Times& times, const Index& k) -> std::pair<Matrix, Matrix> {
+template <typename TScalar, typename TIndex, int TRows, int TCols = TRows != Eigen::Dynamic ? (TRows - 1) : Eigen::Dynamic>
+auto coefficients(const std::vector<TScalar>& v, const TIndex& k) -> std::pair<Matrix<TScalar, TRows, TCols>, Matrix<TScalar, TRows, TCols>> {
+  using Matrix = Matrix<TScalar, TRows, TCols>;
+
   Matrix Ak = Matrix::Zero(k, k - 1);
   Matrix Bk = Matrix::Zero(k, k - 1);
 
-  for (Index i = 0; i < k - 1; ++i) {
-    const auto [a, b] = coefficient(times, i, k);
-    Ak(i, i) = Scalar{1} - a;
+  for (TIndex i = 0; i < k - 1; ++i) {
+    const auto [a, b] = coefficient<TScalar, TIndex>(v, i, k);
+    Ak(i, i) = TScalar{1} - a;
     Ak(i + 1, i) = a;
     Bk(i, i) = -b;
     Bk(i + 1, i) = b;
@@ -92,28 +87,26 @@ auto coefficients(const Times& times, const Index& k) -> std::pair<Matrix, Matri
   return {Ak, Bk};
 }
 
-/// Evaluates the matrix precursor (i.e. non-cumulative matrix).
-/// \param times Input times (i.e. times associated with variables).
-/// \param k Index.
-/// \return Matrix precursor.
-auto recursion(const Times& times, const Index& k) -> Matrix { // NOLINT
+/// Evaluates the weight precursor (i.e. non-cumulative matrix).
+template <typename TScalar, typename TIndex, int K>
+auto nonUniformRecursion(const std::vector<TScalar>& v, const TIndex& k) -> Matrix<TScalar, K, K> { // NOLINT
+  using Matrix = Matrix<TScalar, K, K>;
+
   if (k == 1) {
     Matrix matrix = Matrix::Ones(1, 1);
     return matrix;
   } else if (k == 2) {
-    Matrix matrix;
-    matrix.resize(k, k);
+    Matrix matrix{k, k};
     matrix(0, 0) = Scalar{1};
     matrix(1, 0) = Scalar{0};
     matrix(0, 1) = Scalar{-1};
     matrix(1, 1) = Scalar{1};
     return matrix;
   } else { // Recursion.
-    Matrix AkMk, BkMk;
-    AkMk.resize(k, k);
-    BkMk.resize(k, k);
-    const auto [Ak, Bk] = coefficients(times, k);
-    const auto Mk = recursion(times, k - 1);
+    const auto [Ak, Bk] = coefficients<TScalar, TIndex, K>(v, k);
+    const auto Mk = nonUniformRecursion<TScalar, TIndex, ((K > 1) ? (K - 1) : Eigen::Dynamic)>(v, k - 1);
+    Matrix AkMk{k, k};
+    Matrix BkMk{k, k};
     AkMk.topLeftCorner(k, k - 1) = Ak * Mk;
     AkMk.col(k - 1).setZero();
     BkMk.col(0).setZero();
@@ -125,19 +118,17 @@ auto recursion(const Times& times, const Index& k) -> Matrix { // NOLINT
 } // namespace
 
 template <typename TScalar, int TOrder>
-BasisInterpolator<TScalar, TOrder>::BasisInterpolator() {
-  if (0 < Base::kOrder) {
-    setOrder(Base::kOrder);
-  }
+BasisInterpolator<TScalar, TOrder>::BasisInterpolator(const Index& order) {
+  setOrder(order);
 }
 
 template <typename TScalar, int TOrder>
 auto BasisInterpolator<TScalar, TOrder>::setOrder(const Index& order) -> void {
-  if (Base::kOrder < 0) {
+  if (TOrder < 0) {
     this->mixing_ = Mixing(order);
     this->polynomials_ = this->polynomials();
   } else {
-    DCHECK_EQ(order, Base::kOrder);
+    CHECK_EQ(order, TOrder);
   }
 }
 
@@ -183,15 +174,16 @@ auto BasisInterpolator<TScalar, TOrder>::layout() const -> Layout {
 
 template <typename TScalar, int TOrder>
 auto BasisInterpolator<TScalar, TOrder>::Mixing(const Index& order) -> OrderMatrix {
-  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * equidistantRecursion(order);
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * uniformRecursion<Scalar, Index, TOrder>(order);
 }
 
 template <typename TScalar, int TOrder>
 auto BasisInterpolator<TScalar, TOrder>::mixing(const Times& times) const -> OrderMatrix {
   const auto order = this->order();
-  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * recursion(times, order);
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * nonUniformRecursion<Scalar, Index, TOrder>(times, order);
 }
 
+template class BasisInterpolator<double, 4>;
 template class BasisInterpolator<double, Eigen::Dynamic>;
 
 } // namespace hyper
