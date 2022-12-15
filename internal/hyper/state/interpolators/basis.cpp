@@ -140,12 +140,39 @@ auto BasisInterpolator::setDegree(const Degree degree) -> void {
   polynomials_ = polynomials();
 }
 
-auto BasisInterpolator::layout() const -> StateLayout {
+auto BasisInterpolator::layout() const -> Layout {
   if (uniform_) {
-    return {{0, order_}, {0, order_}};
+    if (order_ % 2 == 0) {
+      const auto margin = order_ / 2;
+      return {
+          .outer_input_size = order_,
+          .inner_input_size = order_,
+          .left_input_margin = margin,
+          .right_input_margin = margin,
+          .left_input_padding = 0,
+          .right_input_padding = 0,
+          .output_size = order_};
+    } else {
+      const auto margin = (order_ - 1) / 2;
+      return {
+          .outer_input_size = order_,
+          .inner_input_size = order_,
+          .left_input_margin = margin + 1,
+          .right_input_margin = margin,
+          .left_input_padding = 0,
+          .right_input_padding = 0,
+          .output_size = order_};
+    }
   } else {
-    const auto offset = (degree_ - 1) / 2;
-    return {{0, 2 * degree_}, {offset, offset + order_}};
+    const auto padding = (degree_ - 1) / 2;
+    return {
+        .outer_input_size = 2 * degree_,
+        .inner_input_size = order_,
+        .left_input_margin = degree_,
+        .right_input_margin = degree_,
+        .left_input_padding = padding,
+        .right_input_padding = padding,
+        .output_size = order_};
   }
 }
 

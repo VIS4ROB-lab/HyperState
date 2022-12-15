@@ -11,14 +11,15 @@ namespace hyper {
 class AbstractInterpolator {
  public:
   // Definitions.
+  using Layout = TemporalInterpolatorLayout<Eigen::Index>;
   using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
   /// Default destructor.
   virtual ~AbstractInterpolator() = default;
 
-  /// Retrieves the state layout.
-  /// \return State layout.
-  [[nodiscard]] virtual auto layout() const -> StateLayout = 0;
+  /// Retrieves the layout.
+  /// \return Layout.
+  [[nodiscard]] virtual auto layout() const -> Layout = 0;
 
   /// Evaluates the weights.
   /// \param time Query time.

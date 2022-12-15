@@ -47,7 +47,7 @@ class CartesianStateTests : public testing::Test {
 
   /// Sets a random state.
   auto setRandomState() -> void {
-    const auto min_num_variables = state_.interpolator()->layout().outer.size;
+    const auto min_num_variables = state_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
       auto input = std::make_unique<Input>();
       input->stamp() = i;
@@ -160,7 +160,7 @@ class ManifoldStateTests : public testing::Test {
 
   /// Sets a random state.
   auto setRandomState() -> void {
-    const auto min_num_variables = state_.interpolator()->layout().outer.size;
+    const auto min_num_variables = state_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
       auto input = std::make_unique<Input>();
       input->stamp() = i;

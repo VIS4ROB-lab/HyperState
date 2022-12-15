@@ -47,7 +47,7 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
 
   // Sanity checks.
   const auto num_inputs = static_cast<Index>(inputs.size());
-  DCHECK(num_inputs == layout.outer.size && weights.rows() == layout.inner.size && weights.cols() == TDerivative + 1);
+  DCHECK(num_inputs == layout.outer_input_size && weights.rows() == layout.inner_input_size && weights.cols() == TDerivative + 1);
 
   // Allocate result.
   Result result;
@@ -56,8 +56,8 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
   jacobians.reserve(TDerivative + 1);
 
   // Compute indices.
-  const auto start_idx = layout.inner.index;
-  const auto end_idx = start_idx + layout.inner.size - 1;
+  const auto start_idx = layout.left_input_padding;
+  const auto end_idx = start_idx + layout.inner_input_size - 1;
 
   // Allocate accumulators.
   Rotation R = Rotation::Identity();

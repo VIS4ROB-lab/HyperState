@@ -28,41 +28,6 @@ struct StateQuery {
   bool jacobian;    ///< Jacobian flag.
 };
 
-struct StateLayout {
-  // Panel struct.
-  struct Panel {
-    Index index;
-    Index size;
-  };
-
-  // Padding struct.
-  struct Padding {
-    Index left;
-    Index right;
-  };
-
-  [[nodiscard]] auto outerPadding() const -> Padding {
-    return ComputePadding(outer);
-  }
-
-  [[nodiscard]] auto innerPadding() const -> Padding {
-    return ComputePadding(inner);
-  }
-
-  Panel outer, inner; ///< Outer and inner panel.
-
- private:
-  [[nodiscard]] static auto ComputePadding(const Panel& panel) -> Padding {
-    if (panel.size % 2 == 0) {
-      const auto half_size = panel.size / 2;
-      return {half_size, half_size};
-    } else {
-      const auto half_size = panel.size / 2;
-      return {half_size + 1, half_size};
-    }
-  }
-};
-
 struct StateResult {
   // Constants.
   static constexpr auto kValueIndex = 0;

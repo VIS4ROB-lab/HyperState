@@ -27,10 +27,6 @@ class PolynomialInterpolator : public AbstractInterpolator {
   /// \param degree Input degree.
   virtual auto setDegree(Degree degree) -> void = 0;
 
-  /// Retrieves the state layout.
-  /// \return State layout.
-  [[nodiscard]] auto layout() const -> StateLayout override = 0;
-
   /// Evaluates the (non-uniform) mixing matrix.
   /// \param times Input times.
   /// \return Interpolation matrix.

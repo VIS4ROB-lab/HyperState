@@ -48,17 +48,16 @@ auto AbstractState::parameters(const Time& time) const -> Pointers<Parameter> {
   DCHECK(range().contains(time)) << "State range does not contain stamp.";
   if (interpolator_) {
     const auto layout = interpolator_->layout();
-    DCHECK_LE(layout.outer.size, elements_.size());
+    DCHECK_LE(layout.outer_input_size, elements_.size());
 
     const auto itr = elements_.upper_bound(time);
-    const auto [left_padding, right_padding] = layout.outerPadding();
-    const auto begin = std::prev(itr, left_padding);
-    const auto end = std::next(itr, right_padding);
+    const auto begin = std::prev(itr, layout.left_input_margin);
+    const auto end = std::next(itr, layout.right_input_margin);
 
     Pointers<Parameter> pointers;
-    pointers.reserve(layout.outer.size);
+    pointers.reserve(layout.outer_input_size);
     std::transform(begin, end, std::back_inserter(pointers), [](const auto& arg) { return arg.get(); });
-    DCHECK_EQ(pointers.size(), layout.outer.size);
+    DCHECK_EQ(pointers.size(), layout.outer_input_size);
     return pointers;
 
   } else {
@@ -71,10 +70,9 @@ auto AbstractState::parameters(const Time& time) const -> Pointers<Parameter> {
 auto AbstractState::range() const -> Range {
   if (interpolator_) {
     const auto layout = interpolator_->layout();
-    DCHECK_LE(layout.outer.size, elements_.size());
-    const auto [left_padding, right_padding] = layout.outerPadding();
-    const auto& v0 = *std::next(elements_.cbegin(), left_padding - 1);
-    const auto& vn = *std::next(elements_.crbegin(), right_padding - 1);
+    DCHECK_LE(layout.outer_input_size, elements_.size());
+    const auto& v0 = *std::next(elements_.cbegin(), layout.left_input_margin - 1);
+    const auto& vn = *std::next(elements_.crbegin(), layout.right_input_margin - 1);
     DCHECK_LT(v0->stamp(), vn->stamp());
     return {v0->stamp(), vn->stamp()};
   } else {
@@ -121,7 +119,7 @@ auto AbstractState::evaluate(const StateQuery& state_query, const Scalar* const*
   DCHECK(policy_ != nullptr);
   if (interpolator_) {
     const auto layout = interpolator_->layout();
-    const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer.size};
+    const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer_input_size};
     const auto stamps = policy_->times(pointers);
     const auto weights = interpolator_->weights(state_query.time, stamps, state_query.derivative);
     const auto policy_query = PolicyQuery{layout, pointers, weights};

@@ -9,7 +9,7 @@ namespace hyper {
 
 struct PolicyQuery {
   // Definitions.
-  using Layout = StateLayout;
+  using Layout = TemporalInterpolatorLayout<Eigen::Index>;
   using Inputs = Pointers<const Scalar>;
   using Weights = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 

@@ -57,8 +57,8 @@ TEST(BasisInterpolatorTests, Duality) {
     Interpolator interpolator{i, false};
     const auto layout = interpolator.layout();
 
-    Times times(layout.outer.size);
-    std::iota(times.begin(), times.end(), 1 - layout.outerPadding().left);
+    Times times(layout.outer_input_size);
+    std::iota(times.begin(), times.end(), 1 - layout.left_input_margin);
 
     const auto M0 = Interpolator::Mixing(i + 1);
     const auto M1 = interpolator.mixing(times);

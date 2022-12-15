@@ -28,9 +28,9 @@ class BasisInterpolator final : public PolynomialInterpolator {
   /// \param degree Input degree.
   auto setDegree(Degree degree) -> void final;
 
-  /// Retrieves the state layout.
-  /// \return State layout.
-  [[nodiscard]] auto layout() const -> StateLayout final;
+  /// Retrieves the layout.
+  /// \return Layout.
+  [[nodiscard]] auto layout() const -> Layout final;
 
   /// Evaluates the (non-uniform) mixing matrix.
   /// \param Times Input times.
