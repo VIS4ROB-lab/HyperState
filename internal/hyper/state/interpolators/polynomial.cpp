@@ -83,36 +83,36 @@ auto PolynomialInterpolator<TScalar, TOrder>::polynomials() const -> OrderMatrix
   const auto order = this->order();
   const auto degree = order - 1;
 
-  OrderMatrix matrix = OrderMatrix::Zero(order, order);
-  matrix.row(0).setOnes();
+  OrderMatrix m = OrderMatrix::Zero(order, order);
 
+  m.row(0).setOnes();
   auto next = degree;
   for (Index i = 1; i < order; ++i) {
     for (Index j = degree - next; j < order; ++j) {
-      matrix(i, j) = static_cast<Scalar>(next - degree + j) * matrix(i - 1, j);
+      m(i, j) = static_cast<Scalar>(next - degree + j) * m(i - 1, j);
     }
     --next;
   }
 
-  return matrix;
+  return m;
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::polynomial(const Time& time, const Index i) const -> OrderVector {
+auto PolynomialInterpolator<TScalar, TOrder>::polynomial(const Time& time, const Index& i) const -> OrderVector {
   const auto order = this->order();
 
-  OrderVector vector = OrderVector::Zero(order);
+  OrderVector v = OrderVector::Zero(order);
 
   if (i < order) {
-    vector(i, 0) = polynomials_(i, i);
+    v(i, 0) = polynomials_(i, i);
     auto stamp_j = time;
     for (Index j = i + 1; j < order; ++j) {
-      vector(j, 0) = polynomials_(i, j) * stamp_j;
+      v(j, 0) = polynomials_(i, j) * stamp_j;
       stamp_j *= time;
     }
   }
 
-  return vector;
+  return v;
 }
 
 template class PolynomialInterpolator<double, Eigen::Dynamic>;

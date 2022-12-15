@@ -8,7 +8,7 @@
 namespace hyper {
 
 template <typename TScalar>
-class AbstractInterpolator;
+class TemporalInterpolator;
 
 template <typename TScalar, int TOrder>
 class PolynomialInterpolator;

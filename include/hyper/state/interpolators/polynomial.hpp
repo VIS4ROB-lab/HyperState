@@ -12,10 +12,10 @@
 namespace hyper {
 
 template <typename TScalar, int TOrder>
-class PolynomialInterpolator : public AbstractInterpolator<TScalar> {
+class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
  public:
   // Definitions.
-  using Base = AbstractInterpolator<TScalar>;
+  using Base = TemporalInterpolator<TScalar>;
 
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
@@ -65,7 +65,7 @@ class PolynomialInterpolator : public AbstractInterpolator<TScalar> {
   /// \param time Normalized time.
   /// \param i Derivative order.
   /// \return Polynomial derivatives.
-  [[nodiscard]] auto polynomial(const Time& time, Index i) const -> OrderVector;
+  [[nodiscard]] auto polynomial(const Time& time, const Index& i) const -> OrderVector;
 
   bool is_uniform_{true}; ///< Uniformity flag.
 

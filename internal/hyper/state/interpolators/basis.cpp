@@ -15,7 +15,7 @@ using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 /// Evaluates low-level coefficients.
 /// \param k Interpolation order.
 /// \return Coefficients.
-auto equidistantCoefficients(const Index k) -> std::pair<Matrix, Matrix> {
+auto equidistantCoefficients(const Index& k) -> std::pair<Matrix, Matrix> {
   Matrix Ak = Matrix::Zero(k, k - 1);
   Matrix Bk = Matrix::Zero(k, k - 1);
 
@@ -33,7 +33,7 @@ auto equidistantCoefficients(const Index k) -> std::pair<Matrix, Matrix> {
 /// Evaluates the matrix precursor (i.e. non-cumulative matrix).
 /// \param k Interpolation order.
 /// \return Matrix precursor.
-auto equidistantRecursion(const Index k) -> Matrix { // NOLINT
+auto equidistantRecursion(const Index& k) -> Matrix { // NOLINT
   if (k == 1) {
     Matrix matrix = Matrix::Ones(1, 1);
     return matrix;
@@ -60,24 +60,24 @@ auto equidistantRecursion(const Index k) -> Matrix { // NOLINT
 }
 
 /// Evaluates low-level coefficients.
-/// \param times Input times (i.e. times associated with variables).
+/// \param times Input times (associated with variables).
 /// \param i Index.
 /// \param j Index.
 /// \return Coefficients.
-auto coefficient(const Times& times, const Index i, const Index j) -> std::pair<Scalar, Scalar> {
+auto coefficient(const Times& times, const Index& i, const Index& j) -> std::pair<Scalar, Scalar> {
   const auto tj0 = times[j - 2];
   const auto tj1 = times[j - 1];
   const auto ti = times[i];
   const auto tij = times[i + j - 1];
-  const auto inverse = Scalar{1} / (tij - ti);
-  return {(tj0 - ti) * inverse, (tj1 - tj0) * inverse};
+  const auto i_t = Scalar{1} / (tij - ti);
+  return {(tj0 - ti) * i_t, (tj1 - tj0) * i_t};
 }
 
 /// Evaluates low-level coefficient matrices.
 /// \param times Input times (i.e. times associated with variables).
 /// \param k Index.
 /// \return Coefficient matrices.
-auto coefficients(const Times& times, const Index k) -> std::pair<Matrix, Matrix> {
+auto coefficients(const Times& times, const Index& k) -> std::pair<Matrix, Matrix> {
   Matrix Ak = Matrix::Zero(k, k - 1);
   Matrix Bk = Matrix::Zero(k, k - 1);
 
@@ -96,7 +96,7 @@ auto coefficients(const Times& times, const Index k) -> std::pair<Matrix, Matrix
 /// \param times Input times (i.e. times associated with variables).
 /// \param k Index.
 /// \return Matrix precursor.
-auto recursion(const Times& times, const Index k) -> Matrix { // NOLINT
+auto recursion(const Times& times, const Index& k) -> Matrix { // NOLINT
   if (k == 1) {
     Matrix matrix = Matrix::Ones(1, 1);
     return matrix;

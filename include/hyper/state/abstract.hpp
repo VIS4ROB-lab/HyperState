@@ -41,7 +41,7 @@ class AbstractState {
   /// Constructor from interpolator and policy.
   /// \param interpolator Input interpolator.
   /// \param policy Input policy.
-  explicit AbstractState(std::unique_ptr<AbstractInterpolator<Scalar>>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
+  explicit AbstractState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
 
   /// Elements accessor.
   /// \return Elements.
@@ -65,11 +65,11 @@ class AbstractState {
 
   /// Interpolator accessor.
   /// \return Interpolator.
-  [[nodiscard]] auto interpolator() const -> const std::unique_ptr<AbstractInterpolator<Scalar>>&;
+  [[nodiscard]] auto interpolator() const -> const std::unique_ptr<TemporalInterpolator<Scalar>>&;
 
   /// Interpolator modifier.
   /// \return Interpolator.
-  [[nodiscard]] auto interpolator() -> std::unique_ptr<AbstractInterpolator<Scalar>>&;
+  [[nodiscard]] auto interpolator() -> std::unique_ptr<TemporalInterpolator<Scalar>>&;
 
   /// Policy accessor.
   /// \return Policy.
@@ -92,7 +92,7 @@ class AbstractState {
 
  private:
   Elements elements_;                                          ///< Elements.
-  std::unique_ptr<AbstractInterpolator<Scalar>> interpolator_; ///< Interpolator.
+  std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_; ///< Interpolator.
   std::unique_ptr<AbstractPolicy> policy_;                     ///< Policy.
 };
 

@@ -8,7 +8,7 @@
 namespace hyper {
 
 template <typename TScalar>
-class AbstractInterpolator {
+class TemporalInterpolator {
  public:
   // Definitions.
   using Scalar = TScalar;
@@ -18,7 +18,7 @@ class AbstractInterpolator {
   using Query = TemporalInterpolatorQuery<Scalar, Index>;
 
   /// Default destructor.
-  virtual ~AbstractInterpolator() = default;
+  virtual ~TemporalInterpolator() = default;
 
   /// Retrieves the layout.
   /// \return Layout.

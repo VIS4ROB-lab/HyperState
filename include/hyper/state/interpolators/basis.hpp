@@ -13,7 +13,6 @@ namespace hyper {
 /// uniform and non-uniform separation between bases and
 /// arbitrary representation degree/order. We recommend using
 /// odd degree splines due to symmetry.
-
 template <typename TScalar, int TOrder>
 class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
  public:

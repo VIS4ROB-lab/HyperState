@@ -25,7 +25,7 @@ auto convertPointers(const Pointers<TParameter>& parameters) -> Pointers<TScalar
 
 } // namespace
 
-AbstractState::AbstractState(std::unique_ptr<AbstractInterpolator<Scalar>>&& interpolator, std::unique_ptr<AbstractPolicy>&& policy)
+AbstractState::AbstractState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator, std::unique_ptr<AbstractPolicy>&& policy)
     : elements_{},
       interpolator_{std::move(interpolator)},
       policy_{std::move(policy)} {}
@@ -84,12 +84,12 @@ auto AbstractState::range() const -> Range {
   }
 }
 
-auto AbstractState::interpolator() const -> const std::unique_ptr<AbstractInterpolator<Scalar>>& {
+auto AbstractState::interpolator() const -> const std::unique_ptr<TemporalInterpolator<Scalar>>& {
   return interpolator_;
 }
 
-auto AbstractState::interpolator() -> std::unique_ptr<AbstractInterpolator<Scalar>>& {
-  return const_cast<std::unique_ptr<AbstractInterpolator<Scalar>>&>(std::as_const(*this).interpolator());
+auto AbstractState::interpolator() -> std::unique_ptr<TemporalInterpolator<Scalar>>& {
+  return const_cast<std::unique_ptr<TemporalInterpolator<Scalar>>&>(std::as_const(*this).interpolator());
 }
 
 auto AbstractState::policy() const -> const std::unique_ptr<AbstractPolicy>& {
