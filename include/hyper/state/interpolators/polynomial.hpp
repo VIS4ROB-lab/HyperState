@@ -5,33 +5,51 @@
 
 #include "hyper/state/policies/forward.hpp"
 
+#include "hyper/matrix.hpp"
 #include "hyper/state/interpolators/abstract.hpp"
+#include "hyper/vector.hpp"
 
 namespace hyper {
 
-/// Basis spline (i.e. B-Spline) interpolator for
-/// uniform and non-uniform separation between bases and
-/// arbitrary representation degree/order. We recommend using
-/// odd degree splines due to symmetry.
-class PolynomialInterpolator : public AbstractInterpolator<Scalar> {
+template <typename TScalar, int TOrder>
+class PolynomialInterpolator : public AbstractInterpolator<TScalar> {
  public:
   // Definitions.
-  using Degree = Index;
-  using Order = Index;
-  using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+  using Base = AbstractInterpolator<TScalar>;
 
-  /// Updates the uniformity flag.
-  /// \param uniform Input flag.
-  auto setUniform(bool uniform = true) -> void;
+  using Index = typename Base::Index;
+  using Scalar = typename Base::Scalar;
+  using Layout = typename Base::Layout;
+  using Query = typename Base::Query;
 
-  /// Updates the interpolator degree.
-  /// \param degree Input degree.
-  virtual auto setDegree(Degree degree) -> void = 0;
+  using OrderVector = Vector<Scalar, TOrder>;
+  using OrderMatrix = Matrix<Scalar, TOrder, TOrder>;
+
+  using Weights = Matrix<Scalar, TOrder, Eigen::Dynamic>;
+
+  // Constants.
+  static constexpr auto kOrder = TOrder;
+
+  /// Uniformity flag accessor.
+  /// \return Uniformity flag.
+  [[nodiscard]] auto isUniform() const -> bool;
+
+  /// Uniformity flag setter.
+  /// \param is_uniform Input uniformity flag.
+  auto setUniform(bool is_uniform = true) -> void;
+
+  /// Order accessor.
+  /// \return Order.
+  [[nodiscard]] auto order() const -> Index;
+
+  /// Order setter.
+  /// \param order Order.
+  virtual auto setOrder(const Index& order) -> void = 0;
 
   /// Evaluates the (non-uniform) mixing matrix.
   /// \param times Input times.
   /// \return Interpolation matrix.
-  [[nodiscard]] virtual auto mixing(const Times& times) const -> Matrix = 0;
+  [[nodiscard]] virtual auto mixing(const Times& times) const -> OrderMatrix = 0;
 
   /// Evaluates this.
   /// \param query Query.
@@ -39,25 +57,20 @@ class PolynomialInterpolator : public AbstractInterpolator<Scalar> {
   [[nodiscard]] auto evaluate(const Query& query) const -> bool final;
 
  protected:
-  /// Constructor from uniformity flag.
-  /// \param uniform Input flag.
-  explicit PolynomialInterpolator(bool uniform);
-
   /// Computes polynomial coefficient matrix.
   /// \return Polynomial coefficient matrix.
-  [[nodiscard]] auto polynomials() const -> Matrix;
+  [[nodiscard]] auto polynomials() const -> OrderMatrix;
 
   /// Polynomial derivatives of normalized stamp.
   /// \param time Normalized time.
   /// \param i Derivative order.
   /// \return Polynomial derivatives.
-  [[nodiscard]] auto polynomial(const Time& time, Index i) const -> Matrix;
+  [[nodiscard]] auto polynomial(const Time& time, Index i) const -> OrderVector;
 
-  bool uniform_;       ///< Uniformity flag.
-  Degree degree_;      ///< Degree.
-  Order order_;        ///< Order.
-  Matrix mixing_;      ///< Cached mixing matrix.
-  Matrix polynomials_; ///< Cached polynomial derivatives.
+  bool is_uniform_{true}; ///< Uniformity flag.
+
+  OrderMatrix mixing_;      ///< Cached mixing matrix.
+  OrderMatrix polynomials_; ///< Cached polynomial derivatives.
 };
 
 } // namespace hyper

@@ -10,8 +10,10 @@ namespace hyper {
 template <typename TScalar>
 class AbstractInterpolator;
 
+template <typename TScalar, int TOrder>
 class PolynomialInterpolator;
 
+template <typename TScalar, int TOrder>
 class BasisInterpolator;
 
 template <typename TIndex>

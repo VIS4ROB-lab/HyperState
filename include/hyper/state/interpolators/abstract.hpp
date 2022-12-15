@@ -12,8 +12,10 @@ class AbstractInterpolator {
  public:
   // Definitions.
   using Scalar = TScalar;
-  using Layout = TemporalInterpolatorLayout<Eigen::Index>;
-  using Query = TemporalInterpolatorQuery<TScalar, Eigen::Index>;
+
+  using Index = Eigen::Index;
+  using Layout = TemporalInterpolatorLayout<Index>;
+  using Query = TemporalInterpolatorQuery<Scalar, Index>;
 
   /// Default destructor.
   virtual ~AbstractInterpolator() = default;

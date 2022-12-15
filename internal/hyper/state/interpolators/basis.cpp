@@ -124,60 +124,74 @@ auto recursion(const Times& times, const Index k) -> Matrix { // NOLINT
 
 } // namespace
 
-auto BasisInterpolator::Mixing(const Order order) -> Matrix {
-  return Matrix::Ones(order, order).triangularView<Eigen::Upper>() * equidistantRecursion(order);
+template <typename TScalar, int TOrder>
+BasisInterpolator<TScalar, TOrder>::BasisInterpolator() {
+  if (0 < Base::kOrder) {
+    setOrder(Base::kOrder);
+  }
 }
 
-BasisInterpolator::BasisInterpolator(const Degree degree, const bool uniform)
-    : PolynomialInterpolator{uniform} {
-  setDegree(degree);
+template <typename TScalar, int TOrder>
+auto BasisInterpolator<TScalar, TOrder>::setOrder(const Index& order) -> void {
+  if (Base::kOrder < 0) {
+    this->mixing_ = Mixing(order);
+    this->polynomials_ = this->polynomials();
+  } else {
+    DCHECK_EQ(order, Base::kOrder);
+  }
 }
 
-auto BasisInterpolator::setDegree(const Degree degree) -> void {
-  degree_ = degree;
-  order_ = degree + 1;
-  mixing_ = Mixing(order_);
-  polynomials_ = polynomials();
-}
+template <typename TScalar, int TOrder>
+auto BasisInterpolator<TScalar, TOrder>::layout() const -> Layout {
+  const auto order = this->order();
 
-auto BasisInterpolator::layout() const -> Layout {
-  if (uniform_) {
-    if (order_ % 2 == 0) {
-      const auto margin = order_ / 2;
+  if (this->isUniform()) {
+    if (order % 2 == 0) {
+      const auto margin = order / 2;
       return {
-          .outer_input_size = order_,
-          .inner_input_size = order_,
+          .outer_input_size = order,
+          .inner_input_size = order,
           .left_input_margin = margin,
           .right_input_margin = margin,
           .left_input_padding = 0,
           .right_input_padding = 0,
-          .output_size = order_};
+          .output_size = order};
     } else {
-      const auto margin = (order_ - 1) / 2;
+      const auto margin = (order - 1) / 2;
       return {
-          .outer_input_size = order_,
-          .inner_input_size = order_,
+          .outer_input_size = order,
+          .inner_input_size = order,
           .left_input_margin = margin + 1,
           .right_input_margin = margin,
           .left_input_padding = 0,
           .right_input_padding = 0,
-          .output_size = order_};
+          .output_size = order};
     }
   } else {
-    const auto padding = (degree_ - 1) / 2;
+    const auto degree = order - 1;
+    const auto padding = (degree - 1) / 2;
     return {
-        .outer_input_size = 2 * degree_,
-        .inner_input_size = order_,
-        .left_input_margin = degree_,
-        .right_input_margin = degree_,
+        .outer_input_size = 2 * degree,
+        .inner_input_size = order,
+        .left_input_margin = degree,
+        .right_input_margin = degree,
         .left_input_padding = padding,
         .right_input_padding = padding,
-        .output_size = order_};
+        .output_size = order};
   }
 }
 
-auto BasisInterpolator::mixing(const Times& times) const -> Matrix {
-  return Matrix::Ones(order_, order_).triangularView<Eigen::Upper>() * recursion(times, order_);
+template <typename TScalar, int TOrder>
+auto BasisInterpolator<TScalar, TOrder>::Mixing(const Index& order) -> OrderMatrix {
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * equidistantRecursion(order);
 }
+
+template <typename TScalar, int TOrder>
+auto BasisInterpolator<TScalar, TOrder>::mixing(const Times& times) const -> OrderMatrix {
+  const auto order = this->order();
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * recursion(times, order);
+}
+
+template class BasisInterpolator<double, Eigen::Dynamic>;
 
 } // namespace hyper

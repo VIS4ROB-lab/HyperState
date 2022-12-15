@@ -10,7 +10,7 @@
 
 namespace hyper::tests {
 
-using Interpolator = BasisInterpolator;
+using Interpolator = BasisInterpolator<Scalar, Eigen::Dynamic>;
 using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 using IndexMatrix = std::map<Index, Matrix>;
 
@@ -54,7 +54,9 @@ TEST(BasisInterpolatorTests, Theory) {
 TEST(BasisInterpolatorTests, Duality) {
   constexpr auto kMaxDegree = 5;
   for (Index i = 0; i < kMaxDegree; ++i) {
-    Interpolator interpolator{i, false};
+    Interpolator interpolator;
+    interpolator.setOrder(i + 1);
+    interpolator.setUniform(false);
     const auto layout = interpolator.layout();
 
     Times times(layout.outer_input_size);

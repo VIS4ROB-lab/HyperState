@@ -17,7 +17,7 @@
 
 namespace hyper::tests {
 
-using CartesianStateTestTypes = ::testing::Types<std::tuple<BasisInterpolator, Position<Scalar>>>;
+using CartesianStateTestTypes = ::testing::Types<std::tuple<BasisInterpolator<Scalar, Eigen::Dynamic>, Position<Scalar>>>;
 
 template <typename TArgs>
 class CartesianStateTests : public testing::Test {
@@ -40,7 +40,8 @@ class CartesianStateTests : public testing::Test {
 
   /// Set up.
   auto SetUp() -> void final {
-    auto interpolator = std::make_unique<Interpolator>(kDegree, true);
+    auto interpolator = std::make_unique<Interpolator>();
+    interpolator->setOrder(kDegree + 1);
     auto policy = std::make_unique<Policy>();
     state_ = AbstractState{std::move(interpolator), std::move(policy)};
   }
@@ -137,7 +138,7 @@ TYPED_TEST_P(CartesianStateTests, Jacobians) {
   }
 }
 
-using ManifoldStateTestTypes = ::testing::Types<std::tuple<BasisInterpolator, SE3<Scalar>>>;
+using ManifoldStateTestTypes = ::testing::Types<std::tuple<BasisInterpolator<Scalar, Eigen::Dynamic>, SE3<Scalar>>>;
 
 template <typename TArgs>
 class ManifoldStateTests : public testing::Test {
@@ -171,7 +172,8 @@ class ManifoldStateTests : public testing::Test {
 
   /// Set up.
   auto SetUp() -> void final {
-    auto interpolator = std::make_unique<Interpolator>(kDegree, true);
+    auto interpolator = std::make_unique<Interpolator>();
+    interpolator->setOrder(kDegree + 1);
     auto policy = std::make_unique<Policy>();
     state_ = AbstractState{std::move(interpolator), std::move(policy)};
   }

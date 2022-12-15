@@ -13,29 +13,42 @@ namespace hyper {
 /// uniform and non-uniform separation between bases and
 /// arbitrary representation degree/order. We recommend using
 /// odd degree splines due to symmetry.
-class BasisInterpolator final : public PolynomialInterpolator {
+
+template <typename TScalar, int TOrder>
+class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
  public:
-  /// Evaluates the (uniform) mixing matrix.
-  /// \return Interpolation matrix.
-  [[nodiscard]] static auto Mixing(Order order) -> Matrix;
+  // Definitions.
+  using Base = PolynomialInterpolator<TScalar, TOrder>;
 
-  /// Constructor from degree and uniformity flag.
-  /// \param degree Input degree.
-  /// \param uniform Input flag.
-  explicit BasisInterpolator(Degree degree = 3, bool uniform = true);
+  using Index = typename Base::Index;
+  using Scalar = typename Base::Scalar;
+  using Layout = typename Base::Layout;
+  using Query = typename Base::Query;
 
-  /// Updates the interpolator degree.
-  /// \param degree Input degree.
-  auto setDegree(Degree degree) -> void final;
+  using OrderVector = typename Base::OrderVector;
+  using OrderMatrix = typename Base::OrderMatrix;
+
+  using Weights = typename Base::Weights;
+
+  /// Default constructor.
+  BasisInterpolator();
+
+  /// Order setter.
+  /// \param order Order.
+  auto setOrder(const Index& order) -> void final;
 
   /// Retrieves the layout.
   /// \return Layout.
   [[nodiscard]] auto layout() const -> Layout final;
 
+  /// Evaluates the (uniform) mixing matrix.
+  /// \return Mixing matrix.
+  [[nodiscard]] static auto Mixing(const Index& order) -> OrderMatrix;
+
   /// Evaluates the (non-uniform) mixing matrix.
   /// \param Times Input times.
   /// \return Interpolation matrix.
-  [[nodiscard]] auto mixing(const Times& times) const -> Matrix final;
+  [[nodiscard]] auto mixing(const Times& times) const -> OrderMatrix final;
 };
 
 } // namespace hyper
