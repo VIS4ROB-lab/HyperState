@@ -3,11 +3,9 @@
 
 #pragma once
 
-#include "hyper/state/policies/forward.hpp"
-
 #include "hyper/matrix.hpp"
+#include "hyper/state/interpolators/temporal/temporal.hpp"
 #include "hyper/vector.hpp"
-#include "temporal.hpp"
 
 namespace hyper {
 
@@ -26,6 +24,10 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   using OrderMatrix = Matrix<Scalar, TOrder, TOrder>;
 
   using Weights = Matrix<Scalar, TOrder, Eigen::Dynamic>;
+
+  /// Computes polynomial coefficient matrix.
+  /// \return Polynomial coefficient matrix.
+  static auto Polynomials(const Index& order) -> OrderMatrix;
 
   /// Uniformity flag accessor.
   /// \return Uniformity flag.
@@ -48,7 +50,7 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   /// Evaluates the (non-uniform) mixing matrix.
   /// \param times Input times.
   /// \return Interpolation matrix.
-  [[nodiscard]] virtual auto mixing(const Times& times) const -> OrderMatrix = 0;
+  [[nodiscard]] virtual auto mixing(const std::vector<Scalar>& times) const -> OrderMatrix = 0;
 
   /// Evaluates this.
   /// \param query Query.
@@ -56,16 +58,6 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   [[nodiscard]] auto evaluate(const Query& query) const -> bool final;
 
  protected:
-  /// Computes polynomial coefficient matrix.
-  /// \return Polynomial coefficient matrix.
-  [[nodiscard]] auto polynomials() const -> OrderMatrix;
-
-  /// Polynomial derivatives of normalized stamp.
-  /// \param ut Normalized time.
-  /// \param i Derivative order.
-  /// \return Polynomial derivatives.
-  [[nodiscard]] auto polynomial(const Time& ut, const Index& i) const -> OrderVector;
-
   bool is_uniform_{true}; ///< Uniformity flag.
 
   OrderMatrix mixing_;      ///< Cached mixing matrix.

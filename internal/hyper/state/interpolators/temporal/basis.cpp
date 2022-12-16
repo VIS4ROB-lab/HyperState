@@ -126,7 +126,7 @@ template <typename TScalar, int TOrder>
 auto BasisInterpolator<TScalar, TOrder>::setOrder(const Index& order) -> void {
   if (TOrder < 0) {
     this->mixing_ = Mixing(order);
-    this->polynomials_ = this->polynomials();
+    this->polynomials_ = Base::Polynomials(order);
   } else {
     CHECK_EQ(order, TOrder);
   }
@@ -178,7 +178,7 @@ auto BasisInterpolator<TScalar, TOrder>::Mixing(const Index& order) -> OrderMatr
 }
 
 template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::mixing(const Times& times) const -> OrderMatrix {
+auto BasisInterpolator<TScalar, TOrder>::mixing(const std::vector<Scalar>& times) const -> OrderMatrix {
   const auto order = this->order();
   return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * nonUniformRecursion<Scalar, Index, TOrder>(times, order);
 }

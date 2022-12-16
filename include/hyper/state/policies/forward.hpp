@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "hyper/definitions.hpp"
 #include "hyper/state/interpolators/temporal/forward.hpp"
 
 namespace hyper {

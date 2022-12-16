@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "hyper/state/forward.hpp"
-
 namespace hyper {
 
 template <typename TScalar>

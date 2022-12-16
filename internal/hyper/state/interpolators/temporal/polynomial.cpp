@@ -7,26 +7,23 @@
 
 namespace hyper {
 
-namespace {
+template <typename TScalar, int TOrder>
+auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(const Index& order) -> OrderMatrix {
+  OrderMatrix m = OrderMatrix::Zero(order, order);
 
-/// Computes x^k.
-template <typename TScalar, typename TIndex>
-auto power(const TScalar x, const TIndex& k) -> TScalar {
-  auto n = k;
-  auto y = TScalar{1};
-  while (n) {
-    if (n & TIndex{1}) {
-      y *= x;
-      --n;
-    } else {
-      y *= x * x;
-      n -= 2;
+  m.row(0).setOnes();
+  const auto degree = order - 1;
+  auto next = degree;
+
+  for (Index i = 1; i < order; ++i) {
+    for (Index j = degree - next; j < order; ++j) {
+      m(i, j) = static_cast<Scalar>(next - degree + j) * m(i - 1, j);
     }
+    --next;
   }
-  return y;
-}
 
-} // namespace
+  return m;
+}
 
 template <typename TScalar, int TOrder>
 auto PolynomialInterpolator<TScalar, TOrder>::isUniform() const -> bool {
@@ -53,72 +50,40 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const
   // Unpack query.
   const auto& [time, derivative, times, weights] = query;
 
-  // Normalize time.
+  const auto order = this->order();
+  const auto num_derivatives = derivative + 1;
   const auto index = (times.size() - 1) / 2;
-  const auto t0 = times[index];
-  const auto t1 = times[index + 1];
 
-  const auto dt = time - t0;
-  const auto i_dt = Scalar{1} / (t1 - t0);
+  const auto dt = time - times[index];
+  const auto i_dt = Scalar{1} / (times[index + 1] - times[index]);
   const auto ut = dt * i_dt;
 
-  // Sanity checks.
   DCHECK_LE(0, ut);
   DCHECK_LE(ut, 1);
 
-  // Allocate weights.
-  const auto order = this->order();
-  auto W = Eigen::Map<Weights>{weights, order, derivative + 1};
+  using Polynomial = Matrix<Scalar, TOrder, Eigen::Dynamic>;
+  Polynomial polynomial = Polynomial::Zero(order, num_derivatives);
+
+  auto i_dt_i = TScalar{1};
+  for (Index i = 0; i < num_derivatives; ++i) {
+    if (i < order) {
+      auto ut_j = ut;
+      polynomial(i, i) = i_dt_i * polynomials_(i, i);
+      for (Index j = i + 1; j < order; ++j) {
+        polynomial(j, i) = ut_j * i_dt_i * polynomials_(i, j);
+        ut_j *= ut;
+      }
+    }
+    i_dt_i *= i_dt;
+  }
 
   if (isUniform()) {
-    for (Index k = 0; k < derivative + 1; ++k) {
-      W.col(k).noalias() = mixing_ * polynomial(ut, k) * power(i_dt, k);
-    }
+    Eigen::Map<Weights>{weights, order, num_derivatives}.noalias() = mixing_.lazyProduct(polynomial);
   } else {
-    const auto mixing = this->mixing(times);
-    for (Index k = 0; k < derivative + 1; ++k) {
-      W.col(k).noalias() = mixing * polynomial(ut, k) * power(i_dt, k);
-    }
+    Eigen::Map<Weights>{weights, order, num_derivatives}.noalias() = mixing(times).lazyProduct(polynomial);
   }
 
   return true;
-}
-
-template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::polynomials() const -> OrderMatrix {
-  const auto order = this->order();
-  const auto degree = order - 1;
-
-  OrderMatrix m = OrderMatrix::Zero(order, order);
-
-  m.row(0).setOnes();
-  auto next = degree;
-  for (Index i = 1; i < order; ++i) {
-    for (Index j = degree - next; j < order; ++j) {
-      m(i, j) = static_cast<Scalar>(next - degree + j) * m(i - 1, j);
-    }
-    --next;
-  }
-
-  return m;
-}
-
-template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::polynomial(const Time& ut, const Index& i) const -> OrderVector {
-  const auto order = this->order();
-
-  OrderVector v = OrderVector::Zero(order);
-
-  if (i < order) {
-    v(i, 0) = polynomials_(i, i);
-    auto ut_j = ut;
-    for (Index j = i + 1; j < order; ++j) {
-      v(j, 0) = polynomials_(i, j) * ut_j;
-      ut_j *= ut;
-    }
-  }
-
-  return v;
 }
 
 template class PolynomialInterpolator<double, 4>;

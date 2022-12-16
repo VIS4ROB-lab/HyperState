@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include "hyper/state/policies/forward.hpp"
-
-#include "polynomial.hpp"
+#include "hyper/state/interpolators/temporal/polynomial.hpp"
 
 namespace hyper {
 
@@ -48,7 +46,7 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   /// Evaluates the (non-uniform) mixing matrix.
   /// \param Times Input times.
   /// \return Interpolation matrix.
-  [[nodiscard]] auto mixing(const Times& times) const -> OrderMatrix final;
+  [[nodiscard]] auto mixing(const std::vector<Scalar>& times) const -> OrderMatrix final;
 };
 
 } // namespace hyper
