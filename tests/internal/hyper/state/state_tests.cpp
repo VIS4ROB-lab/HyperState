@@ -42,17 +42,17 @@ class CartesianStateTests : public testing::Test {
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
     auto policy = std::make_unique<Policy>();
-    state_ = ContinuousMotion{std::move(interpolator), std::move(policy)};
+    state_ = ContinuousMotion<Value>{std::move(interpolator), std::move(policy)};
   }
 
   /// Sets a random state.
   auto setRandomState() -> void {
     const auto min_num_variables = state_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
-      auto input = std::make_unique<Input>();
-      input->stamp() = 0.25 * i;
-      input->variable() = Value::Random();
-      state_.elements().insert(std::move(input));
+      Input input;
+      input.stamp() = 0.25 * i;
+      input.variable() = Value::Random();
+      state_.elements().insert(input);
     }
   }
 
@@ -86,7 +86,7 @@ class CartesianStateTests : public testing::Test {
       auto output = state_.evaluate(query);
 
       // Retrieve inputs.
-      const auto inputs = state_.parameters(stamp);
+      const auto inputs = state_.pointers(stamp);
 
       // Allocate Jacobian.
       Jacobian Jn_i;
@@ -118,7 +118,7 @@ class CartesianStateTests : public testing::Test {
   }
 
  private:
-  ContinuousMotion state_;
+  ContinuousMotion<Value> state_;
 };
 
 TYPED_TEST_SUITE_P(CartesianStateTests);
@@ -162,10 +162,10 @@ class ManifoldStateTests : public testing::Test {
   auto setRandomState() -> void {
     const auto min_num_variables = state_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
-      auto input = std::make_unique<Input>();
-      input->stamp() = 0.25 * i;
-      input->variable() = Value::Random();
-      state_.elements().insert(std::move(input));
+      Input input;
+      input.stamp() = 0.25 * i;
+      input.variable() = Value::Random();
+      state_.elements().insert(input);
     }
   }
 
@@ -173,7 +173,7 @@ class ManifoldStateTests : public testing::Test {
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
     auto policy = std::make_unique<Policy>();
-    state_ = ContinuousMotion{std::move(interpolator), std::move(policy)};
+    state_ = ContinuousMotion<Value>{std::move(interpolator), std::move(policy)};
   }
 
   /// Checks the derivatives.
@@ -220,7 +220,7 @@ class ManifoldStateTests : public testing::Test {
       auto output = state_.evaluate(query);
 
       // Retrieve inputs.
-      const auto inputs = state_.parameters(stamp);
+      const auto inputs = state_.pointers(stamp);
 
       // Allocate Jacobian.
       Jacobian Jn_i;
@@ -263,7 +263,7 @@ class ManifoldStateTests : public testing::Test {
   }
 
  private:
-  ContinuousMotion state_;
+  ContinuousMotion<Value> state_;
 };
 
 TYPED_TEST_SUITE_P(ManifoldStateTests);

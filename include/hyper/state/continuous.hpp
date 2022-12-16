@@ -10,58 +10,37 @@
 
 #include "hyper/state/interpolators/temporal/temporal.hpp"
 #include "hyper/state/policies/abstract.hpp"
+#include "hyper/state/temporal.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper {
 
-class ContinuousMotion {
+template <typename TVariable>
+class ContinuousMotion : public TemporalMotion<TVariable> {
  public:
   // Definitions.
-  using Range = hyper::Range<Time, BoundaryPolicy::LOWER_INCLUSIVE_ONLY>;
-  using Parameter = AbstractStamped<Scalar>;
-  using Element = std::unique_ptr<Parameter>;
+  using Base = TemporalMotion<TVariable>;
+  using Scalar = typename Base::Scalar;
 
-  struct ElementCompare {
-    using is_transparent = std::true_type;
-    auto operator()(const Element& lhs, const Element& rhs) const -> bool {
-      return lhs->stamp() < rhs->stamp();
-    }
-    auto operator()(const Element& lhs, const Time& rhs) const -> bool {
-      return lhs->stamp() < rhs;
-    }
-    auto operator()(const Time& lhs, const Element& rhs) const -> bool {
-      return lhs < rhs->stamp();
-    }
-  };
+  using Time = typename Base::Time;
+  using Range = typename Base::Range;
 
-  using Elements = std::set<Element, ElementCompare>;
-  // using Elements = boost::container::flat_set<Element, ElementCompare>;
-  // using Elements = absl::btree_set<Element, ElementCompare>;
+  using Element = typename Base::Element;
+
+  using Query = typename Base::Query;
 
   /// Constructor from interpolator and policy.
   /// \param interpolator Input interpolator.
   /// \param policy Input policy.
   explicit ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
 
-  /// Elements accessor.
-  /// \return Elements.
-  [[nodiscard]] auto elements() const -> const Elements&;
+  /// Evaluates the range.
+  /// \return Range.
+  [[nodiscard]] auto range() const -> Range final;
 
-  /// Elements modifier.
-  /// \return Elements.
-  auto elements() -> Elements&;
-
-  /// Parameters accessor.
-  /// \return Parameters.
-  [[nodiscard]] auto parameters() const -> Pointers<Parameter>;
-
-  /// Parameters accessor (stamp-based).
-  /// \return Parameters.
-  [[nodiscard]] auto parameters(const Time& time) const -> Pointers<Parameter>;
-
-  /// Evaluates the temporal range.
-  /// \return Temporal range.
-  [[nodiscard]] auto range() const -> Range;
+  /// Time-based pointers accessor.
+  /// \return Time-based pointers.
+  [[nodiscard]] virtual auto pointers(const Time& time) const -> Pointers<Element> final;
 
   /// Interpolator accessor.
   /// \return Interpolator.
@@ -79,6 +58,12 @@ class ContinuousMotion {
   /// \return Policy.
   [[nodiscard]] auto policy() -> std::unique_ptr<AbstractPolicy>&;
 
+  /// Evaluates the motion.
+  /// \param query Motion query.
+  /// \param pointers Input pointers.
+  /// \return True on success.
+  [[nodiscard]] virtual auto evaluate(const Query& query, const Scalar* pointers) const -> bool final;
+
   /// Evaluates the states.
   /// \param state_query State query.
   /// \return Interpolation result.
@@ -91,7 +76,6 @@ class ContinuousMotion {
   [[nodiscard]] auto evaluate(const StateQuery& state_query, const Scalar* const* raw_values) const -> StateResult;
 
  private:
-  Elements elements_;                                          ///< Elements.
   std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_; ///< Interpolator.
   std::unique_ptr<AbstractPolicy> policy_;                     ///< Policy.
 };

@@ -66,6 +66,40 @@ struct StateResult {
   Jacobians jacobians;     ///< Jacobians.
 };
 
+struct DerivativeOrder {
+  static constexpr auto kValue = 0;
+  static constexpr auto kVelocity = 1;
+  static constexpr auto kAcceleration = 2;
+  static constexpr auto kJerk = 3;
+};
+
+template <typename TScalar>
+class Motion;
+
+template <typename TLabel, typename TVariable>
+class LabeledMotion;
+
+template <typename TVariable>
+class TemporalMotion;
+
+template <typename TVariable>
+class DiscreteMotion;
+
+template <typename TVariable>
 class ContinuousMotion;
+
+template <typename TScalar>
+class TemporalInterpolator;
+
+template <typename TVariable>
+class SpatialInterpolator;
+
+template <typename TScalar, typename TDerivative>
+struct TemporalMotionQuery {
+  const TScalar time;
+  const TDerivative derivative;
+  TScalar* const values;
+  TScalar* const* const jacobians;
+};
 
 } // namespace hyper
