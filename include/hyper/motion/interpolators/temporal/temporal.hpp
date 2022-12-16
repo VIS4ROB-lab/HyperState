@@ -27,7 +27,7 @@ class TemporalInterpolator {
   /// Evaluates this.
   /// \param query Query.
   /// \return True on success.
-  [[nodiscard]] virtual auto evaluate(const Query& query) const -> bool = 0;
+  virtual auto evaluate(const Query& query) const -> bool = 0;
 };
 
 } // namespace hyper

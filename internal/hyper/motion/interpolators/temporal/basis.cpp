@@ -3,7 +3,6 @@
 
 #include <glog/logging.h>
 
-#include "hyper/motion/interpolators/spatial/abstract.hpp"
 #include "hyper/motion/interpolators/temporal/basis.hpp"
 
 namespace hyper {
@@ -97,10 +96,10 @@ auto nonUniformRecursion(const std::vector<TScalar>& v, const TIndex& k) -> Matr
     return matrix;
   } else if (k == 2) {
     Matrix matrix{k, k};
-    matrix(0, 0) = Scalar{1};
-    matrix(1, 0) = Scalar{0};
-    matrix(0, 1) = Scalar{-1};
-    matrix(1, 1) = Scalar{1};
+    matrix(0, 0) = TScalar{1};
+    matrix(1, 0) = TScalar{0};
+    matrix(0, 1) = TScalar{-1};
+    matrix(1, 1) = TScalar{1};
     return matrix;
   } else { // Recursion.
     const auto [Ak, Bk] = coefficients<TScalar, TIndex, K>(v, k);

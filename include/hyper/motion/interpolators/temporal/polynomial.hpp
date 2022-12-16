@@ -55,7 +55,7 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   /// Evaluates this.
   /// \param query Query.
   /// \return True on success.
-  [[nodiscard]] auto evaluate(const Query& query) const -> bool final;
+  auto evaluate(const Query& query) const -> bool final;
 
  protected:
   bool is_uniform_{true}; ///< Uniformity flag.

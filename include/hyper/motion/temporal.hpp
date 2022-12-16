@@ -44,7 +44,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   };
 
   using Elements = std::set<Element, ElementCompare>;
-  using Query = TemporalMotionQuery<Scalar, std::size_t>;
+  using Query = TemporalMotionQuery<Scalar, Index>;
 
   /// Evaluates the range.
   /// \return Range.
@@ -68,23 +68,21 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
 
   /// Evaluates the motion.
   /// \param query Motion query.
-  /// \param pointers Input pointers.
   /// \return True on success.
-  [[nodiscard]] virtual auto evaluate(const Query& query, const Scalar* pointers) const -> bool = 0;
+  virtual auto evaluate(const Query& query) const -> bool = 0;
 
   /// Evaluates the motion.
   /// \param query Motion query.
+  /// \param pointers Input pointers.
   /// \return True on success.
-  [[nodiscard]] virtual auto evaluate(const Query& query) const -> bool {
-    return evaluate(query, nullptr);
-  }
+  virtual auto evaluate(const Query& query, const Scalar* const* pointers) const -> bool = 0;
 
  protected:
   /// Extracts the time associated with elements.
   /// \param pointers Input pointers.
   /// \param num_pointers Number of pointers.
   /// \return Times.
-  auto extractTimes(const Scalar* pointers, const Index& num_pointers) const -> std::vector<Time> {
+  auto extractTimes(const Scalar* const* pointers, const Index& num_pointers) const -> std::vector<Time> {
     std::vector<Time> times;
     times.reserve(num_pointers);
     for (auto i = Index{0}; i < num_pointers; ++i) {
