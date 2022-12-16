@@ -58,8 +58,9 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const
   const auto t0 = times[index];
   const auto t1 = times[index + 1];
 
-  const auto i_ut = Scalar{1} / (t1 - t0);
-  const auto ut = (time - t0) * i_ut;
+  const auto dt = time - t0;
+  const auto i_dt = Scalar{1} / (t1 - t0);
+  const auto ut = dt * i_dt;
 
   // Sanity checks.
   DCHECK_LE(0, ut);
@@ -71,12 +72,12 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const
 
   if (isUniform()) {
     for (Index k = 0; k < derivative + 1; ++k) {
-      W.col(k).noalias() = mixing_ * polynomial(ut, k) * power(i_ut, k);
+      W.col(k).noalias() = mixing_ * polynomial(ut, k) * power(i_dt, k);
     }
   } else {
     const auto mixing = this->mixing(times);
     for (Index k = 0; k < derivative + 1; ++k) {
-      W.col(k).noalias() = mixing * polynomial(ut, k) * power(i_ut, k);
+      W.col(k).noalias() = mixing * polynomial(ut, k) * power(i_dt, k);
     }
   }
 
