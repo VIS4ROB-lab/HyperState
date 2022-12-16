@@ -14,7 +14,7 @@
 
 namespace hyper {
 
-class AbstractState {
+class ContinuousMotion {
  public:
   // Definitions.
   using Range = hyper::Range<Time, BoundaryPolicy::LOWER_INCLUSIVE_ONLY>;
@@ -41,7 +41,7 @@ class AbstractState {
   /// Constructor from interpolator and policy.
   /// \param interpolator Input interpolator.
   /// \param policy Input policy.
-  explicit AbstractState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
+  explicit ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
 
   /// Elements accessor.
   /// \return Elements.

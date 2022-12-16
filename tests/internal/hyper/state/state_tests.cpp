@@ -7,7 +7,7 @@
 
 #include "hyper/variables/forward.hpp"
 
-#include "hyper/state/abstract.hpp"
+#include "hyper/state/continuous.hpp"
 #include "hyper/state/interpolators/temporal/basis.hpp"
 #include "hyper/state/policies/cartesian.hpp"
 
@@ -42,7 +42,7 @@ class CartesianStateTests : public testing::Test {
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
     auto policy = std::make_unique<Policy>();
-    state_ = AbstractState{std::move(interpolator), std::move(policy)};
+    state_ = ContinuousMotion{std::move(interpolator), std::move(policy)};
   }
 
   /// Sets a random state.
@@ -118,7 +118,7 @@ class CartesianStateTests : public testing::Test {
   }
 
  private:
-  AbstractState state_;
+  ContinuousMotion state_;
 };
 
 TYPED_TEST_SUITE_P(CartesianStateTests);
@@ -173,7 +173,7 @@ class ManifoldStateTests : public testing::Test {
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
     auto policy = std::make_unique<Policy>();
-    state_ = AbstractState{std::move(interpolator), std::move(policy)};
+    state_ = ContinuousMotion{std::move(interpolator), std::move(policy)};
   }
 
   /// Checks the derivatives.
@@ -263,7 +263,7 @@ class ManifoldStateTests : public testing::Test {
   }
 
  private:
-  AbstractState state_;
+  ContinuousMotion state_;
 };
 
 TYPED_TEST_SUITE_P(ManifoldStateTests);

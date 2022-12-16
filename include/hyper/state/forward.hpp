@@ -66,6 +66,6 @@ struct StateResult {
   Jacobians jacobians;     ///< Jacobians.
 };
 
-class AbstractState;
+class ContinuousMotion;
 
 } // namespace hyper
