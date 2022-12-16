@@ -8,9 +8,9 @@
 // #include <boost/container/flat_set.hpp>
 // #include <absl/container/btree_set.h>
 
-#include "hyper/state/interpolators/temporal/temporal.hpp"
-#include "hyper/state/policies/abstract.hpp"
-#include "hyper/state/temporal.hpp"
+#include "hyper/motion/interpolators/spatial/abstract.hpp"
+#include "hyper/motion/interpolators/temporal/temporal.hpp"
+#include "hyper/motion/temporal.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper {

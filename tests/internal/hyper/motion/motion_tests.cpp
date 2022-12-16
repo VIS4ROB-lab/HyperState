@@ -7,11 +7,10 @@
 
 #include "hyper/variables/forward.hpp"
 
-#include "hyper/state/continuous.hpp"
-#include "hyper/state/interpolators/temporal/basis.hpp"
-#include "hyper/state/policies/cartesian.hpp"
-
-#include "hyper/state/policies/se3.hpp"
+#include "hyper/motion/continuous.hpp"
+#include "hyper/motion/interpolators/spatial/cartesian.hpp"
+#include "hyper/motion/interpolators/spatial/se3.hpp"
+#include "hyper/motion/interpolators/temporal/basis.hpp"
 #include "hyper/variables/adapters.hpp"
 #include "hyper/variables/groups/se3.hpp"
 

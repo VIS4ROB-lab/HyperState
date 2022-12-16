@@ -4,7 +4,7 @@
 #pragma once
 
 #include "hyper/matrix.hpp"
-#include "hyper/state/interpolators/temporal/temporal.hpp"
+#include "hyper/motion/interpolators/temporal/temporal.hpp"
 #include "hyper/vector.hpp"
 
 namespace hyper {

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "hyper/state/policies/abstract.hpp"
+#include "abstract.hpp"
 #include "hyper/variables/groups/forward.hpp"
 
 namespace hyper {

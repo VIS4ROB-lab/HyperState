@@ -5,7 +5,7 @@
 
 #include "hyper/variables/forward.hpp"
 
-#include "hyper/state/policies/abstract.hpp"
+#include "abstract.hpp"
 
 namespace hyper {
 

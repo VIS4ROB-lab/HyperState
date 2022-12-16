@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "hyper/state/forward.hpp"
-#include "hyper/state/policies/forward.hpp"
+#include "forward.hpp"
+#include "hyper/motion/forward.hpp"
 
 namespace hyper {
 

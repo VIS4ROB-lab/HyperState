@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "hyper/definitions.hpp"
-#include "hyper/state/interpolators/temporal/basis.hpp"
+#include "hyper/motion/interpolators/temporal/basis.hpp"
 
 namespace hyper::tests {
 

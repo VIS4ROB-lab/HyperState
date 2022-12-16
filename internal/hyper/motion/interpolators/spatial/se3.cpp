@@ -1,7 +1,7 @@
 /// This file is subject to the terms and conditions defined in
 /// the 'LICENSE' file, which is part of this repository.
 
-#include "hyper/state/policies/se3.hpp"
+#include "hyper/motion/interpolators/spatial/se3.hpp"
 #include "hyper/variables/adapters.hpp"
 #include "hyper/variables/groups/se3.hpp"
 #include "hyper/variables/stamped.hpp"

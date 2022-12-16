@@ -3,7 +3,7 @@
 
 #include <glog/logging.h>
 
-#include "hyper/state/interpolators/temporal/polynomial.hpp"
+#include "hyper/motion/interpolators/temporal/polynomial.hpp"
 
 namespace hyper {
 

@@ -9,8 +9,8 @@
 #include <glog/logging.h>
 
 #include "hyper/definitions.hpp"
+#include "hyper/motion/motion.hpp"
 #include "hyper/range.hpp"
-#include "hyper/state/motion.hpp"
 #include "hyper/variables/abstract.hpp"
 #include "hyper/variables/definitions/jacobian.hpp"
 #include "hyper/variables/stamped.hpp"
