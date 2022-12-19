@@ -60,9 +60,14 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
 
   /// Evaluates the motion.
   /// \param query Motion query.
+  /// \return True on success.
+  auto evaluate(const Query& query) const -> bool final;
+
+  /// Evaluates the motion.
+  /// \param query Motion query.
   /// \param pointers Input pointers.
   /// \return True on success.
-  [[nodiscard]] virtual auto evaluate(const Query& query, const Scalar* pointers) const -> bool final;
+  [[nodiscard]] auto evaluate(const Query& query, const Scalar* const* pointers) const -> bool final;
 
   /// Evaluates the states.
   /// \param state_query State query.

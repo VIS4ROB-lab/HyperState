@@ -94,7 +94,13 @@ auto ContinuousMotion<TVariable>::policy() -> std::unique_ptr<AbstractPolicy>& {
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* pointers) const -> bool {
+auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> bool {
+  DCHECK(false);
+  return false;
+}
+
+template <typename TVariable>
+auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* pointers) const -> bool {
   DCHECK(false);
   return false;
 }
