@@ -17,11 +17,17 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   using Input = Stamped<Value>;
   using Derivative = Tangent<Value>;
 
+  using SpatialQuery = SpatialInterpolatorQuery;
+
   /// Evaluates a query.
   /// \param state_query State query.
   /// \param policy_query Policy query.
   /// \return Interpolation result.
-  [[nodiscard]] static auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) -> StateResult;
+  [[nodiscard]] static auto evaluate(const StateQuery& state_query, const SpatialQuery& spatial_query) -> StateResult;
+
+ private:
+  template <int TDerivative>
+  [[nodiscard]] static auto evaluate(const StateQuery& state_query, const SpatialQuery& spatial_query) -> StateResult;
 };
 
 } // namespace hyper

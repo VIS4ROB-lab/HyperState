@@ -34,8 +34,25 @@ inline auto TranslationJacobian(TMatrix& matrix, const Index& index) {
   return matrix.template block<3, 3>(3, index * kNumInputParameters + 4);
 }
 
+} // namespace
+
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state_query, const SpatialQuery& spatial_query) -> StateResult {
+  const auto derivative = state_query.derivative;
+  switch (derivative) {
+    case kValueIndex:
+      return evaluate<kValueIndex>(state_query, spatial_query);
+    case kVelocityIndex:
+      return evaluate<kVelocityIndex>(state_query, spatial_query);
+    case kAccelerationIndex:
+      return evaluate<kAccelerationIndex>(state_query, spatial_query);
+    default:
+      LOG(FATAL) << "Requested derivative is not available.";
+      return {};
+  }
+}
+
 template <int TDerivative>
-auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) -> StateResult {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state_query, const SpatialQuery& policy_query) -> StateResult {
   // Definitions.
   using Result = StateResult;
   using Rotation = typename SE3<Scalar>::Rotation;
@@ -46,8 +63,7 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
   const auto& [layout, inputs, weights] = policy_query;
 
   // Sanity checks.
-  const auto num_inputs = static_cast<Index>(inputs.size());
-  DCHECK(num_inputs == layout.outer_input_size && weights.rows() == layout.inner_input_size && weights.cols() == TDerivative + 1);
+  DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == TDerivative + 1);
 
   // Allocate result.
   Result result;
@@ -140,7 +156,7 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
 
   } else {
     // Allocate Jacobians.
-    const auto num_parameters = num_inputs * kNumInputParameters;
+    const auto num_parameters = layout.outer_input_size * kNumInputParameters;
     jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_parameters));
     if constexpr (kValueIndex < TDerivative) {
       jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_parameters));
@@ -253,23 +269,6 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
   }
 
   return result;
-}
-
-} // namespace
-
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) -> StateResult {
-  const auto derivative = state_query.derivative;
-  switch (derivative) {
-    case kValueIndex:
-      return hyper::evaluate<kValueIndex>(state_query, policy_query);
-    case kVelocityIndex:
-      return hyper::evaluate<kVelocityIndex>(state_query, policy_query);
-    case kAccelerationIndex:
-      return hyper::evaluate<kAccelerationIndex>(state_query, policy_query);
-    default:
-      LOG(FATAL) << "Requested derivative is not available.";
-      return {};
-  }
 }
 
 } // namespace hyper

@@ -17,21 +17,22 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   using Input = Stamped<Value>;
   using Derivative = Value;
 
+  using SpatialQuery = SpatialInterpolatorQuery;
+
   /// Evaluates a query.
   /// \param state_query State query.
   /// \param policy_query Policy query.
   /// \return Interpolation result.
-  [[nodiscard]] static auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) -> StateResult {
+  [[nodiscard]] static auto evaluate(const StateQuery& state_query, const SpatialQuery& spatial_query) -> StateResult {
     // Definitions.
     using Result = StateResult;
 
     // Unpack queries.
     const auto& [stamp, derivative, jacobian] = state_query;
-    const auto& [layout, inputs, weights] = policy_query;
+    const auto& [layout, inputs, weights] = spatial_query;
 
     // Sanity checks.
-    const auto num_inputs = static_cast<Index>(inputs.size());
-    DCHECK(num_inputs == layout.outer_input_size && weights.rows() == layout.inner_input_size && weights.cols() == derivative + 1);
+    DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == derivative + 1);
 
     // Allocate result.
     Result result;
@@ -39,7 +40,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
     outputs.reserve(derivative + 1);
     jacobians.reserve(derivative + 1);
 
-    if (num_inputs == 1) {
+    if (layout.outer_input_size == 1) {
       for (Index k = 0; k <= derivative; ++k) {
         if (k == 0) {
           outputs.emplace_back(Eigen::Map<const Input>{inputs[0]}.variable());
@@ -73,7 +74,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
         outputs.emplace_back(increments * weights.col(k));
 
         if (jacobian) {
-          jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_inputs * kNumInputParameters));
+          jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, layout.outer_input_size * kNumInputParameters));
 
           if (k == 0) {
             jacobians[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{1} - weights(1, k));

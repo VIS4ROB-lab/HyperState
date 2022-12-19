@@ -11,15 +11,14 @@ namespace hyper {
 template <typename TVariable>
 class SpatialInterpolator;
 
-struct PolicyQuery {
+struct SpatialInterpolatorQuery {
   // Definitions.
   using Layout = TemporalInterpolatorLayout<Eigen::Index>;
-  using Inputs = Pointers<const Scalar>;
   using Weights = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
   // Members.
   const Layout& layout;
-  const Inputs& inputs;
+  const Scalar* const* inputs;
   const Weights& weights;
 };
 

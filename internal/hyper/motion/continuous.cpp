@@ -10,23 +10,6 @@
 
 namespace hyper {
 
-namespace {
-
-/// Converts parameter pointers to raw pointers.
-/// \tparam TScalar Scalar type.
-/// \tparam TParameter Parameter type.
-/// \param parameters Input parameters.
-/// \return Converted pointers
-template <typename TScalar, typename TParameter>
-auto convertPointers(const Pointers<TParameter>& parameters) -> Pointers<TScalar> {
-  Pointers<TScalar> pointers;
-  pointers.reserve(parameters.size());
-  std::transform(parameters.begin(), parameters.end(), std::back_inserter(pointers), [](const auto& arg) { return arg->asVector().data(); });
-  return pointers;
-}
-
-} // namespace
-
 template <typename TVariable>
 ContinuousMotion<TVariable>::ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator)
     : interpolator_{std::move(interpolator)} {}
@@ -96,40 +79,24 @@ auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* con
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query) const -> StateResult {
-  if (interpolator_) {
-    const auto layout = interpolator_->layout();
-    const auto pointers = convertPointers<const Scalar>(this->pointers(state_query.time));
-    const auto stamps = this->extractTimes(pointers.data(), layout.outer_input_size);
-
-    MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
-    interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
-
-    const auto policy_query = PolicyQuery{layout, pointers, weights};
-    return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
-  } else {
-    const auto pointers = convertPointers<const Scalar>(this->pointers(state_query.time));
-    const auto policy_query = PolicyQuery{{}, pointers, {}};
-    return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
-  }
+  Pointers<const Scalar> pointers;
+  const auto elements = this->pointers(state_query.time);
+  pointers.reserve(elements.size());
+  std::transform(elements.begin(), elements.end(), std::back_inserter(pointers), [](const auto& arg) { return arg->asVector().data(); });
+  return evaluate(state_query, pointers.data());
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query, const Scalar* const* raw_values) const -> StateResult {
-  if (interpolator_) {
-    const auto layout = interpolator_->layout();
-    const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer_input_size};
-    const auto stamps = this->extractTimes(pointers.data(), layout.outer_input_size);
+auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query, const Scalar* const* pointers) const -> StateResult {
+  DCHECK(interpolator_ != nullptr);
+  const auto layout = interpolator_->layout();
+  const auto stamps = this->extractTimes(pointers, layout.outer_input_size);
 
-    MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
-    interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
+  MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
+  interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
 
-    const auto policy_query = PolicyQuery{layout, pointers, weights};
-    return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
-  } else {
-    const auto pointers = Pointers<const Scalar>{raw_values, raw_values + 1};
-    const auto policy_query = PolicyQuery{{}, pointers, {}};
-    return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
-  }
+  const auto policy_query = SpatialInterpolatorQuery{layout, pointers, weights};
+  return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
 }
 
 template class ContinuousMotion<Cartesian<double, 3>>;
