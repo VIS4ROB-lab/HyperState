@@ -8,6 +8,9 @@
 
 namespace hyper {
 
+template <typename TVariable>
+class SpatialInterpolator;
+
 struct PolicyQuery {
   // Definitions.
   using Layout = TemporalInterpolatorLayout<Eigen::Index>;
@@ -19,13 +22,5 @@ struct PolicyQuery {
   const Inputs& inputs;
   const Weights& weights;
 };
-
-class AbstractPolicy;
-
-template <typename>
-class CartesianPolicy;
-
-template <typename>
-class ManifoldPolicy;
 
 } // namespace hyper

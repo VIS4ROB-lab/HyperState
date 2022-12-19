@@ -3,37 +3,25 @@
 
 #pragma once
 
+#include "hyper/motion/forward.hpp"
+#include "hyper/motion/interpolators/spatial/forward.hpp"
 #include "hyper/variables/forward.hpp"
-
-#include "abstract.hpp"
 
 namespace hyper {
 
 template <typename TVariable>
-class CartesianPolicy<Stamped<TVariable>> final : public AbstractPolicy {
+class SpatialInterpolator<Stamped<TVariable>> final {
  public:
   // Definitions.
   using Value = TVariable;
   using Input = Stamped<Value>;
   using Derivative = Value;
 
-  /// Collects the times.
-  /// \return Times.
-  [[nodiscard]] auto times(const Pointers<const Scalar>& pointers) const -> Times final {
-    Times times;
-    times.reserve(pointers.size());
-    for (const auto& pointer : pointers) {
-      const auto stamped = Eigen::Map<const Input>{pointer};
-      times.emplace_back(stamped.stamp());
-    }
-    return times;
-  }
-
   /// Evaluates a query.
   /// \param state_query State query.
   /// \param policy_query Policy query.
   /// \return Interpolation result.
-  [[nodiscard]] auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) const -> StateResult final {
+  [[nodiscard]] static auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) -> StateResult {
     // Definitions.
     using Result = StateResult;
 

@@ -8,7 +8,7 @@
 // #include <boost/container/flat_set.hpp>
 // #include <absl/container/btree_set.h>
 
-#include "hyper/motion/interpolators/spatial/abstract.hpp"
+#include "hyper/motion/interpolators/spatial/spatial.hpp"
 #include "hyper/motion/interpolators/temporal/temporal.hpp"
 #include "hyper/motion/temporal.hpp"
 #include "hyper/variables/stamped.hpp"
@@ -31,8 +31,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
 
   /// Constructor from interpolator and policy.
   /// \param interpolator Input interpolator.
-  /// \param policy Input policy.
-  explicit ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator = nullptr, std::unique_ptr<AbstractPolicy>&& policy = nullptr);
+  explicit ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator = nullptr);
 
   /// Evaluates the range.
   /// \return Range.
@@ -49,14 +48,6 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// Interpolator modifier.
   /// \return Interpolator.
   [[nodiscard]] auto interpolator() -> std::unique_ptr<TemporalInterpolator<Scalar>>&;
-
-  /// Policy accessor.
-  /// \return Policy.
-  [[nodiscard]] auto policy() const -> const std::unique_ptr<AbstractPolicy>&;
-
-  /// Policy modifier.
-  /// \return Policy.
-  [[nodiscard]] auto policy() -> std::unique_ptr<AbstractPolicy>&;
 
   /// Evaluates the motion.
   /// \param query Motion query.
@@ -82,7 +73,6 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
 
  private:
   std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_; ///< Interpolator.
-  std::unique_ptr<AbstractPolicy> policy_;                     ///< Policy.
 };
 
 } // namespace hyper

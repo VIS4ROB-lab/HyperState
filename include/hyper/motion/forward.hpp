@@ -88,18 +88,12 @@ class DiscreteMotion;
 template <typename TVariable>
 class ContinuousMotion;
 
-template <typename TScalar>
-class TemporalInterpolator;
-
-template <typename TVariable>
-class SpatialInterpolator;
-
 template <typename TScalar, typename TDerivative>
 struct TemporalMotionQuery {
-  const TScalar time;
-  const TDerivative derivative;
-  TScalar* const values;
-  TScalar* const* const jacobians;
+  TScalar time;
+  TDerivative derivative;
+  const Scalar* const* values;
+  TScalar* const* jacobians;
 };
 
 } // namespace hyper

@@ -3,28 +3,25 @@
 
 #pragma once
 
-#include "abstract.hpp"
+#include "hyper/motion/forward.hpp"
+#include "hyper/motion/interpolators/spatial/forward.hpp"
 #include "hyper/variables/groups/forward.hpp"
 
 namespace hyper {
 
 template <>
-class ManifoldPolicy<Stamped<SE3<Scalar>>> final : public AbstractPolicy {
+class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
  public:
   // Definitions.
   using Value = SE3<Scalar>;
   using Input = Stamped<Value>;
   using Derivative = Tangent<Value>;
 
-  /// Collects the times.
-  /// \return Times.
-  [[nodiscard]] auto times(const Pointers<const Scalar>& pointers) const -> Times final;
-
   /// Evaluates a query.
   /// \param state_query State query.
   /// \param policy_query Policy query.
   /// \return Interpolation result.
-  [[nodiscard]] auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) const -> StateResult final;
+  [[nodiscard]] static auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) -> StateResult;
 };
 
 } // namespace hyper

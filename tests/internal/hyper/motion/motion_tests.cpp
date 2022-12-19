@@ -32,7 +32,7 @@ class CartesianStateTests : public testing::Test {
 
   using Jacobian = StateResult::Jacobian;
   using Jacobians = StateResult::Jacobians;
-  using Policy = CartesianPolicy<StampedValue>;
+  using Policy = SpatialInterpolator<StampedValue>;
 
   using Input = typename Policy::Input;
   using Derivative = typename Policy::Derivative;
@@ -40,8 +40,7 @@ class CartesianStateTests : public testing::Test {
   /// Set up.
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
-    auto policy = std::make_unique<Policy>();
-    state_ = ContinuousMotion<Value>{std::move(interpolator), std::move(policy)};
+    state_ = ContinuousMotion<Value>{std::move(interpolator)};
   }
 
   /// Sets a random state.
@@ -152,7 +151,7 @@ class ManifoldStateTests : public testing::Test {
 
   using Jacobian = StateResult::Jacobian;
   using Jacobians = StateResult::Jacobians;
-  using Policy = ManifoldPolicy<StampedValue>;
+  using Policy = SpatialInterpolator<StampedValue>;
 
   using Input = typename Policy::Input;
   using Derivative = typename Policy::Derivative;
@@ -171,8 +170,7 @@ class ManifoldStateTests : public testing::Test {
   /// Set up.
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
-    auto policy = std::make_unique<Policy>();
-    state_ = ContinuousMotion<Value>{std::move(interpolator), std::move(policy)};
+    state_ = ContinuousMotion<Value>{std::move(interpolator)};
   }
 
   /// Checks the derivatives.

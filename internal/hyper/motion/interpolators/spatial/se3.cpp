@@ -257,17 +257,7 @@ auto evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) ->
 
 } // namespace
 
-auto ManifoldPolicy<Stamped<SE3<Scalar>>>::times(const Pointers<const Scalar>& pointers) const -> Times {
-  Times times;
-  times.reserve(pointers.size());
-  for (const auto& pointer : pointers) {
-    const auto stamped = Eigen::Map<const Input>{pointer};
-    times.emplace_back(stamped.stamp());
-  }
-  return times;
-}
-
-auto ManifoldPolicy<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) const -> StateResult {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state_query, const PolicyQuery& policy_query) -> StateResult {
   const auto derivative = state_query.derivative;
   switch (derivative) {
     case kValueIndex:

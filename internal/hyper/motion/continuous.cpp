@@ -28,9 +28,8 @@ auto convertPointers(const Pointers<TParameter>& parameters) -> Pointers<TScalar
 } // namespace
 
 template <typename TVariable>
-ContinuousMotion<TVariable>::ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator, std::unique_ptr<AbstractPolicy>&& policy)
-    : interpolator_{std::move(interpolator)},
-      policy_{std::move(policy)} {}
+ContinuousMotion<TVariable>::ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator)
+    : interpolator_{std::move(interpolator)} {}
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::range() const -> Range {
@@ -84,16 +83,6 @@ auto ContinuousMotion<TVariable>::interpolator() -> std::unique_ptr<TemporalInte
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::policy() const -> const std::unique_ptr<AbstractPolicy>& {
-  return policy_;
-}
-
-template <typename TVariable>
-auto ContinuousMotion<TVariable>::policy() -> std::unique_ptr<AbstractPolicy>& {
-  return const_cast<std::unique_ptr<AbstractPolicy>&>(std::as_const(*this).policy());
-}
-
-template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> bool {
   DCHECK(false);
   return false;
@@ -107,41 +96,39 @@ auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* con
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query) const -> StateResult {
-  DCHECK(policy_ != nullptr);
   if (interpolator_) {
     const auto layout = interpolator_->layout();
     const auto pointers = convertPointers<const Scalar>(this->pointers(state_query.time));
-    const auto stamps = policy_->times(pointers);
+    const auto stamps = this->extractTimes(pointers.data(), layout.outer_input_size);
 
     MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
     interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
 
     const auto policy_query = PolicyQuery{layout, pointers, weights};
-    return policy_->evaluate(state_query, policy_query);
+    return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
   } else {
     const auto pointers = convertPointers<const Scalar>(this->pointers(state_query.time));
     const auto policy_query = PolicyQuery{{}, pointers, {}};
-    return policy_->evaluate(state_query, policy_query);
+    return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
   }
 }
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query, const Scalar* const* raw_values) const -> StateResult {
-  DCHECK(policy_ != nullptr);
   if (interpolator_) {
     const auto layout = interpolator_->layout();
     const auto pointers = Pointers<const Scalar>{raw_values, raw_values + layout.outer_input_size};
-    const auto stamps = policy_->times(pointers);
+    const auto stamps = this->extractTimes(pointers.data(), layout.outer_input_size);
 
     MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
     interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
 
     const auto policy_query = PolicyQuery{layout, pointers, weights};
-    return policy_->evaluate(state_query, policy_query);
+    return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
   } else {
     const auto pointers = Pointers<const Scalar>{raw_values, raw_values + 1};
     const auto policy_query = PolicyQuery{{}, pointers, {}};
-    return policy_->evaluate(state_query, policy_query);
+    return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
   }
 }
 
