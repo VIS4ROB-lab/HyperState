@@ -5,6 +5,7 @@
 
 #include "hyper/motion/forward.hpp"
 #include "hyper/motion/interpolators/spatial/forward.hpp"
+#include "hyper/variables/cartesian.hpp"
 #include "hyper/variables/forward.hpp"
 
 namespace hyper {
@@ -13,9 +14,18 @@ template <typename TVariable>
 class SpatialInterpolator<Stamped<TVariable>> final {
  public:
   // Definitions.
-  using Value = TVariable;
-  using Input = Stamped<Value>;
-  using Derivative = Value;
+  using Input = Stamped<TVariable>;
+
+  // Definitions.
+  using Index = Eigen::Index;
+  using Scalar = typename TVariable::Scalar;
+
+  using Manifold = TVariable;
+  using Tangent = hyper::Tangent<TVariable>;
+
+  // Constants.
+  static constexpr auto kDimManifold = Manifold::kNumParameters;
+  static constexpr auto kDimTangent = Tangent::kNumParameters;
 
   /// Evaluates this.
   /// \param query Spatial interpolator query.
@@ -42,12 +52,12 @@ class SpatialInterpolator<Stamped<TVariable>> final {
         if (k == 0) {
           outputs.emplace_back(Eigen::Map<const Input>{inputs[0]}.variable());
           if (jacobian) {
-            jacobians.emplace_back(Result::Jacobian::Identity(kNumDerivativeParameters, kNumInputParameters));
+            jacobians.emplace_back(Result::Jacobian::Identity(kDimTangent, kNumInputParameters));
           }
         } else {
-          outputs.emplace_back(Result::Derivative::Zero(kNumValueParameters, 1));
+          outputs.emplace_back(Result::Derivative::Zero(kDimManifold, 1));
           if (jacobian) {
-            jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, kNumInputParameters));
+            jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, kNumInputParameters));
           }
         }
       }
@@ -57,8 +67,8 @@ class SpatialInterpolator<Stamped<TVariable>> final {
       const auto end_idx = start_idx + layout.inner_input_size - 1;
 
       // Evaluate increments.
-      using Increments = Eigen::Matrix<Scalar, kNumDerivativeParameters, Eigen::Dynamic>;
-      auto increments = Increments{kNumDerivativeParameters, end_idx - start_idx + 1};
+      using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
+      auto increments = Increments{kDimTangent, end_idx - start_idx + 1};
       increments.col(0).noalias() = Eigen::Map<const Input>{inputs[start_idx]}.variable();
 
       for (auto i = start_idx; i < end_idx; ++i) {
@@ -71,7 +81,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
         outputs.emplace_back(increments * weights.col(k));
 
         if (jacobian) {
-          jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, layout.outer_input_size * kNumInputParameters));
+          jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, layout.outer_input_size * kNumInputParameters));
 
           if (k == 0) {
             jacobians[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{1} - weights(1, k));
@@ -93,9 +103,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
 
  private:
   // Constants.
-  static constexpr auto kNumValueParameters = Value::kNumParameters;
   static constexpr auto kNumInputParameters = Input::kNumParameters;
-  static constexpr auto kNumDerivativeParameters = Derivative::kNumParameters;
 };
 
 } // namespace hyper

@@ -35,7 +35,7 @@ class CartesianStateTests : public testing::Test {
   using Policy = SpatialInterpolator<StampedValue>;
 
   using Input = typename Policy::Input;
-  using Derivative = typename Policy::Derivative;
+  using Tangent = typename Policy::Tangent;
 
   /// Set up.
   auto SetUp() -> void final {
@@ -97,7 +97,7 @@ class CartesianStateTests : public testing::Test {
 
         for (Index k = 0; k < input_j.size() - 1; ++k) {
           const Input tmp = input_j;
-          const Derivative tau = kNumericIncrement * Derivative::Unit(k);
+          const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable() += tau;
 
           const auto d_query = StateQuery{stamp, i, false};
@@ -154,7 +154,7 @@ class ManifoldStateTests : public testing::Test {
   using Policy = SpatialInterpolator<StampedValue>;
 
   using Input = typename Policy::Input;
-  using Derivative = typename Policy::Derivative;
+  using Tangent = typename Policy::Tangent;
 
   /// Sets a random state.
   auto setRandomState() -> void {
@@ -188,7 +188,7 @@ class ManifoldStateTests : public testing::Test {
     const auto d_value = d_output.template derivativeAs<SE3<Scalar>>(0);
 
     for (Index i = 1; i <= degree; ++i) {
-      Derivative derivative;
+      Tangent derivative;
 
       if (i == 1) {
         SU2<Scalar> d_su2;
@@ -222,15 +222,15 @@ class ManifoldStateTests : public testing::Test {
       // Allocate Jacobian.
       Jacobian Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Derivative::kNumParameters, num_inputs * Input::kNumParameters);
+      Jn_i.setZero(Tangent::kNumParameters, num_inputs * Input::kNumParameters);
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
         auto input_j = Eigen::Map<Input>{inputs[j]->asVector().data()};
 
-        for (Index k = 0; k < Derivative::kNumParameters; ++k) {
+        for (Index k = 0; k < Tangent::kNumParameters; ++k) {
           const Input tmp = input_j;
-          const Derivative tau = kNumericIncrement * Derivative::Unit(k);
+          const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable().rotation() *= tau.angular().toManifold();
           input_j.variable().translation() += tau.linear();
 
@@ -249,7 +249,7 @@ class ManifoldStateTests : public testing::Test {
           input_j = tmp;
         }
 
-        Jn_i.template middleCols<Input::kNumParameters - 1>(j * Input::kNumParameters) = Jn_i.template middleCols<Derivative::kNumParameters>(j * Input::kNumParameters) * SE3JacobianAdapter(inputs[j]->asVector().data());
+        Jn_i.template middleCols<Input::kNumParameters - 1>(j * Input::kNumParameters) = Jn_i.template middleCols<Tangent::kNumParameters>(j * Input::kNumParameters) * SE3JacobianAdapter(inputs[j]->asVector().data());
       }
 
       // Compare Jacobians.

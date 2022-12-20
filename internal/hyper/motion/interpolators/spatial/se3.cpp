@@ -3,22 +3,14 @@
 
 #include "hyper/motion/interpolators/spatial/se3.hpp"
 #include "hyper/variables/adapters.hpp"
-#include "hyper/variables/groups/se3.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper {
 
 namespace {
 
-using Value = SE3<Scalar>;
-using Input = Stamped<Value>;
-using Derivative = Tangent<Value>;
-using SE3Tangent = Tangent<SE3<Scalar>>;
-using SU2Tangent = Tangent<SU2<Scalar>>;
-
-constexpr auto kNumValueParameters = Value::kNumParameters;
+using Input = Stamped<SE3<Scalar>>;
 constexpr auto kNumInputParameters = Input::kNumParameters;
-constexpr auto kNumDerivativeParameters = Derivative::kNumParameters;
 
 template <Index TCols = 3, typename TMatrix>
 inline auto RotationJacobian(TMatrix& matrix, const Index& index) {
@@ -52,6 +44,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
   using Result = StateResult;
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
+  using SU2Tangent = hyper::Tangent<SU2<Scalar>>;
 
   // Unpack queries.
   const auto& [motion_query, layout, inputs, weights] = query;
@@ -73,8 +66,8 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
   // Allocate accumulators.
   Rotation R = Rotation::Identity();
   Translation x = Translation::Zero();
-  SE3Tangent v = SE3Tangent::Zero();
-  SE3Tangent a = SE3Tangent::Zero();
+  Tangent v = Tangent::Zero();
+  Tangent a = Tangent::Zero();
 
   if (!jacobian) {
     // Retrieves first input.
@@ -83,8 +76,8 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
     /* Allocate accumulators.
     Rotation R = T_0.rotation();
     Translation x = T_0.translation();
-    SE3Tangent v = SE3Tangent::Zero();
-    SE3Tangent a = SE3Tangent::Zero();
+    Tangent v = Tangent::Zero();
+    Tangent a = Tangent::Zero();
 
     for (Index i = start_idx; i < end_idx; ++i) {
       const auto T_a = Eigen::Map<const Input>{inputs[i]}.variable();
@@ -152,11 +145,11 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
   } else {
     // Allocate Jacobians.
     const auto num_parameters = layout.outer_input_size * kNumInputParameters;
-    jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_parameters));
+    jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, num_parameters));
     if constexpr (DerivativeOrder::kValue < TDerivative) {
-      jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_parameters));
+      jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, num_parameters));
       if constexpr (DerivativeOrder::kVelocity < TDerivative) {
-        jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_parameters));
+        jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, num_parameters));
       }
     }
 
@@ -248,7 +241,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
     x = T_a.translation() + x;
 
     for (Index i = start_idx; i <= end_idx; ++i) {
-      const auto adapter = SU2JacobianAdapter(inputs[i] + Input::kVariableOffset + Value::kRotationOffset);
+      const auto adapter = SU2JacobianAdapter(inputs[i] + Input::kVariableOffset + Manifold::kRotationOffset);
       for (auto& J : jacobians) {
         RotationJacobian<SU2<Scalar>::kNumParameters>(J, i) = RotationJacobian(J, i) * adapter;
       }
