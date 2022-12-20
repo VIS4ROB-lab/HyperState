@@ -31,8 +31,7 @@ template <typename TScalar>
 struct TemporalInterpolatorQuery {
   TScalar time;
   MotionDerivative derivative;
-  const std::vector<TScalar>& times;
-  TScalar* weights;
+  const std::vector<TScalar>& timestamps;
 };
 
 } // namespace hyper

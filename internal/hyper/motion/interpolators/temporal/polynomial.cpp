@@ -46,16 +46,16 @@ auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const -> bool {
+auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const -> Weights {
   // Unpack query.
-  const auto& [time, derivative, times, weights] = query;
+  const auto& [time, derivative, timestamps] = query;
 
   const auto order = this->order();
   const auto num_derivatives = derivative + 1;
-  const auto index = (times.size() - 1) / 2;
+  const auto index = (timestamps.size() - 1) / 2;
 
-  const auto dt = time - times[index];
-  const auto i_dt = Scalar{1} / (times[index + 1] - times[index]);
+  const auto dt = time - timestamps[index];
+  const auto i_dt = Scalar{1} / (timestamps[index + 1] - timestamps[index]);
   const auto ut = dt * i_dt;
 
   DCHECK_LE(0, ut);
@@ -78,12 +78,10 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const
   }
 
   if (isUniform()) {
-    Eigen::Map<Weights>{weights, order, num_derivatives}.noalias() = mixing_.lazyProduct(polynomial);
+    return mixing_.lazyProduct(polynomial);
   } else {
-    Eigen::Map<Weights>{weights, order, num_derivatives}.noalias() = mixing(times).lazyProduct(polynomial);
+    return mixing(timestamps).lazyProduct(polynomial);
   }
-
-  return true;
 }
 
 template class PolynomialInterpolator<double, 4>;

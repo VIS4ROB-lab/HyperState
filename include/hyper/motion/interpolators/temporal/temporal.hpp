@@ -16,6 +16,7 @@ class TemporalInterpolator {
   using Index = Eigen::Index;
   using Layout = TemporalInterpolatorLayout<Index>;
   using Query = TemporalInterpolatorQuery<Scalar>;
+  using Weights = MatrixX<Scalar>;
 
   /// Default destructor.
   virtual ~TemporalInterpolator() = default;
@@ -27,7 +28,7 @@ class TemporalInterpolator {
   /// Evaluates this.
   /// \param query Query.
   /// \return True on success.
-  virtual auto evaluate(const Query& query) const -> bool = 0;
+  virtual auto evaluate(const Query& query) const -> Weights = 0;
 };
 
 } // namespace hyper

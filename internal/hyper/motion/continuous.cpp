@@ -78,13 +78,9 @@ template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* pointers) const -> bool {
   DCHECK(interpolator_ != nullptr);
   const auto layout = interpolator_->layout();
-  const auto stamps = this->extractTimes(pointers, layout.outer_input_size);
-
-  MatrixX<Scalar> weights{layout.output_size, query.derivative + 1};
-  interpolator_->evaluate({query.time, query.derivative, stamps, weights.data()});
-
-  const auto policy_query = SpatialInterpolatorQuery{query, layout, pointers, weights};
-  return SpatialInterpolator<Element>::evaluate(policy_query);
+  const auto times = this->extractTimes(pointers, layout.outer_input_size);
+  const auto weights = interpolator_->evaluate({query.time, query.derivative, times});
+  return SpatialInterpolator<Element>::evaluate({query, layout, pointers, weights});
 }
 
 template class ContinuousMotion<Cartesian<double, 3>>;

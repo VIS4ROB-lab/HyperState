@@ -23,7 +23,7 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   using OrderVector = Vector<Scalar, TOrder>;
   using OrderMatrix = Matrix<Scalar, TOrder, TOrder>;
 
-  using Weights = Matrix<Scalar, TOrder, Eigen::Dynamic>;
+  using Weights = typename Base::Weights;
 
   /// Computes polynomial coefficient matrix.
   /// \return Polynomial coefficient matrix.
@@ -55,7 +55,7 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   /// Evaluates this.
   /// \param query Query.
   /// \return True on success.
-  auto evaluate(const Query& query) const -> bool final;
+  auto evaluate(const Query& query) const -> Weights final;
 
  protected:
   bool is_uniform_{true}; ///< Uniformity flag.
