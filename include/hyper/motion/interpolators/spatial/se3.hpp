@@ -31,7 +31,7 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> StateResult;
 
  private:
-  template <int TDerivative>
+  template <MotionDerivative TMotionDerivative>
   [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> StateResult;
 };
 

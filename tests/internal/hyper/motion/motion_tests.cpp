@@ -59,10 +59,10 @@ class CartesianStateTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = state_.range().sample();
-    const auto query = StateQuery{stamp, degree, false};
+    const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
     auto output = state_.evaluate(query);
 
-    const auto d_query = StateQuery{stamp + kNumericIncrement, degree, false};
+    const auto d_query = StateQuery{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
     auto d_output = state_.evaluate(d_query);
 
     for (auto i = 1; i <= degree; ++i) {
@@ -80,7 +80,7 @@ class CartesianStateTests : public testing::Test {
     for (Index i = 0; i <= degree; ++i) {
       // Evaluate analytic Jacobian.
       const auto stamp = state_.range().sample();
-      const auto query = StateQuery{stamp, i, true};
+      const auto query = StateQuery{stamp, static_cast<MotionDerivative>(i), true};
       auto output = state_.evaluate(query);
 
       // Retrieve inputs.
@@ -100,7 +100,7 @@ class CartesianStateTests : public testing::Test {
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable() += tau;
 
-          const auto d_query = StateQuery{stamp, i, false};
+          const auto d_query = StateQuery{stamp, static_cast<MotionDerivative>(i), false};
           const auto d_output = state_.evaluate(d_query);
           Jn_i.col(j * Input::kNumParameters + k) = (d_output.derivatives.at(i) - output.derivatives.at(i)).transpose() / kNumericIncrement;
 
@@ -178,10 +178,10 @@ class ManifoldStateTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = state_.range().sample();
-    const auto query = StateQuery{stamp, degree, false};
+    const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
     auto output = state_.evaluate(query);
 
-    const auto d_query = StateQuery{stamp + kNumericIncrement, degree, false};
+    const auto d_query = StateQuery{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
     auto d_output = state_.evaluate(d_query);
 
     const auto value = output.template derivativeAs<SE3<Scalar>>(0);
@@ -213,7 +213,7 @@ class ManifoldStateTests : public testing::Test {
   auto checkJacobians(const Index degree = kDegree) -> bool {
     for (Index i = 0; i <= degree; ++i) {
       const auto stamp = state_.range().sample();
-      const auto query = StateQuery{stamp, degree, true};
+      const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), true};
       auto output = state_.evaluate(query);
 
       // Retrieve inputs.
@@ -234,7 +234,7 @@ class ManifoldStateTests : public testing::Test {
           input_j.variable().rotation() *= tau.angular().toManifold();
           input_j.variable().translation() += tau.linear();
 
-          const auto d_query = StateQuery{stamp, degree, false};
+          const auto d_query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
           const auto d_output = state_.evaluate(d_query);
 
           if (i == 0) {

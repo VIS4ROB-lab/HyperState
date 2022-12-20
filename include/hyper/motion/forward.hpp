@@ -12,29 +12,30 @@
 
 namespace hyper {
 
+enum MotionDerivative {
+  VALUE = 0,
+  VELOCITY = 1,
+  ACCELERATION = 2,
+  JERK = 3,
+};
+
 struct StateQuery {
   /// Constructor from query stamp and derivative requests.
   /// \param time Query time.
   /// \param derivative Highest degree of requested derivatives.
   /// \param jacobian Jacobian flag (true if requested).
-  StateQuery(const Time& time, Index derivative = 0, const bool jacobian = false) // NOLINT
+  StateQuery(const Time& time, const MotionDerivative& derivative = MotionDerivative::VALUE, const bool jacobian = false) // NOLINT
       : time{time},
         derivative{derivative},
         jacobian{jacobian} {}
 
   // Members.
-  Time time;        ///< Time.
-  Index derivative; ///< Highest degree of requested derivatives.
-  bool jacobian;    ///< Jacobian flag.
+  Time time;                   ///< Time.
+  MotionDerivative derivative; ///< Derivative.
+  bool jacobian;               ///< Jacobian flag.
 };
 
 struct StateResult {
-  // Constants.
-  static constexpr auto kValueIndex = 0;
-  static constexpr auto kVelocityIndex = 1;
-  static constexpr auto kAccelerationIndex = 2;
-  static constexpr auto kJerkIndex = 3;
-
   // Definitions.
   using Derivative = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
   using Jacobian = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
@@ -64,13 +65,6 @@ struct StateResult {
   // Members.
   Derivatives derivatives; ///< Derivatives.
   Jacobians jacobians;     ///< Jacobians.
-};
-
-struct DerivativeOrder {
-  static constexpr auto kValue = 0;
-  static constexpr auto kVelocity = 1;
-  static constexpr auto kAcceleration = 2;
-  static constexpr auto kJerk = 3;
 };
 
 template <typename TScalar>
