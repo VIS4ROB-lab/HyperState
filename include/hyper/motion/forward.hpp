@@ -19,10 +19,26 @@ enum MotionDerivative {
   JERK = 3,
 };
 
-struct StateQuery {
+template <typename TScalar>
+class Motion;
+
+template <typename TLabel, typename TVariable>
+class LabeledMotion;
+
+template <typename TVariable>
+class TemporalMotion;
+
+template <typename TVariable>
+class DiscreteMotion;
+
+template <typename TVariable>
+class ContinuousMotion;
+
+template <typename TScalar>
+struct TemporalMotionQuery {
   // Definitions.
-  using Derivative = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
-  using Jacobian = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+  using Derivative = Eigen::Matrix<TScalar, Eigen::Dynamic, 1>;
+  using Jacobian = Eigen::Matrix<TScalar, Eigen::Dynamic, Eigen::Dynamic>;
   using Derivatives = std::vector<Derivative>;
   using Jacobians = std::vector<Jacobian>;
 
@@ -30,7 +46,7 @@ struct StateQuery {
   /// \param time Query time.
   /// \param derivative Highest degree of requested derivatives.
   /// \param jacobian Jacobian flag (true if requested).
-  StateQuery(const Time& time, const MotionDerivative& derivative = MotionDerivative::VALUE, const bool jacobian = false) // NOLINT
+  TemporalMotionQuery(const Time& time, const MotionDerivative& derivative = MotionDerivative::VALUE, const bool jacobian = false) // NOLINT
       : time{time},
         derivative{derivative},
         jacobian{jacobian} {}
@@ -62,37 +78,6 @@ struct StateQuery {
 
   mutable Derivatives derivatives; ///< Derivatives.
   mutable Jacobians jacobians;     ///< Jacobians.
-};
-
-template <typename TScalar>
-class Motion;
-
-template <typename TLabel, typename TVariable>
-class LabeledMotion;
-
-template <typename TVariable>
-class TemporalMotion;
-
-template <typename TVariable>
-class DiscreteMotion;
-
-template <typename TVariable>
-class ContinuousMotion;
-
-template <typename TScalar>
-struct TemporalMotionQuery {
-  // Definitions.
-  struct Request {
-    TScalar* const* value;
-    TScalar* const* jacobian;
-  };
-
-  /// Virtual default destructor.
-  virtual ~TemporalMotionQuery() = default;
-
-  TScalar time;                  ///< Query time.
-  std::vector<Request> requests; ///< Query requests.
-  MotionDerivative derivative;   ///< Highest derivative.
 };
 
 } // namespace hyper

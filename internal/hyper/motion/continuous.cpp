@@ -66,7 +66,7 @@ auto ContinuousMotion<TVariable>::interpolator() -> std::unique_ptr<TemporalInte
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const TemporalMotionQuery<Scalar>& query) const -> bool {
+auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> bool {
   Pointers<const Scalar> pointers;
   const auto elements = this->pointers(query.time);
   pointers.reserve(elements.size());
@@ -75,30 +75,15 @@ auto ContinuousMotion<TVariable>::evaluate(const TemporalMotionQuery<Scalar>& qu
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const TemporalMotionQuery<Scalar>& query, const Scalar* const* pointers) const -> bool {
-  DCHECK(false);
-  return false;
-}
-
-template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query) const -> bool {
-  Pointers<const Scalar> pointers;
-  const auto elements = this->pointers(state_query.time);
-  pointers.reserve(elements.size());
-  std::transform(elements.begin(), elements.end(), std::back_inserter(pointers), [](const auto& arg) { return arg->asVector().data(); });
-  return evaluate(state_query, pointers.data());
-}
-
-template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query, const Scalar* const* pointers) const -> bool {
+auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* pointers) const -> bool {
   DCHECK(interpolator_ != nullptr);
   const auto layout = interpolator_->layout();
   const auto stamps = this->extractTimes(pointers, layout.outer_input_size);
 
-  MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
-  interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
+  MatrixX<Scalar> weights{layout.output_size, query.derivative + 1};
+  interpolator_->evaluate({query.time, query.derivative, stamps, weights.data()});
 
-  const auto policy_query = SpatialInterpolatorQuery{state_query, layout, pointers, weights};
+  const auto policy_query = SpatialInterpolatorQuery{query, layout, pointers, weights};
   return SpatialInterpolator<Element>::evaluate(policy_query);
 }
 

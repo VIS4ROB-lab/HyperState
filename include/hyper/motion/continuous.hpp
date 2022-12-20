@@ -26,6 +26,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Range = typename Base::Range;
 
   using Element = typename Base::Element;
+  using Query =  typename Base::Query;
 
   /// Constructor from interpolator and policy.
   /// \param interpolator Input interpolator.
@@ -50,24 +51,13 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// Evaluates the motion.
   /// \param query Temporal motion query.
   /// \return True on success.
-  auto evaluate(const TemporalMotionQuery<Scalar>& query) const -> bool final;
+  auto evaluate(const Query& query) const -> bool final;
 
   /// Evaluates the motion.
   /// \param query Temporal motion query.
   /// \param pointers Input pointers.
   /// \return True on success.
-  auto evaluate(const TemporalMotionQuery<Scalar>& query, const Scalar* const* pointers) const -> bool final;
-
-  /// Evaluates the states.
-  /// \param state_query State query.
-  /// \return Interpolation result.
-  auto evaluate(const StateQuery& state_query) const -> bool;
-
-  /// Evaluates the states (with external parameters).
-  /// \param state_query State query.
-  /// \param raw_values Input values.
-  /// \return Interpolation result.
-  auto evaluate(const StateQuery& state_query, const Scalar* const* raw_values) const -> bool;
+  auto evaluate(const Query& query, const Scalar* const* pointers) const -> bool final;
 
  private:
   std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_; ///< Interpolator.

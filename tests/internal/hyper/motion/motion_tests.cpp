@@ -35,6 +35,9 @@ class CartesianStateTests : public testing::Test {
   using Input = typename Policy::Input;
   using Tangent = typename Policy::Tangent;
 
+  using Motion = ContinuousMotion<Value>;
+  using Query = typename Motion::Query;
+
   /// Set up.
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
@@ -57,10 +60,10 @@ class CartesianStateTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = state_.range().sample();
-    const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
+    const auto query = Query{stamp, static_cast<MotionDerivative>(degree), false};
     state_.evaluate(query);
 
-    const auto d_query = StateQuery{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
+    const auto d_query = Query{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
     state_.evaluate(d_query);
 
     for (auto i = 1; i <= degree; ++i) {
@@ -78,7 +81,7 @@ class CartesianStateTests : public testing::Test {
     for (Index i = 0; i <= degree; ++i) {
       // Evaluate analytic Jacobian.
       const auto stamp = state_.range().sample();
-      const auto query = StateQuery{stamp, static_cast<MotionDerivative>(i), true};
+      const auto query = Query{stamp, static_cast<MotionDerivative>(i), true};
       state_.evaluate(query);
 
       // Retrieve inputs.
@@ -98,7 +101,7 @@ class CartesianStateTests : public testing::Test {
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable() += tau;
 
-          const auto d_query = StateQuery{stamp, static_cast<MotionDerivative>(i), false};
+          const auto d_query = Query{stamp, static_cast<MotionDerivative>(i), false};
           state_.evaluate(d_query);
           Jn_i.col(j * Input::kNumParameters + k) = (d_query.derivatives.at(i) - query.derivatives.at(i)).transpose() / kNumericIncrement;
 
@@ -114,7 +117,7 @@ class CartesianStateTests : public testing::Test {
   }
 
  private:
-  ContinuousMotion<Value> state_;
+  Motion state_;
 };
 
 TYPED_TEST_SUITE_P(CartesianStateTests);
@@ -152,6 +155,9 @@ class ManifoldStateTests : public testing::Test {
   using Input = typename Policy::Input;
   using Tangent = typename Policy::Tangent;
 
+  using Motion = ContinuousMotion<Value>;
+  using Query = typename Motion::Query;
+
   /// Sets a random state.
   auto setRandomState() -> void {
     const auto min_num_variables = state_.interpolator()->layout().outer_input_size;
@@ -174,10 +180,10 @@ class ManifoldStateTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = state_.range().sample();
-    const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
+    const auto query = Query{stamp, static_cast<MotionDerivative>(degree), false};
     state_.evaluate(query);
 
-    const auto d_query = StateQuery{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
+    const auto d_query = Query{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
     state_.evaluate(d_query);
 
     const auto value = query.template derivativeAs<SE3<Scalar>>(0);
@@ -209,7 +215,7 @@ class ManifoldStateTests : public testing::Test {
   auto checkJacobians(const Index degree = kDegree) -> bool {
     for (Index i = 0; i <= degree; ++i) {
       const auto stamp = state_.range().sample();
-      const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), true};
+      const auto query = Query{stamp, static_cast<MotionDerivative>(degree), true};
       state_.evaluate(query);
 
       // Retrieve inputs.
@@ -230,7 +236,7 @@ class ManifoldStateTests : public testing::Test {
           input_j.variable().rotation() *= tau.angular().toManifold();
           input_j.variable().translation() += tau.linear();
 
-          const auto d_query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
+          const auto d_query = Query{stamp, static_cast<MotionDerivative>(degree), false};
           state_.evaluate(d_query);
 
           if (i == 0) {
@@ -256,7 +262,7 @@ class ManifoldStateTests : public testing::Test {
   }
 
  private:
-  ContinuousMotion<Value> state_;
+  Motion state_;
 };
 
 TYPED_TEST_SUITE_P(ManifoldStateTests);

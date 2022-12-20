@@ -14,7 +14,7 @@ class SpatialInterpolator;
 
 struct SpatialInterpolatorQuery {
   // Definitions.
-  using MotionQuery = StateQuery;
+  using MotionQuery = TemporalMotionQuery<Scalar>;
   using Layout = TemporalInterpolatorLayout<Eigen::Index>;
   using Weights = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
