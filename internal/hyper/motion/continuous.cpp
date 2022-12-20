@@ -67,8 +67,11 @@ auto ContinuousMotion<TVariable>::interpolator() -> std::unique_ptr<TemporalInte
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const TemporalMotionQuery<Scalar>& query) const -> bool {
-  DCHECK(false);
-  return false;
+  Pointers<const Scalar> pointers;
+  const auto elements = this->pointers(query.time);
+  pointers.reserve(elements.size());
+  std::transform(elements.begin(), elements.end(), std::back_inserter(pointers), [](const auto& arg) { return arg->asVector().data(); });
+  return evaluate(query, pointers.data());
 }
 
 template <typename TVariable>

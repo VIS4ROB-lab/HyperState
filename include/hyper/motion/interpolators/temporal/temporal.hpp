@@ -15,7 +15,7 @@ class TemporalInterpolator {
 
   using Index = Eigen::Index;
   using Layout = TemporalInterpolatorLayout<Index>;
-  using Query = TemporalInterpolatorQuery<Scalar, Index>;
+  using Query = TemporalInterpolatorQuery<Scalar>;
 
   /// Default destructor.
   virtual ~TemporalInterpolator() = default;

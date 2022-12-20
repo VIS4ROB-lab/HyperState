@@ -84,13 +84,18 @@ class ContinuousMotion;
 
 template <typename TScalar>
 struct TemporalMotionQuery {
+  // Definitions.
+  struct Request {
+    TScalar* const* value;
+    TScalar* const* jacobian;
+  };
+
+  /// Virtual default destructor.
   virtual ~TemporalMotionQuery() = default;
 
-  TScalar time;
-  MotionDerivative derivative;
-
-  TScalar* const* values;
-  TScalar* const* jacobians;
+  TScalar time;                  ///< Query time.
+  std::vector<Request> requests; ///< Query requests.
+  MotionDerivative derivative;   ///< Highest derivative.
 };
 
 } // namespace hyper

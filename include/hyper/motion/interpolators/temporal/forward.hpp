@@ -27,10 +27,10 @@ struct TemporalInterpolatorLayout {
   const TIndex output_size;
 };
 
-template <typename TScalar, typename TDerivative>
+template <typename TScalar>
 struct TemporalInterpolatorQuery {
   TScalar time;
-  TDerivative derivative;
+  MotionDerivative derivative;
   const std::vector<TScalar>& times;
   TScalar* weights;
 };
