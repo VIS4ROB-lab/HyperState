@@ -32,18 +32,18 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   /// \param layout Temporal interpolator layout.
   /// \param weights Weights.
   /// \param inputs Inputs.
-  /// \return True on success.
+  /// \return Temporal motion results.
   [[nodiscard]] static auto evaluate(const TemporalMotionQuery<Scalar>& query,
       const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
-      const Scalar* const* inputs) -> bool;
+      const Scalar* const* inputs) -> TemporalMotionResult<Scalar>;
 
  private:
   template <MotionDerivative TMotionDerivative>
   [[nodiscard]] static auto evaluate(const TemporalMotionQuery<Scalar>& query,
       const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
-      const Scalar* const* inputs) -> bool;
+      const Scalar* const* inputs) -> TemporalMotionResult<Scalar>;
 };
 
 } // namespace hyper

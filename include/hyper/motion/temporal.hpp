@@ -45,6 +45,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
 
   using Elements = std::set<Element, ElementCompare>;
   using Query = TemporalMotionQuery<Scalar>;
+  using Result = TemporalMotionResult<Scalar>;
 
   /// Evaluates the range.
   /// \return Range.
@@ -69,13 +70,13 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   /// Evaluates the motion.
   /// \param query Temporal motion query.
   /// \return True on success.
-  virtual auto evaluate(const Query& query) const -> bool = 0;
+  virtual auto evaluate(const Query& query) const -> Result = 0;
 
   /// Evaluates the motion.
   /// \param query Temporal motion query.
   /// \param inputs Input pointers.
   /// \return True on success.
-  virtual auto evaluate(const Query& query, const Scalar* const* inputs) const -> bool = 0;
+  virtual auto evaluate(const Query& query, const Scalar* const* inputs) const -> Result = 0;
 
  protected:
   Elements elements_; ///< Elements.

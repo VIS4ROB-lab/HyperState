@@ -46,7 +46,7 @@ auto ContinuousMotion<TVariable>::interpolator() -> std::unique_ptr<TemporalInte
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> bool {
+auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> Result {
   const auto& [begin, end, num_inputs] = iterators(query.time);
   Pointers<const Scalar> pointers;
   pointers.reserve(num_inputs);
@@ -56,7 +56,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> bool {
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* inputs) const -> bool {
+auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* inputs) const -> Result {
   // Fetch layout.
   DCHECK(temporal_interpolator_ != nullptr);
   const auto layout = temporal_interpolator_->layout();

@@ -34,19 +34,21 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   /// \param layout Temporal interpolator layout.
   /// \param weights Weights.
   /// \param inputs Inputs.
-  /// \return True on success.
+  /// \return Temporal motion results.
   [[nodiscard]] static auto evaluate(
       const TemporalMotionQuery<Scalar>& query,
       const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
-      const Scalar* const* inputs) -> bool {
+      const Scalar* const* inputs) -> TemporalMotionResult<Scalar> {
     // Unpack queries.
-    const auto& [stamp, derivative, jacobian, derivatives, jacobians] = query;
+    const auto& [stamp, derivative, jacobian] = query;
 
     // Sanity checks.
     DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == derivative + 1);
 
     // Allocate result.
+    TemporalMotionResult<Scalar> result;
+    auto& [derivatives, jacobians] = result;
     derivatives.reserve(derivative + 1);
     jacobians.reserve(derivative + 1);
 
@@ -101,7 +103,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
       }
     }
 
-    return true;
+    return result;
   }
 
  private:

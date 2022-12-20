@@ -28,6 +28,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Element = typename Base::Element;
   using Elements = typename Base::Elements;
   using Query = typename Base::Query;
+  using Result = typename Base::Result;
 
   /// Constructor from temporal interpolator.
   /// \param temporal_interpolator Temporal interpolator.
@@ -52,13 +53,13 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// Evaluates the motion.
   /// \param query Temporal motion query.
   /// \return True on success.
-  auto evaluate(const Query& query) const -> bool final;
+  auto evaluate(const Query& query) const -> Result final;
 
   /// Evaluates the motion.
   /// \param query Temporal motion query.
   /// \param inputs Input pointers.
   /// \return True on success.
-  auto evaluate(const Query& query, const Scalar* const* inputs) const -> bool final;
+  auto evaluate(const Query& query, const Scalar* const* inputs) const -> Result final;
 
  private:
   // Definitions.

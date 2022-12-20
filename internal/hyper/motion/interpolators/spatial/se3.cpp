@@ -28,7 +28,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
     const TemporalMotionQuery<Scalar>& query,
     const TemporalInterpolatorLayout<Index>& layout,
     const Eigen::Ref<const MatrixX<Scalar>>& weights,
-    const Scalar* const* inputs) -> bool {
+    const Scalar* const* inputs) -> TemporalMotionResult<Scalar> {
   switch (query.derivative) {
     case MotionDerivative::VALUE:
       return evaluate<MotionDerivative::VALUE>(query, layout, weights, inputs);
@@ -47,20 +47,22 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
     const TemporalMotionQuery<Scalar>& query,
     const TemporalInterpolatorLayout<Index>& layout,
     const Eigen::Ref<const MatrixX<Scalar>>& weights,
-    const Scalar* const* inputs) -> bool {
+    const Scalar* const* inputs) -> TemporalMotionResult<Scalar> {
   // Definitions.
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
   using SU2Tangent = hyper::Tangent<SU2<Scalar>>;
 
   // Unpack queries.
-  const auto& [time, derivative, jacobian, outputs, jacobians] = query;
+  const auto& [time, derivative, jacobian] = query;
 
   // Sanity checks.
   DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == TMotionDerivative + 1);
 
   // Allocate result.
-  outputs.reserve(TMotionDerivative + 1);
+  TemporalMotionResult<Scalar> result;
+  auto& [derivatives, jacobians] = result;
+  derivatives.reserve(TMotionDerivative + 1);
   jacobians.reserve(TMotionDerivative + 1);
 
   // Compute indices.
@@ -252,15 +254,15 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
     }
   }
 
-  outputs.emplace_back(SE3<Scalar>{R, x});
+  derivatives.emplace_back(SE3<Scalar>{R, x});
   if constexpr (MotionDerivative::VALUE < TMotionDerivative) {
-    outputs.emplace_back(v);
+    derivatives.emplace_back(v);
     if constexpr (MotionDerivative::VELOCITY < TMotionDerivative) {
-      outputs.emplace_back(a);
+      derivatives.emplace_back(a);
     }
   }
 
-  return true;
+  return result;
 }
 
 } // namespace hyper

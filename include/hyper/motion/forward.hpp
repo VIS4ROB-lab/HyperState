@@ -37,10 +37,7 @@ class ContinuousMotion;
 template <typename TScalar>
 struct TemporalMotionQuery {
   // Definitions.
-  using Derivative = Eigen::Matrix<TScalar, Eigen::Dynamic, 1>;
-  using Jacobian = Eigen::Matrix<TScalar, Eigen::Dynamic, Eigen::Dynamic>;
-  using Derivatives = std::vector<Derivative>;
-  using Jacobians = std::vector<Jacobian>;
+  using Time = TScalar;
 
   /// Constructor from query stamp and derivative requests.
   /// \param time Query time.
@@ -50,6 +47,20 @@ struct TemporalMotionQuery {
       : time{time},
         derivative{derivative},
         jacobian{jacobian} {}
+
+  // Members.
+  Time time;                   ///< Time.
+  MotionDerivative derivative; ///< Derivative.
+  bool jacobian;               ///< Jacobian flag.
+};
+
+template <typename TScalar>
+struct TemporalMotionResult {
+  // Definitions.
+  using Derivative = Eigen::Matrix<TScalar, Eigen::Dynamic, 1>;
+  using Jacobian = Eigen::Matrix<TScalar, Eigen::Dynamic, Eigen::Dynamic>;
+  using Derivatives = std::vector<Derivative>;
+  using Jacobians = std::vector<Jacobian>;
 
   /// Value accessor.
   /// \tparam TDerived Derived type.
@@ -70,11 +81,6 @@ struct TemporalMotionQuery {
     DCHECK_LT(index, derivatives.size());
     return Eigen::Map<TDerived>{derivatives[index].data()};
   }
-
-  // Members.
-  Time time;                   ///< Time.
-  MotionDerivative derivative; ///< Derivative.
-  bool jacobian;               ///< Jacobian flag.
 
   mutable Derivatives derivatives; ///< Derivatives.
   mutable Jacobians jacobians;     ///< Jacobians.
