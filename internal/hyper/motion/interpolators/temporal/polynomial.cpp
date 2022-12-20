@@ -46,7 +46,7 @@ auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& time, const MotionDerivative& derivative, const Index& offset, const std::vector<Scalar>& timestamps) const -> Weights {
+auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& time, const MotionDerivative& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights {
   const auto dt = time - timestamps[offset];
   const auto i_dt = Scalar{1} / (timestamps[offset + 1] - timestamps[offset]);
   const auto ut = dt * i_dt;

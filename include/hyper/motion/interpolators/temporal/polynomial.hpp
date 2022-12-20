@@ -54,10 +54,10 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   /// Evaluates this.
   /// \param time Query time.
   /// \param derivative Query derivative.
-  /// \param offset Offset to (left) central timestamp.
   /// \param timestamps Adjacent timestamps.
+  /// \param offset Offset to (left) central timestamp.
   /// \return Weights.
-  auto evaluate(const Scalar& time, const MotionDerivative& derivative, const Index& offset, const std::vector<Scalar>& timestamps) const -> Weights final;
+  auto evaluate(const Scalar& time, const MotionDerivative& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights final;
 
  protected:
   bool is_uniform_{true}; ///< Uniformity flag.

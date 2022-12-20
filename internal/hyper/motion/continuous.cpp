@@ -57,11 +57,27 @@ auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> bool {
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* inputs) const -> bool {
+  // Fetch layout.
   DCHECK(temporal_interpolator_ != nullptr);
   const auto layout = temporal_interpolator_->layout();
-  const auto timestamps = this->extractTimestamps(inputs, layout.outer_input_size);
-  const auto weights = temporal_interpolator_->evaluate(query.time, query.derivative, layout.left_input_margin - 1, timestamps);
-  return SpatialInterpolator<Element>::evaluate(query, layout, weights, inputs);
+
+  // Split pointers.
+  using Timestamps = std::vector<Scalar>;
+
+  Timestamps ts;
+  ts.reserve(layout.outer_input_size);
+
+  Pointers<const Scalar> p_vs;
+  p_vs.reserve(layout.outer_input_size);
+
+  for (Index i = 0; i < layout.outer_input_size; ++i) {
+    ts.emplace_back(inputs[i][Element::kStampOffset]);
+    p_vs.emplace_back(inputs[i] + Element::kVariableOffset);
+  }
+
+  const auto offset = layout.left_input_margin - 1;
+  const auto weights = temporal_interpolator_->evaluate(query.time, query.derivative, ts, offset);
+  return SpatialInterpolator<Element>::evaluate(query, layout, weights, p_vs.data());
 }
 
 template <typename TVariable>
