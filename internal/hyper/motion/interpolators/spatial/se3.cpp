@@ -20,10 +20,6 @@ constexpr auto kNumValueParameters = Value::kNumParameters;
 constexpr auto kNumInputParameters = Input::kNumParameters;
 constexpr auto kNumDerivativeParameters = Derivative::kNumParameters;
 
-constexpr auto kValueIndex = 0;
-constexpr auto kVelocityIndex = 1;
-constexpr auto kAccelerationIndex = 2;
-
 template <Index TCols = 3, typename TMatrix>
 inline auto RotationJacobian(TMatrix& matrix, const Index& index) {
   return matrix.template block<3, TCols>(0, index * kNumInputParameters + 0);
@@ -38,12 +34,12 @@ inline auto TranslationJacobian(TMatrix& matrix, const Index& index) {
 
 auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> StateResult {
   switch (query.motion_query.derivative) {
-    case kValueIndex:
-      return evaluate<kValueIndex>(query);
-    case kVelocityIndex:
-      return evaluate<kVelocityIndex>(query);
-    case kAccelerationIndex:
-      return evaluate<kAccelerationIndex>(query);
+    case DerivativeOrder::kValue:
+      return evaluate<DerivativeOrder::kValue>(query);
+    case DerivativeOrder::kVelocity:
+      return evaluate<DerivativeOrder::kVelocity>(query);
+    case DerivativeOrder::kAcceleration:
+      return evaluate<DerivativeOrder::kAcceleration>(query);
     default:
       LOG(FATAL) << "Requested derivative is not available.";
       return {};
@@ -93,7 +89,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
     for (Index i = start_idx; i < end_idx; ++i) {
       const auto T_a = Eigen::Map<const Input>{inputs[i]}.variable();
       const auto T_b = Eigen::Map<const Input>{inputs[i + 1]}.variable();
-      const auto w0_i = weights(i - start_idx + 1, kValueIndex);
+      const auto w0_i = weights(i - start_idx + 1, DerivativeOrder::kValue);
 
       const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
       const auto d_ab = R_ab.toTangent();
@@ -105,14 +101,14 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
       R *= R_i;
       x += x_i;
 
-      if constexpr (kValueIndex < TDerivative) {
+      if constexpr (DerivativeOrder::kValue < TDerivative) {
         const auto i_R_i = R_i.groupInverse();
-        const auto w1_i = weights(i - start_idx + 1, kVelocityIndex);
+        const auto w1_i = weights(i - start_idx + 1, DerivativeOrder::kVelocity);
         v.angular() = i_R_i * v.angular() + w1_i * d_ab;
         v.linear() += w1_i * x_ab;
 
-        if constexpr (kVelocityIndex < TDerivative) {
-          const auto w2_i = weights(i - start_idx + 1, kAccelerationIndex);
+        if constexpr (DerivativeOrder::kVelocity < TDerivative) {
+          const auto w2_i = weights(i - start_idx + 1, DerivativeOrder::kAcceleration);
           a.angular() = i_R_i * a.angular() + w1_i * v.angular().cross(d_ab) + w2_i * d_ab;
           a.linear() += w2_i * x_ab;
         }
@@ -122,7 +118,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
     for (Index i = end_idx; start_idx < i; --i) {
       const auto T_a = Eigen::Map<const Input>{inputs[i - 1]}.variable();
       const auto T_b = Eigen::Map<const Input>{inputs[i]}.variable();
-      const auto w0_i = weights(i - start_idx, kValueIndex);
+      const auto w0_i = weights(i - start_idx, DerivativeOrder::kValue);
 
       const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
       const auto d_ab = R_ab.toTangent();
@@ -131,16 +127,16 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
       const auto R_i = w_ab.toManifold();
       const auto x_i = Translation{w0_i * x_ab};
 
-      if constexpr (kValueIndex < TDerivative) {
+      if constexpr (DerivativeOrder::kValue < TDerivative) {
         const auto i_R = R.groupInverse().matrix();
         const auto i_R_d_ab = (i_R * d_ab).eval();
-        const auto w1_i = weights(i - start_idx, kVelocityIndex);
+        const auto w1_i = weights(i - start_idx, DerivativeOrder::kVelocity);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
         v.angular() += w1_i_i_R_d_ab;
         v.linear() += w1_i * x_ab;
 
-        if constexpr (kVelocityIndex < TDerivative) {
-          const auto w2_i = weights(i - start_idx, kAccelerationIndex);
+        if constexpr (DerivativeOrder::kVelocity < TDerivative) {
+          const auto w2_i = weights(i - start_idx, DerivativeOrder::kAcceleration);
           a.angular() += w2_i * i_R_d_ab - v.angular().cross(w1_i_i_R_d_ab);
           a.linear() += w2_i * x_ab;
         }
@@ -157,9 +153,9 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
     // Allocate Jacobians.
     const auto num_parameters = layout.outer_input_size * kNumInputParameters;
     jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_parameters));
-    if constexpr (kValueIndex < TDerivative) {
+    if constexpr (DerivativeOrder::kValue < TDerivative) {
       jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_parameters));
-      if constexpr (kVelocityIndex < TDerivative) {
+      if constexpr (DerivativeOrder::kVelocity < TDerivative) {
         jacobians.emplace_back(Result::Jacobian::Zero(kNumDerivativeParameters, num_parameters));
       }
     }
@@ -167,7 +163,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
     for (Index i = end_idx; start_idx < i; --i) {
       const auto T_a = Eigen::Map<const Input>{inputs[i - 1]}.variable();
       const auto T_b = Eigen::Map<const Input>{inputs[i]}.variable();
-      const auto w0_i = weights(i - start_idx, kValueIndex);
+      const auto w0_i = weights(i - start_idx, DerivativeOrder::kValue);
 
       JacobianNM<SU2Tangent> J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
@@ -182,14 +178,14 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
 
       // Update left value Jacobian.
       const auto J_x_a = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
-      RotationJacobian(jacobians[kValueIndex], i - 1).noalias() = -J_x_a * i_R_ab;
-      TranslationJacobian(jacobians[kValueIndex], i - 1).noalias() = -w0_i * JacobianNM<Translation>::Identity();
+      RotationJacobian(jacobians[DerivativeOrder::kValue], i - 1).noalias() = -J_x_a * i_R_ab;
+      TranslationJacobian(jacobians[DerivativeOrder::kValue], i - 1).noalias() = -w0_i * JacobianNM<Translation>::Identity();
 
       // Velocity update.
-      if constexpr (kValueIndex < TDerivative) {
+      if constexpr (DerivativeOrder::kValue < TDerivative) {
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto i_R_d_ab_x = i_R_d_ab.hat();
-        const auto w1_i = weights(i - start_idx, kVelocityIndex);
+        const auto w1_i = weights(i - start_idx, DerivativeOrder::kVelocity);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
 
         v.angular() += w1_i_i_R_d_ab;
@@ -199,19 +195,19 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
         const auto J_v_b = (w1_i * i_R_d_ab_x).eval();
 
         // Update velocity Jacobians.
-        RotationJacobian(jacobians[kVelocityIndex], i - 1).noalias() = -J_v_a * i_R_ab;
-        TranslationJacobian(jacobians[kVelocityIndex], i - 1).noalias() = -w1_i * JacobianNM<Translation>::Identity();
-        RotationJacobian(jacobians[kVelocityIndex], i).noalias() += J_v_a + J_v_b * RotationJacobian(jacobians[kValueIndex], i);
-        TranslationJacobian(jacobians[kVelocityIndex], i).noalias() += w1_i * JacobianNM<Translation>::Identity();
+        RotationJacobian(jacobians[DerivativeOrder::kVelocity], i - 1).noalias() = -J_v_a * i_R_ab;
+        TranslationJacobian(jacobians[DerivativeOrder::kVelocity], i - 1).noalias() = -w1_i * JacobianNM<Translation>::Identity();
+        RotationJacobian(jacobians[DerivativeOrder::kVelocity], i).noalias() += J_v_a + J_v_b * RotationJacobian(jacobians[DerivativeOrder::kValue], i);
+        TranslationJacobian(jacobians[DerivativeOrder::kVelocity], i).noalias() += w1_i * JacobianNM<Translation>::Identity();
 
         // Propagate velocity updates.
         for (Index k = end_idx; i < k; --k) {
-          RotationJacobian(jacobians[kVelocityIndex], k).noalias() += J_v_b * RotationJacobian(jacobians[kValueIndex], k);
+          RotationJacobian(jacobians[DerivativeOrder::kVelocity], k).noalias() += J_v_b * RotationJacobian(jacobians[DerivativeOrder::kValue], k);
         }
 
         // Acceleration update.
-        if constexpr (kVelocityIndex < TDerivative) {
-          const auto w2_i = weights(i - start_idx, kAccelerationIndex);
+        if constexpr (DerivativeOrder::kVelocity < TDerivative) {
+          const auto w2_i = weights(i - start_idx, DerivativeOrder::kAcceleration);
           const auto w1_i_i_R_d_ab_x = w1_i_i_R_d_ab.hat();
 
           a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());
@@ -223,21 +219,21 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
           const auto J_a_c = (J_a_b - v_x * J_v_b).eval();
 
           // Update acceleration Jacobians.
-          RotationJacobian(jacobians[kAccelerationIndex], i - 1).noalias() = -J_a_a * i_R_ab + (w1_i_i_R_d_ab_x - v_x) * RotationJacobian(jacobians[kVelocityIndex], i - 1);
-          TranslationJacobian(jacobians[kAccelerationIndex], i - 1).noalias() = -w2_i * JacobianNM<Translation>::Identity();
-          RotationJacobian(jacobians[kAccelerationIndex], i).noalias() += J_a_a + J_a_b * RotationJacobian(jacobians[kValueIndex], i) + (w1_i_i_R_d_ab_x - v_x) * RotationJacobian(jacobians[kVelocityIndex], i);
-          TranslationJacobian(jacobians[kAccelerationIndex], i).noalias() += w2_i * JacobianNM<Translation>::Identity();
+          RotationJacobian(jacobians[DerivativeOrder::kAcceleration], i - 1).noalias() = -J_a_a * i_R_ab + (w1_i_i_R_d_ab_x - v_x) * RotationJacobian(jacobians[DerivativeOrder::kVelocity], i - 1);
+          TranslationJacobian(jacobians[DerivativeOrder::kAcceleration], i - 1).noalias() = -w2_i * JacobianNM<Translation>::Identity();
+          RotationJacobian(jacobians[DerivativeOrder::kAcceleration], i).noalias() += J_a_a + J_a_b * RotationJacobian(jacobians[DerivativeOrder::kValue], i) + (w1_i_i_R_d_ab_x - v_x) * RotationJacobian(jacobians[DerivativeOrder::kVelocity], i);
+          TranslationJacobian(jacobians[DerivativeOrder::kAcceleration], i).noalias() += w2_i * JacobianNM<Translation>::Identity();
 
           // Propagate acceleration updates.
           for (Index k = end_idx; i < k; --k) {
-            RotationJacobian(jacobians[kAccelerationIndex], k).noalias() += J_a_c * RotationJacobian(jacobians[kValueIndex], k) + w1_i_i_R_d_ab_x * RotationJacobian(jacobians[kVelocityIndex], k);
+            RotationJacobian(jacobians[DerivativeOrder::kAcceleration], k).noalias() += J_a_c * RotationJacobian(jacobians[DerivativeOrder::kValue], k) + w1_i_i_R_d_ab_x * RotationJacobian(jacobians[DerivativeOrder::kVelocity], k);
           }
         }
       }
 
       // Update right value Jacobian.
-      RotationJacobian(jacobians[kValueIndex], i).noalias() += J_x_a;
-      TranslationJacobian(jacobians[kValueIndex], i).noalias() += w0_i * JacobianNM<Translation>::Identity();
+      RotationJacobian(jacobians[DerivativeOrder::kValue], i).noalias() += J_x_a;
+      TranslationJacobian(jacobians[DerivativeOrder::kValue], i).noalias() += w0_i * JacobianNM<Translation>::Identity();
 
       // Value update.
       R = R_i * R;
@@ -245,8 +241,8 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
     }
 
     const auto T_a = Eigen::Map<const Input>{inputs[start_idx]}.variable();
-    RotationJacobian(jacobians[kValueIndex], start_idx).noalias() += R.groupInverse().matrix();
-    TranslationJacobian(jacobians[kValueIndex], start_idx).noalias() += JacobianNM<Translation>::Identity();
+    RotationJacobian(jacobians[DerivativeOrder::kValue], start_idx).noalias() += R.groupInverse().matrix();
+    TranslationJacobian(jacobians[DerivativeOrder::kValue], start_idx).noalias() += JacobianNM<Translation>::Identity();
 
     R = T_a.rotation() * R;
     x = T_a.translation() + x;
@@ -260,9 +256,9 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
   }
 
   outputs.emplace_back(SE3<Scalar>{R, x});
-  if constexpr (kValueIndex < TDerivative) {
+  if constexpr (DerivativeOrder::kValue < TDerivative) {
     outputs.emplace_back(v);
-    if constexpr (kVelocityIndex < TDerivative) {
+    if constexpr (DerivativeOrder::kVelocity < TDerivative) {
       outputs.emplace_back(a);
     }
   }
