@@ -29,9 +29,9 @@ struct TemporalInterpolatorLayout {
 
 template <typename TScalar>
 struct TemporalInterpolatorQuery {
-  TScalar time;
-  MotionDerivative derivative;
-  const std::vector<TScalar>& timestamps;
+  using Timestamps = std::vector<TScalar>;
+  const TemporalMotionQuery<TScalar>& temporal_motion_query;
+  const Timestamps& timestamps;
 };
 
 } // namespace hyper

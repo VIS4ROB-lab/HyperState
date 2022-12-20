@@ -78,18 +78,18 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   virtual auto evaluate(const Query& query, const Scalar* const* pointers) const -> bool = 0;
 
  protected:
-  /// Extracts the time associated with elements.
+  /// Extracts the timestamps.
   /// \param pointers Input pointers.
   /// \param num_pointers Number of pointers.
-  /// \return Times.
-  auto extractTimes(const Scalar* const* pointers, const Index& num_pointers) const -> std::vector<Time> {
-    std::vector<Time> times;
-    times.reserve(num_pointers);
+  /// \return Timestamps.
+  auto extractTimestamps(const Scalar* const* pointers, const Index& num_pointers) const -> std::vector<Scalar> {
+    std::vector<Scalar> timestamps;
+    timestamps.reserve(num_pointers);
     for (auto i = Index{0}; i < num_pointers; ++i) {
       const auto element_i = Eigen::Map<const Element>{pointers[i]};
-      times.emplace_back(element_i.stamp());
+      timestamps.emplace_back(element_i.stamp());
     }
-    return times;
+    return timestamps;
   }
 
   Elements elements_; ///< Elements.

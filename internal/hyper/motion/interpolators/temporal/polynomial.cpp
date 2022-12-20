@@ -48,13 +48,13 @@ auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
 template <typename TScalar, int TOrder>
 auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const -> Weights {
   // Unpack query.
-  const auto& [time, derivative, timestamps] = query;
+  const auto& [temporal_motion_query, timestamps] = query;
 
   const auto order = this->order();
-  const auto num_derivatives = derivative + 1;
+  const auto num_derivatives = temporal_motion_query.derivative + 1;
   const auto index = (timestamps.size() - 1) / 2;
 
-  const auto dt = time - timestamps[index];
+  const auto dt = temporal_motion_query.time - timestamps[index];
   const auto i_dt = Scalar{1} / (timestamps[index + 1] - timestamps[index]);
   const auto ut = dt * i_dt;
 

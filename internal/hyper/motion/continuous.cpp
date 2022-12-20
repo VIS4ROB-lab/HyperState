@@ -78,8 +78,8 @@ template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* pointers) const -> bool {
   DCHECK(interpolator_ != nullptr);
   const auto layout = interpolator_->layout();
-  const auto times = this->extractTimes(pointers, layout.outer_input_size);
-  const auto weights = interpolator_->evaluate({query.time, query.derivative, times});
+  const auto timestamps = this->extractTimestamps(pointers, layout.outer_input_size);
+  const auto weights = interpolator_->evaluate({query, timestamps});
   return SpatialInterpolator<Element>::evaluate({query, layout, pointers, weights});
 }
 
