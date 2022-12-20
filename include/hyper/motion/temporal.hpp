@@ -73,9 +73,9 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
 
   /// Evaluates the motion.
   /// \param query Temporal motion query.
-  /// \param pointers Input pointers.
+  /// \param inputs Input pointers.
   /// \return True on success.
-  virtual auto evaluate(const Query& query, const Scalar* const* pointers) const -> bool = 0;
+  virtual auto evaluate(const Query& query, const Scalar* const* inputs) const -> bool = 0;
 
  protected:
   /// Extracts the timestamps.

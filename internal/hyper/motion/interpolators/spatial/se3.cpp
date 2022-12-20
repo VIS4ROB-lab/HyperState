@@ -24,14 +24,18 @@ inline auto TranslationJacobian(TMatrix& matrix, const Index& index) {
 
 } // namespace
 
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> bool {
-  switch (query.motion_query.derivative) {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
+    const TemporalMotionQuery<Scalar>& query,
+    const TemporalInterpolatorLayout<Index>& layout,
+    const Eigen::Ref<const MatrixX<Scalar>>& weights,
+    const Scalar* const* inputs) -> bool {
+  switch (query.derivative) {
     case MotionDerivative::VALUE:
-      return evaluate<MotionDerivative::VALUE>(query);
+      return evaluate<MotionDerivative::VALUE>(query, layout, weights, inputs);
     case MotionDerivative::VELOCITY:
-      return evaluate<MotionDerivative::VELOCITY>(query);
+      return evaluate<MotionDerivative::VELOCITY>(query, layout, weights, inputs);
     case MotionDerivative::ACCELERATION:
-      return evaluate<MotionDerivative::ACCELERATION>(query);
+      return evaluate<MotionDerivative::ACCELERATION>(query, layout, weights, inputs);
     default:
       LOG(FATAL) << "Requested derivative is not available.";
       return {};
@@ -39,15 +43,18 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
 }
 
 template <MotionDerivative TMotionDerivative>
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> bool {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
+    const TemporalMotionQuery<Scalar>& query,
+    const TemporalInterpolatorLayout<Index>& layout,
+    const Eigen::Ref<const MatrixX<Scalar>>& weights,
+    const Scalar* const* inputs) -> bool {
   // Definitions.
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
   using SU2Tangent = hyper::Tangent<SU2<Scalar>>;
 
   // Unpack queries.
-  const auto& [motion_query, layout, inputs, weights] = query;
-  const auto& [time, derivative, jacobian, outputs, jacobians] = motion_query;
+  const auto& [time, derivative, jacobian, outputs, jacobians] = query;
 
   // Sanity checks.
   DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == TMotionDerivative + 1);

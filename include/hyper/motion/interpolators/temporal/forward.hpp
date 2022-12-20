@@ -27,11 +27,4 @@ struct TemporalInterpolatorLayout {
   const TIndex output_size;
 };
 
-template <typename TScalar>
-struct TemporalInterpolatorQuery {
-  using Timestamps = std::vector<TScalar>;
-  const TemporalMotionQuery<TScalar>& temporal_motion_query;
-  const Timestamps& timestamps;
-};
-
 } // namespace hyper

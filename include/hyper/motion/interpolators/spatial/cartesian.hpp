@@ -5,8 +5,9 @@
 
 #include "hyper/motion/forward.hpp"
 #include "hyper/motion/interpolators/spatial/forward.hpp"
+#include "hyper/motion/interpolators/temporal/forward.hpp"
+
 #include "hyper/variables/cartesian.hpp"
-#include "hyper/variables/forward.hpp"
 #include "hyper/variables/definitions/jacobian.hpp"
 
 namespace hyper {
@@ -29,12 +30,18 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   static constexpr auto kDimTangent = Tangent::kNumParameters;
 
   /// Evaluates this.
-  /// \param query Spatial interpolator query.
+  /// \param query Temporal motion query.
+  /// \param layout Temporal interpolator layout.
+  /// \param weights Weights.
+  /// \param inputs Inputs.
   /// \return True on success.
-  [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> bool {
+  [[nodiscard]] static auto evaluate(
+      const TemporalMotionQuery<Scalar>& query,
+      const TemporalInterpolatorLayout<Index>& layout,
+      const Eigen::Ref<const MatrixX<Scalar>>& weights,
+      const Scalar* const* inputs) -> bool {
     // Unpack queries.
-    const auto& [motion_query, layout, inputs, weights] = query;
-    const auto& [stamp, derivative, jacobian, derivatives, jacobians] = motion_query;
+    const auto& [stamp, derivative, jacobian, derivatives, jacobians] = query;
 
     // Sanity checks.
     DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == derivative + 1);

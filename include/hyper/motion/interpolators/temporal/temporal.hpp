@@ -11,11 +11,10 @@ template <typename TScalar>
 class TemporalInterpolator {
  public:
   // Definitions.
-  using Scalar = TScalar;
-
   using Index = Eigen::Index;
+
+  using Scalar = TScalar;
   using Layout = TemporalInterpolatorLayout<Index>;
-  using Query = TemporalInterpolatorQuery<Scalar>;
   using Weights = MatrixX<Scalar>;
 
   /// Default destructor.
@@ -26,9 +25,12 @@ class TemporalInterpolator {
   [[nodiscard]] virtual auto layout() const -> Layout = 0;
 
   /// Evaluates this.
-  /// \param query Query.
-  /// \return True on success.
-  virtual auto evaluate(const Query& query) const -> Weights = 0;
+  /// \param time Query time.
+  /// \param derivative Query derivative.
+  /// \param offset Offset to (left) central timestamp.
+  /// \param timestamps Adjacent timestamps.
+  /// \return Weights.
+  virtual auto evaluate(const Scalar& time, const MotionDerivative& derivative, const Index& offset, const std::vector<Scalar>& timestamps) const -> Weights = 0;
 };
 
 } // namespace hyper

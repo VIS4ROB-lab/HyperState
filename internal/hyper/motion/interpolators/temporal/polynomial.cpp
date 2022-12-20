@@ -46,22 +46,18 @@ auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Query& query) const -> Weights {
-  // Unpack query.
-  const auto& [temporal_motion_query, timestamps] = query;
-
-  const auto order = this->order();
-  const auto num_derivatives = temporal_motion_query.derivative + 1;
-  const auto index = (timestamps.size() - 1) / 2;
-
-  const auto dt = temporal_motion_query.time - timestamps[index];
-  const auto i_dt = Scalar{1} / (timestamps[index + 1] - timestamps[index]);
+auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& time, const MotionDerivative& derivative, const Index& offset, const std::vector<Scalar>& timestamps) const -> Weights {
+  const auto dt = time - timestamps[offset];
+  const auto i_dt = Scalar{1} / (timestamps[offset + 1] - timestamps[offset]);
   const auto ut = dt * i_dt;
 
   DCHECK_LE(0, ut);
   DCHECK_LE(ut, 1);
 
   using Polynomial = Matrix<Scalar, TOrder, Eigen::Dynamic>;
+
+  const auto order = this->order();
+  const auto num_derivatives = derivative + 1;
   Polynomial polynomial = Polynomial::Zero(order, num_derivatives);
 
   auto i_dt_i = TScalar{1};

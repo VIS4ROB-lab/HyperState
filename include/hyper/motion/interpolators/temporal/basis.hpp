@@ -20,7 +20,6 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
   using Layout = typename Base::Layout;
-  using Query = typename Base::Query;
 
   using OrderVector = typename Base::OrderVector;
   using OrderMatrix = typename Base::OrderMatrix;

@@ -18,7 +18,6 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
   using Layout = typename Base::Layout;
-  using Query = typename Base::Query;
 
   using OrderVector = Vector<Scalar, TOrder>;
   using OrderMatrix = Matrix<Scalar, TOrder, TOrder>;
@@ -53,9 +52,12 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   [[nodiscard]] virtual auto mixing(const std::vector<Scalar>& times) const -> OrderMatrix = 0;
 
   /// Evaluates this.
-  /// \param query Query.
-  /// \return True on success.
-  auto evaluate(const Query& query) const -> Weights final;
+  /// \param time Query time.
+  /// \param derivative Query derivative.
+  /// \param offset Offset to (left) central timestamp.
+  /// \param timestamps Adjacent timestamps.
+  /// \return Weights.
+  auto evaluate(const Scalar& time, const MotionDerivative& derivative, const Index& offset, const std::vector<Scalar>& timestamps) const -> Weights final;
 
  protected:
   bool is_uniform_{true}; ///< Uniformity flag.

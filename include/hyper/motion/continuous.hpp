@@ -26,11 +26,11 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Range = typename Base::Range;
 
   using Element = typename Base::Element;
-  using Query =  typename Base::Query;
+  using Query = typename Base::Query;
 
-  /// Constructor from interpolator and policy.
-  /// \param interpolator Input interpolator.
-  explicit ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator = nullptr);
+  /// Constructor from temporal interpolator.
+  /// \param temporal_interpolator Temporal interpolator.
+  explicit ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& temporal_interpolator = nullptr);
 
   /// Evaluates the range.
   /// \return Range.
@@ -55,12 +55,12 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
 
   /// Evaluates the motion.
   /// \param query Temporal motion query.
-  /// \param pointers Input pointers.
+  /// \param inputs Input pointers.
   /// \return True on success.
-  auto evaluate(const Query& query, const Scalar* const* pointers) const -> bool final;
+  auto evaluate(const Query& query, const Scalar* const* inputs) const -> bool final;
 
  private:
-  std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_; ///< Interpolator.
+  std::unique_ptr<TemporalInterpolator<Scalar>> temporal_interpolator_; ///< Temporal interpolator.
 };
 
 } // namespace hyper
