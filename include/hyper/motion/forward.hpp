@@ -82,11 +82,14 @@ class DiscreteMotion;
 template <typename TVariable>
 class ContinuousMotion;
 
-template <typename TScalar, typename TDerivative>
+template <typename TScalar>
 struct TemporalMotionQuery {
+  virtual ~TemporalMotionQuery() = default;
+
   TScalar time;
-  TDerivative derivative;
-  const Scalar* const* values;
+  MotionDerivative derivative;
+
+  TScalar* const* values;
   TScalar* const* jacobians;
 };
 
