@@ -13,10 +13,12 @@ class SpatialInterpolator;
 
 struct SpatialInterpolatorQuery {
   // Definitions.
+  using MotionQuery = StateQuery;
   using Layout = TemporalInterpolatorLayout<Eigen::Index>;
   using Weights = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
   // Members.
+  const MotionQuery& motion_query;
   const Layout& layout;
   const Scalar* const* inputs;
   const Weights& weights;

@@ -36,15 +36,14 @@ inline auto TranslationJacobian(TMatrix& matrix, const Index& index) {
 
 } // namespace
 
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state_query, const SpatialQuery& spatial_query) -> StateResult {
-  const auto derivative = state_query.derivative;
-  switch (derivative) {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> StateResult {
+  switch (query.motion_query.derivative) {
     case kValueIndex:
-      return evaluate<kValueIndex>(state_query, spatial_query);
+      return evaluate<kValueIndex>(query);
     case kVelocityIndex:
-      return evaluate<kVelocityIndex>(state_query, spatial_query);
+      return evaluate<kVelocityIndex>(query);
     case kAccelerationIndex:
-      return evaluate<kAccelerationIndex>(state_query, spatial_query);
+      return evaluate<kAccelerationIndex>(query);
     default:
       LOG(FATAL) << "Requested derivative is not available.";
       return {};
@@ -52,15 +51,15 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state
 }
 
 template <int TDerivative>
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const StateQuery& state_query, const SpatialQuery& policy_query) -> StateResult {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> StateResult {
   // Definitions.
   using Result = StateResult;
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
 
   // Unpack queries.
-  const auto& [stamp, _, jacobian] = state_query;
-  const auto& [layout, inputs, weights] = policy_query;
+  const auto& [motion_query, layout, inputs, weights] = query;
+  const auto& [stamp, derivative, jacobian] = motion_query;
 
   // Sanity checks.
   DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == TDerivative + 1);

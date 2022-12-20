@@ -17,19 +17,16 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   using Input = Stamped<Value>;
   using Derivative = Value;
 
-  using SpatialQuery = SpatialInterpolatorQuery;
-
-  /// Evaluates a query.
-  /// \param state_query State query.
-  /// \param policy_query Policy query.
-  /// \return Interpolation result.
-  [[nodiscard]] static auto evaluate(const StateQuery& state_query, const SpatialQuery& spatial_query) -> StateResult {
+  /// Evaluates this.
+  /// \param query Spatial interpolator query.
+  /// \return True on success.
+  [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> StateResult {
     // Definitions.
     using Result = StateResult;
 
     // Unpack queries.
-    const auto& [stamp, derivative, jacobian] = state_query;
-    const auto& [layout, inputs, weights] = spatial_query;
+    const auto& [motion_query, layout, inputs, weights] = query;
+    const auto& [stamp, derivative, jacobian] = motion_query;
 
     // Sanity checks.
     DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == derivative + 1);

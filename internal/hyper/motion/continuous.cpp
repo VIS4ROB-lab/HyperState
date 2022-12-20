@@ -95,8 +95,8 @@ auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query, const 
   MatrixX<Scalar> weights{layout.output_size, state_query.derivative + 1};
   interpolator_->evaluate({state_query.time, state_query.derivative, stamps, weights.data()});
 
-  const auto policy_query = SpatialInterpolatorQuery{layout, pointers, weights};
-  return SpatialInterpolator<Element>::evaluate(state_query, policy_query);
+  const auto policy_query = SpatialInterpolatorQuery{state_query, layout, pointers, weights};
+  return SpatialInterpolator<Element>::evaluate(policy_query);
 }
 
 template class ContinuousMotion<Cartesian<double, 3>>;
