@@ -28,11 +28,11 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   /// Evaluates this.
   /// \param query Spatial interpolator query.
   /// \return True on success.
-  [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> StateResult;
+  [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> bool;
 
  private:
   template <MotionDerivative TMotionDerivative>
-  [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> StateResult;
+  [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> bool;
 };
 
 } // namespace hyper

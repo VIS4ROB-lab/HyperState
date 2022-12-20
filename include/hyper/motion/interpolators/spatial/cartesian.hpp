@@ -7,6 +7,7 @@
 #include "hyper/motion/interpolators/spatial/forward.hpp"
 #include "hyper/variables/cartesian.hpp"
 #include "hyper/variables/forward.hpp"
+#include "hyper/variables/definitions/jacobian.hpp"
 
 namespace hyper {
 
@@ -30,34 +31,29 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   /// Evaluates this.
   /// \param query Spatial interpolator query.
   /// \return True on success.
-  [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> StateResult {
-    // Definitions.
-    using Result = StateResult;
-
+  [[nodiscard]] static auto evaluate(const SpatialInterpolatorQuery& query) -> bool {
     // Unpack queries.
     const auto& [motion_query, layout, inputs, weights] = query;
-    const auto& [stamp, derivative, jacobian] = motion_query;
+    const auto& [stamp, derivative, jacobian, derivatives, jacobians] = motion_query;
 
     // Sanity checks.
     DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == derivative + 1);
 
     // Allocate result.
-    Result result;
-    auto& [outputs, jacobians] = result;
-    outputs.reserve(derivative + 1);
+    derivatives.reserve(derivative + 1);
     jacobians.reserve(derivative + 1);
 
     if (layout.outer_input_size == 1) {
       for (Index k = 0; k <= derivative; ++k) {
         if (k == 0) {
-          outputs.emplace_back(Eigen::Map<const Input>{inputs[0]}.variable());
+          derivatives.emplace_back(Eigen::Map<const Input>{inputs[0]}.variable());
           if (jacobian) {
-            jacobians.emplace_back(Result::Jacobian::Identity(kDimTangent, kNumInputParameters));
+            jacobians.emplace_back(JacobianX<Scalar>::Identity(kDimTangent, kNumInputParameters));
           }
         } else {
-          outputs.emplace_back(Result::Derivative::Zero(kDimManifold, 1));
+          derivatives.emplace_back(MatrixX<Scalar>::Zero(kDimManifold, 1));
           if (jacobian) {
-            jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, kNumInputParameters));
+            jacobians.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, kNumInputParameters));
           }
         }
       }
@@ -78,10 +74,10 @@ class SpatialInterpolator<Stamped<TVariable>> final {
       }
 
       for (Index k = 0; k <= derivative; ++k) {
-        outputs.emplace_back(increments * weights.col(k));
+        derivatives.emplace_back(increments * weights.col(k));
 
         if (jacobian) {
-          jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, layout.outer_input_size * kNumInputParameters));
+          jacobians.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, layout.outer_input_size * kNumInputParameters));
 
           if (k == 0) {
             jacobians[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{1} - weights(1, k));
@@ -98,7 +94,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
       }
     }
 
-    return result;
+    return true;
   }
 
  private:

@@ -24,7 +24,7 @@ inline auto TranslationJacobian(TMatrix& matrix, const Index& index) {
 
 } // namespace
 
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> StateResult {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> bool {
   switch (query.motion_query.derivative) {
     case MotionDerivative::VALUE:
       return evaluate<MotionDerivative::VALUE>(query);
@@ -39,23 +39,20 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
 }
 
 template <MotionDerivative TMotionDerivative>
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> StateResult {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolatorQuery& query) -> bool {
   // Definitions.
-  using Result = StateResult;
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
   using SU2Tangent = hyper::Tangent<SU2<Scalar>>;
 
   // Unpack queries.
   const auto& [motion_query, layout, inputs, weights] = query;
-  const auto& [stamp, derivative, jacobian] = motion_query;
+  const auto& [time, derivative, jacobian, outputs, jacobians] = motion_query;
 
   // Sanity checks.
   DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == TMotionDerivative + 1);
 
   // Allocate result.
-  Result result;
-  auto& [outputs, jacobians] = result;
   outputs.reserve(TMotionDerivative + 1);
   jacobians.reserve(TMotionDerivative + 1);
 
@@ -145,11 +142,11 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
   } else {
     // Allocate Jacobians.
     const auto num_parameters = layout.outer_input_size * kNumInputParameters;
-    jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, num_parameters));
+    jacobians.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, num_parameters));
     if constexpr (MotionDerivative::VALUE < TMotionDerivative) {
-      jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, num_parameters));
+      jacobians.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, num_parameters));
       if constexpr (MotionDerivative::VELOCITY < TMotionDerivative) {
-        jacobians.emplace_back(Result::Jacobian::Zero(kDimTangent, num_parameters));
+        jacobians.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, num_parameters));
       }
     }
 
@@ -256,7 +253,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const SpatialInterpolat
     }
   }
 
-  return result;
+  return true;
 }
 
 } // namespace hyper

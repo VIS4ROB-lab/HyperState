@@ -20,6 +20,12 @@ enum MotionDerivative {
 };
 
 struct StateQuery {
+  // Definitions.
+  using Derivative = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+  using Jacobian = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+  using Derivatives = std::vector<Derivative>;
+  using Jacobians = std::vector<Jacobian>;
+
   /// Constructor from query stamp and derivative requests.
   /// \param time Query time.
   /// \param derivative Highest degree of requested derivatives.
@@ -28,19 +34,6 @@ struct StateQuery {
       : time{time},
         derivative{derivative},
         jacobian{jacobian} {}
-
-  // Members.
-  Time time;                   ///< Time.
-  MotionDerivative derivative; ///< Derivative.
-  bool jacobian;               ///< Jacobian flag.
-};
-
-struct StateResult {
-  // Definitions.
-  using Derivative = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
-  using Jacobian = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
-  using Derivatives = std::vector<Derivative>;
-  using Jacobians = std::vector<Jacobian>;
 
   /// Value accessor.
   /// \tparam TDerived Derived type.
@@ -63,8 +56,12 @@ struct StateResult {
   }
 
   // Members.
-  Derivatives derivatives; ///< Derivatives.
-  Jacobians jacobians;     ///< Jacobians.
+  Time time;                   ///< Time.
+  MotionDerivative derivative; ///< Derivative.
+  bool jacobian;               ///< Jacobian flag.
+
+  mutable Derivatives derivatives; ///< Derivatives.
+  mutable Jacobians jacobians;     ///< Jacobians.
 };
 
 template <typename TScalar>

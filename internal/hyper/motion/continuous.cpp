@@ -81,7 +81,7 @@ auto ContinuousMotion<TVariable>::evaluate(const TemporalMotionQuery<Scalar>& qu
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query) const -> StateResult {
+auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query) const -> bool {
   Pointers<const Scalar> pointers;
   const auto elements = this->pointers(state_query.time);
   pointers.reserve(elements.size());
@@ -90,7 +90,7 @@ auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query) const 
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query, const Scalar* const* pointers) const -> StateResult {
+auto ContinuousMotion<TVariable>::evaluate(const StateQuery& state_query, const Scalar* const* pointers) const -> bool {
   DCHECK(interpolator_ != nullptr);
   const auto layout = interpolator_->layout();
   const auto stamps = this->extractTimes(pointers, layout.outer_input_size);

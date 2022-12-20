@@ -30,8 +30,6 @@ class CartesianStateTests : public testing::Test {
   using Value = typename std::tuple_element<1, TArgs>::type;
   using StampedValue = Stamped<Value>;
 
-  using Jacobian = StateResult::Jacobian;
-  using Jacobians = StateResult::Jacobians;
   using Policy = SpatialInterpolator<StampedValue>;
 
   using Input = typename Policy::Input;
@@ -60,14 +58,14 @@ class CartesianStateTests : public testing::Test {
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = state_.range().sample();
     const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
-    auto output = state_.evaluate(query);
+    state_.evaluate(query);
 
     const auto d_query = StateQuery{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
-    auto d_output = state_.evaluate(d_query);
+    state_.evaluate(d_query);
 
     for (auto i = 1; i <= degree; ++i) {
-      const auto derivative = ((d_output.derivatives.at(i - 1) - output.derivatives.at(i - 1)) / kNumericIncrement).eval();
-      if (!derivative.isApprox(output.derivatives.at(i), kNumericTolerance)) return false;
+      const auto derivative = ((d_query.derivatives.at(i - 1) - query.derivatives.at(i - 1)) / kNumericIncrement).eval();
+      if (!derivative.isApprox(query.derivatives.at(i), kNumericTolerance)) return false;
     }
 
     return true;
@@ -81,13 +79,13 @@ class CartesianStateTests : public testing::Test {
       // Evaluate analytic Jacobian.
       const auto stamp = state_.range().sample();
       const auto query = StateQuery{stamp, static_cast<MotionDerivative>(i), true};
-      auto output = state_.evaluate(query);
+      state_.evaluate(query);
 
       // Retrieve inputs.
       const auto inputs = state_.pointers(stamp);
 
       // Allocate Jacobian.
-      Jacobian Jn_i;
+      JacobianX<Scalar> Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
       Jn_i.setZero(Value::kNumParameters, num_inputs * Input::kNumParameters);
 
@@ -101,15 +99,15 @@ class CartesianStateTests : public testing::Test {
           input_j.variable() += tau;
 
           const auto d_query = StateQuery{stamp, static_cast<MotionDerivative>(i), false};
-          const auto d_output = state_.evaluate(d_query);
-          Jn_i.col(j * Input::kNumParameters + k) = (d_output.derivatives.at(i) - output.derivatives.at(i)).transpose() / kNumericIncrement;
+          state_.evaluate(d_query);
+          Jn_i.col(j * Input::kNumParameters + k) = (d_query.derivatives.at(i) - query.derivatives.at(i)).transpose() / kNumericIncrement;
 
           input_j = tmp;
         }
       }
 
       // Compare Jacobians.
-      if (!Jn_i.isApprox(output.jacobians.at(i), kNumericTolerance)) return false;
+      if (!Jn_i.isApprox(query.jacobians.at(i), kNumericTolerance)) return false;
     }
 
     return true;
@@ -149,8 +147,6 @@ class ManifoldStateTests : public testing::Test {
   using Value = typename std::tuple_element<1, TArgs>::type;
   using StampedValue = Stamped<Value>;
 
-  using Jacobian = StateResult::Jacobian;
-  using Jacobians = StateResult::Jacobians;
   using Policy = SpatialInterpolator<StampedValue>;
 
   using Input = typename Policy::Input;
@@ -179,13 +175,13 @@ class ManifoldStateTests : public testing::Test {
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = state_.range().sample();
     const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
-    auto output = state_.evaluate(query);
+    state_.evaluate(query);
 
     const auto d_query = StateQuery{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
-    auto d_output = state_.evaluate(d_query);
+    state_.evaluate(d_query);
 
-    const auto value = output.template derivativeAs<SE3<Scalar>>(0);
-    const auto d_value = d_output.template derivativeAs<SE3<Scalar>>(0);
+    const auto value = query.template derivativeAs<SE3<Scalar>>(0);
+    const auto d_value = d_query.template derivativeAs<SE3<Scalar>>(0);
 
     for (Index i = 1; i <= degree; ++i) {
       Tangent derivative;
@@ -198,10 +194,10 @@ class ManifoldStateTests : public testing::Test {
         derivative.angular() = d_algebra.toTangent();
         derivative.linear() = (d_value.translation() - value.translation()) / kNumericIncrement;
       } else {
-        derivative = (d_output.derivatives.at(i - 1) - output.derivatives.at(i - 1)) / kNumericIncrement;
+        derivative = (d_query.derivatives.at(i - 1) - query.derivatives.at(i - 1)) / kNumericIncrement;
       }
 
-      if (!derivative.isApprox(output.derivatives[i], kNumericTolerance)) return false;
+      if (!derivative.isApprox(query.derivatives[i], kNumericTolerance)) return false;
     }
 
     return true;
@@ -214,13 +210,13 @@ class ManifoldStateTests : public testing::Test {
     for (Index i = 0; i <= degree; ++i) {
       const auto stamp = state_.range().sample();
       const auto query = StateQuery{stamp, static_cast<MotionDerivative>(degree), true};
-      auto output = state_.evaluate(query);
+      state_.evaluate(query);
 
       // Retrieve inputs.
       const auto inputs = state_.pointers(stamp);
 
       // Allocate Jacobian.
-      Jacobian Jn_i;
+      JacobianX<Scalar> Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
       Jn_i.setZero(Tangent::kNumParameters, num_inputs * Input::kNumParameters);
 
@@ -235,15 +231,15 @@ class ManifoldStateTests : public testing::Test {
           input_j.variable().translation() += tau.linear();
 
           const auto d_query = StateQuery{stamp, static_cast<MotionDerivative>(degree), false};
-          const auto d_output = state_.evaluate(d_query);
+          state_.evaluate(d_query);
 
           if (i == 0) {
-            const auto value = output.template derivativeAs<SE3<Scalar>>(0);
-            const auto d_value = d_output.template derivativeAs<SE3<Scalar>>(0);
+            const auto value = query.template derivativeAs<SE3<Scalar>>(0);
+            const auto d_value = d_query.template derivativeAs<SE3<Scalar>>(0);
             Jn_i.col(j * Input::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
             Jn_i.col(j * Input::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
           } else {
-            Jn_i.col(j * Input::kNumParameters + k) = (d_output.derivatives.at(i) - output.derivatives.at(i)) / kNumericIncrement;
+            Jn_i.col(j * Input::kNumParameters + k) = (d_query.derivatives.at(i) - query.derivatives.at(i)) / kNumericIncrement;
           }
 
           input_j = tmp;
@@ -253,7 +249,7 @@ class ManifoldStateTests : public testing::Test {
       }
 
       // Compare Jacobians.
-      if (!Jn_i.isApprox(output.jacobians.at(i), kNumericTolerance)) return false;
+      if (!Jn_i.isApprox(query.jacobians.at(i), kNumericTolerance)) return false;
     }
 
     return true;

@@ -56,18 +56,18 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \param query Temporal motion query.
   /// \param pointers Input pointers.
   /// \return True on success.
-  [[nodiscard]] auto evaluate(const TemporalMotionQuery<Scalar>& query, const Scalar* const* pointers) const -> bool final;
+  auto evaluate(const TemporalMotionQuery<Scalar>& query, const Scalar* const* pointers) const -> bool final;
 
   /// Evaluates the states.
   /// \param state_query State query.
   /// \return Interpolation result.
-  [[nodiscard]] auto evaluate(const StateQuery& state_query) const -> StateResult;
+  auto evaluate(const StateQuery& state_query) const -> bool;
 
   /// Evaluates the states (with external parameters).
   /// \param state_query State query.
   /// \param raw_values Input values.
   /// \return Interpolation result.
-  [[nodiscard]] auto evaluate(const StateQuery& state_query, const Scalar* const* raw_values) const -> StateResult;
+  auto evaluate(const StateQuery& state_query, const Scalar* const* raw_values) const -> bool;
 
  private:
   std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_; ///< Interpolator.
