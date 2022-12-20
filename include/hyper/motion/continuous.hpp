@@ -26,6 +26,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Range = typename Base::Range;
 
   using Element = typename Base::Element;
+  using Elements = typename Base::Elements;
   using Query = typename Base::Query;
 
   /// Constructor from temporal interpolator.
@@ -60,6 +61,14 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   auto evaluate(const Query& query, const Scalar* const* inputs) const -> bool final;
 
  private:
+  // Definitions.
+  using Iterator = typename Elements::const_iterator;
+
+  /// Retrieves the iterators for a time.
+  /// \param time Query time.
+  /// \return Iterators and number of elements between them.
+  auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index>;
+
   std::unique_ptr<TemporalInterpolator<Scalar>> temporal_interpolator_; ///< Temporal interpolator.
 };
 
