@@ -8,7 +8,7 @@
 #include "hyper/motion/interpolators/temporal/forward.hpp"
 
 #include "hyper/variables/cartesian.hpp"
-#include "hyper/variables/definitions/jacobian.hpp"
+#include "hyper/variables/jacobian.hpp"
 
 namespace hyper {
 

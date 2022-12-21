@@ -6,7 +6,7 @@ enable_language(CXX)
 include(FetchContent)
 
 # Define projects.
-project(HyperState VERSION 22.07.01 DESCRIPTION "" HOMEPAGE_URL https://github.com/VIS4ROB-lab/HyperState LANGUAGES CXX)
+project(HyperMotion VERSION 22.07.01 DESCRIPTION "" HOMEPAGE_URL https://github.com/VIS4ROB-lab/HyperState LANGUAGES CXX)
 
 # Set properties.
 if(PROJECT_IS_TOP_LEVEL)
@@ -18,10 +18,10 @@ endif()
 # Define libraries and aliases.
 file(GLOB_RECURSE PROJECT_SOURCE_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/internal/*.hpp ${PROJECT_SOURCE_DIR}/internal/*.cpp)
 add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCE_FILES})
-add_library(Hyper::State ALIAS ${PROJECT_NAME})
+add_library(Hyper::Motion ALIAS ${PROJECT_NAME})
 
 # Fetch (external) content.
-FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG 85e43fb198bc5704d41cd75478da5b65a3f7a5ac)
+FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG d2cc27383b986f8e3c2e3f668f178d30b4b13ebf)
 FetchContent_MakeAvailable(HyperVariables)
 
 # Find Eigen target if not present.

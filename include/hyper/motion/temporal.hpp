@@ -12,7 +12,7 @@
 #include "hyper/motion/motion.hpp"
 #include "hyper/range.hpp"
 #include "hyper/variables/abstract.hpp"
-#include "hyper/variables/definitions/jacobian.hpp"
+#include "hyper/variables/jacobian.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper {

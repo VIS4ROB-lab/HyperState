@@ -1,5 +1,5 @@
 # Define projects.
-project(HyperStateTests VERSION 22.07.01 DESCRIPTION "" HOMEPAGE_URL https://github.com/VIS4ROB-lab/HyperState LANGUAGES CXX)
+project(HyperMotionTests VERSION 22.07.01 DESCRIPTION "" HOMEPAGE_URL https://github.com/VIS4ROB-lab/HyperState LANGUAGES CXX)
 
 # Collect files and add executable.
 get_filename_component(APPS_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
@@ -9,4 +9,4 @@ add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/main.cpp ${PROJECT_SOURCE_F
 
 # Add includes and link libraries.
 target_include_directories(${PROJECT_NAME} PRIVATE ${PARENT_DIR}/tests/include)
-target_link_libraries(${PROJECT_NAME} PRIVATE Hyper::State)
+target_link_libraries(${PROJECT_NAME} PRIVATE Hyper::Motion)

@@ -82,7 +82,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* con
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
-  DCHECK(range().contains(time)) << "State range does not contain stamp.";
+  DCHECK(range().contains(time)) << "Range does not contain time.";
   const auto layout = temporal_interpolator_->layout();
 
   DCHECK_LE(layout.outer_input_size, this->elements_.size());
