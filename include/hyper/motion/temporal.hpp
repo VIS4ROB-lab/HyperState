@@ -28,6 +28,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   using Range = hyper::Range<Time, BoundaryPolicy::INCLUSIVE>;
 
   using Element = Stamped<TVariable>;
+  using Derivative = typename Base::Derivative;
 
   // Element compare.
   struct ElementCompare {
@@ -44,7 +45,6 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   };
 
   using Elements = std::set<Element, ElementCompare>;
-  using Query = TemporalMotionQuery<Scalar>;
   using Result = TemporalMotionResult<Scalar>;
 
   /// Evaluates the range.
@@ -70,13 +70,21 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   /// Evaluates the motion.
   /// \param query Temporal motion query.
   /// \return True on success.
-  virtual auto evaluate(const Query& query) const -> Result = 0;
 
-  /// Evaluates the motion.
-  /// \param query Temporal motion query.
-  /// \param inputs Input pointers.
-  /// \return True on success.
-  virtual auto evaluate(const Query& query, const Scalar* const* inputs) const -> Result = 0;
+  /// Evaluates this.
+  /// \param time Query time.
+  /// \param derivative Query derivative.
+  /// \param jacobians Jacobians evaluation flag.
+  /// \return Result.
+  virtual auto evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> Result = 0;
+
+  /// Evaluates this.
+  /// \param time Query time.
+  /// \param derivative Query derivative.
+  /// \param jacobians Jacobians evaluation flag.
+  /// \param elements Element pointers.
+  /// \return Result.
+  virtual auto evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> Result = 0;
 
  protected:
   Elements elements_; ///< Elements.

@@ -30,39 +30,38 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   static constexpr auto kDimTangent = Tangent::kNumParameters;
 
   /// Evaluates this.
-  /// \param query Temporal motion query.
   /// \param layout Temporal interpolator layout.
-  /// \param weights Weights.
-  /// \param inputs Inputs.
+  /// \param weights Interpolation weights.
+  /// \param variables Interpolation variables.
+  /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
   [[nodiscard]] static auto evaluate(
-      const TemporalMotionQuery<Scalar>& query,
       const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
-      const Scalar* const* inputs) -> TemporalMotionResult<Scalar> {
-    // Unpack queries.
-    const auto& [stamp, derivative, jacobian] = query;
-
+      const Pointers<const Scalar>& variables,
+      const bool jacobians) -> TemporalMotionResult<Scalar> {
     // Sanity checks.
-    DCHECK(weights.rows() == layout.inner_input_size && weights.cols() == derivative + 1);
+    DCHECK_EQ(weights.rows(), layout.inner_input_size);
+    DCHECK_EQ(variables.size(), layout.outer_input_size);
+    const auto num_derivatives = weights.cols();
 
     // Allocate result.
     TemporalMotionResult<Scalar> result;
-    auto& [derivatives, jacobians] = result;
-    derivatives.reserve(derivative + 1);
-    jacobians.reserve(derivative + 1);
+    auto& [xs, Js] = result;
+    xs.reserve(num_derivatives);
+    Js.reserve(num_derivatives);
 
     if (layout.outer_input_size == 1) {
-      for (Index k = 0; k <= derivative; ++k) {
+      for (Index k = 0; k < num_derivatives; ++k) {
         if (k == 0) {
-          derivatives.emplace_back(Eigen::Map<const Input>{inputs[0]}.variable());
-          if (jacobian) {
-            jacobians.emplace_back(JacobianX<Scalar>::Identity(kDimTangent, kNumInputParameters));
+          xs.emplace_back(Eigen::Map<const Input>{variables[0]}.variable());
+          if (jacobians) {
+            Js.emplace_back(JacobianX<Scalar>::Identity(kDimTangent, kNumInputParameters));
           }
         } else {
-          derivatives.emplace_back(MatrixX<Scalar>::Zero(kDimManifold, 1));
-          if (jacobian) {
-            jacobians.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, kNumInputParameters));
+          xs.emplace_back(MatrixX<Scalar>::Zero(kDimManifold, 1));
+          if (jacobians) {
+            Js.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, kNumInputParameters));
           }
         }
       }
@@ -74,31 +73,31 @@ class SpatialInterpolator<Stamped<TVariable>> final {
       // Evaluate increments.
       using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
       auto increments = Increments{kDimTangent, end_idx - start_idx + 1};
-      increments.col(0).noalias() = Eigen::Map<const Input>{inputs[start_idx]}.variable();
+      increments.col(0).noalias() = Eigen::Map<const Input>{variables[start_idx]}.variable();
 
       for (auto i = start_idx; i < end_idx; ++i) {
-        const auto x = Eigen::Map<const Input>{inputs[i]};
-        const auto y = Eigen::Map<const Input>{inputs[i + 1]};
+        const auto x = Eigen::Map<const Input>{variables[i]};
+        const auto y = Eigen::Map<const Input>{variables[i + 1]};
         increments.col(i - start_idx + 1).noalias() = y.variable() - x.variable();
       }
 
-      for (Index k = 0; k <= derivative; ++k) {
-        derivatives.emplace_back(increments * weights.col(k));
+      for (Index k = 0; k < num_derivatives; ++k) {
+        xs.emplace_back(increments * weights.col(k));
 
-        if (jacobian) {
-          jacobians.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, layout.outer_input_size * kNumInputParameters));
+        if (jacobians) {
+          Js.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, layout.outer_input_size * kNumInputParameters));
 
           if (k == 0) {
-            jacobians[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{1} - weights(1, k));
+            Js[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{1} - weights(1, k));
           } else {
-            jacobians[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{-1} * weights(1, k));
+            Js[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{-1} * weights(1, k));
           }
 
           for (auto j = start_idx + 1; j < end_idx; ++j) {
-            jacobians[k].template middleCols<kNumInputParameters>(j * kNumInputParameters).diagonal().setConstant(weights(j, k) - weights(j + 1, k));
+            Js[k].template middleCols<kNumInputParameters>(j * kNumInputParameters).diagonal().setConstant(weights(j, k) - weights(j + 1, k));
           }
 
-          jacobians[k].template middleCols<kNumInputParameters>(end_idx * kNumInputParameters).diagonal().setConstant(weights(end_idx, k));
+          Js[k].template middleCols<kNumInputParameters>(end_idx * kNumInputParameters).diagonal().setConstant(weights(end_idx, k));
         }
       }
     }

@@ -36,7 +36,6 @@ class CartesianMotionTests : public testing::Test {
   using Tangent = typename Policy::Tangent;
 
   using Motion = ContinuousMotion<Value>;
-  using Query = typename Motion::Query;
 
   /// Set up.
   auto SetUp() -> void final {
@@ -60,15 +59,13 @@ class CartesianMotionTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = motion_.range().sample();
-    const auto query = Query{stamp, static_cast<MotionDerivative>(degree), false};
-    const auto result = motion_.evaluate(query);
-
-    const auto d_query = Query{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
-    const auto d_result = motion_.evaluate(d_query);
+    const auto derivative = static_cast<MotionDerivative>(degree);
+    const auto result = motion_.evaluate(stamp, derivative, false);
+    const auto d_result = motion_.evaluate(stamp + kNumericIncrement, derivative, false);
 
     for (auto i = 1; i <= degree; ++i) {
-      const auto derivative = ((d_result.derivatives.at(i - 1) - result.derivatives.at(i - 1)) / kNumericIncrement).eval();
-      if (!derivative.isApprox(result.derivatives.at(i), kNumericTolerance)) return false;
+      const auto dx = ((d_result.derivatives.at(i - 1) - result.derivatives.at(i - 1)) / kNumericIncrement).eval();
+      if (!dx.isApprox(result.derivatives.at(i), kNumericTolerance)) return false;
     }
 
     return true;
@@ -81,8 +78,8 @@ class CartesianMotionTests : public testing::Test {
     for (Index i = 0; i <= degree; ++i) {
       // Evaluate analytic Jacobian.
       const auto stamp = motion_.range().sample();
-      const auto query = Query{stamp, static_cast<MotionDerivative>(i), true};
-      const auto result = motion_.evaluate(query);
+      const auto derivative = static_cast<MotionDerivative>(i);
+      const auto result = motion_.evaluate(stamp, derivative, true);
 
       // Retrieve inputs.
       const auto inputs = motion_.pointers(stamp);
@@ -101,8 +98,7 @@ class CartesianMotionTests : public testing::Test {
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable() += tau;
 
-          const auto d_query = Query{stamp, static_cast<MotionDerivative>(i), false};
-          const auto d_result = motion_.evaluate(d_query);
+          const auto d_result = motion_.evaluate(stamp, derivative, false);
           Jn_i.col(j * Input::kNumParameters + k) = (d_result.derivatives.at(i) - result.derivatives.at(i)).transpose() / kNumericIncrement;
 
           input_j = tmp;
@@ -157,7 +153,6 @@ class ManifoldMotionTests : public testing::Test {
   using Tangent = typename Policy::Tangent;
 
   using Motion = ContinuousMotion<Value>;
-  using Query = typename Motion::Query;
 
   /// Sets a random motion.
   auto setRandomMotion() -> void {
@@ -181,30 +176,28 @@ class ManifoldMotionTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = motion_.range().sample();
-    const auto query = Query{stamp, static_cast<MotionDerivative>(degree), false};
-    const auto result = motion_.evaluate(query);
-
-    const auto d_query = Query{stamp + kNumericIncrement, static_cast<MotionDerivative>(degree), false};
-    const auto d_result = motion_.evaluate(d_query);
+    const auto derivative = static_cast<MotionDerivative>(degree);
+    const auto result = motion_.evaluate(stamp, derivative, false);
+    const auto d_result = motion_.evaluate(stamp + kNumericIncrement, derivative, false);
 
     const auto value = result.template derivativeAs<SE3<Scalar>>(0);
     const auto d_value = d_result.template derivativeAs<SE3<Scalar>>(0);
 
     for (Index i = 1; i <= degree; ++i) {
-      Tangent derivative;
+      Tangent dx;
 
       if (i == 1) {
         SU2<Scalar> d_su2;
         Algebra<SU2<Scalar>> d_algebra;
         d_su2 = SU2<Scalar>{(d_value.rotation().coeffs() - value.rotation().coeffs()) / kNumericIncrement};
         d_algebra = value.rotation().groupInverse().groupPlus(d_su2).coeffs();
-        derivative.angular() = d_algebra.toTangent();
-        derivative.linear() = (d_value.translation() - value.translation()) / kNumericIncrement;
+        dx.angular() = d_algebra.toTangent();
+        dx.linear() = (d_value.translation() - value.translation()) / kNumericIncrement;
       } else {
-        derivative = (d_result.derivatives.at(i - 1) - result.derivatives.at(i - 1)) / kNumericIncrement;
+        dx = (d_result.derivatives.at(i - 1) - result.derivatives.at(i - 1)) / kNumericIncrement;
       }
 
-      if (!derivative.isApprox(result.derivatives[i], kNumericTolerance)) return false;
+      if (!dx.isApprox(result.derivatives[i], kNumericTolerance)) return false;
     }
 
     return true;
@@ -216,8 +209,8 @@ class ManifoldMotionTests : public testing::Test {
   auto checkJacobians(const Index degree = kDegree) -> bool {
     for (Index i = 0; i <= degree; ++i) {
       const auto stamp = motion_.range().sample();
-      const auto query = Query{stamp, static_cast<MotionDerivative>(degree), true};
-      const auto result = motion_.evaluate(query);
+      const auto derivative = static_cast<MotionDerivative>(degree);
+      const auto result = motion_.evaluate(stamp, derivative, true);
 
       // Retrieve inputs.
       const auto inputs = motion_.pointers(stamp);
@@ -237,8 +230,7 @@ class ManifoldMotionTests : public testing::Test {
           input_j.variable().rotation() *= tau.angular().toManifold();
           input_j.variable().translation() += tau.linear();
 
-          const auto d_query = Query{stamp, static_cast<MotionDerivative>(degree), false};
-          const auto d_result = motion_.evaluate(d_query);
+          const auto d_result = motion_.evaluate(stamp, derivative, false);
 
           if (i == 0) {
             const auto value = result.template derivativeAs<SE3<Scalar>>(0);

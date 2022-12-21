@@ -50,37 +50,39 @@ auto ContinuousMotion<TVariable>::setInterpolator(const TemporalInterpolator<Sca
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> Result {
-  const auto& [begin, end, num_inputs] = iterators(query.time);
+auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> Result {
+  const auto& [begin, end, num_inputs] = iterators(time);
   Pointers<const Scalar> pointers;
   pointers.reserve(num_inputs);
   std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return element.data(); });
   DCHECK_EQ(pointers.size(), num_inputs);
-  return evaluate(query, pointers.data());
+  return evaluate(time, derivative, jacobians, pointers.data());
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* inputs) const -> Result {
+auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> Result {
+  // Definitions.
+  using Stamps = std::vector<Scalar>;
+
   // Fetch layout.
   const auto layout = interpolator()->layout();
 
   // Split pointers.
-  using Timestamps = std::vector<Scalar>;
+  Pointers<const Scalar> variables;
+  variables.reserve(layout.outer_input_size);
 
-  Timestamps ts;
-  ts.reserve(layout.outer_input_size);
-
-  Pointers<const Scalar> p_vs;
-  p_vs.reserve(layout.outer_input_size);
+  Stamps stamps;
+  stamps.reserve(layout.outer_input_size);
 
   for (Index i = 0; i < layout.outer_input_size; ++i) {
-    ts.emplace_back(inputs[i][Element::kStampOffset]);
-    p_vs.emplace_back(inputs[i] + Element::kVariableOffset);
+    const auto p_element_i = elements[i];
+    variables.emplace_back(p_element_i + Element::kVariableOffset);
+    stamps.emplace_back(p_element_i[Element::kStampOffset]);
   }
 
   const auto offset = layout.left_input_margin - 1;
-  const auto weights = interpolator()->evaluate(query.time, query.derivative, ts, offset);
-  return SpatialInterpolator<Element>::evaluate(query, layout, weights, p_vs.data());
+  const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
+  return SpatialInterpolator<Element>::evaluate(layout, weights, variables, jacobians);
 }
 
 template <typename TVariable>

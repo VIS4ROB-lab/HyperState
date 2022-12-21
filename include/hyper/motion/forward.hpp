@@ -35,26 +35,6 @@ template <typename TVariable>
 class ContinuousMotion;
 
 template <typename TScalar>
-struct TemporalMotionQuery {
-  // Definitions.
-  using Time = TScalar;
-
-  /// Constructor from query stamp and derivative requests.
-  /// \param time Query time.
-  /// \param derivative Highest degree of requested derivatives.
-  /// \param jacobian Jacobian flag (true if requested).
-  TemporalMotionQuery(const Time& time, const MotionDerivative& derivative = MotionDerivative::VALUE, const bool jacobian = false) // NOLINT
-      : time{time},
-        derivative{derivative},
-        jacobian{jacobian} {}
-
-  // Members.
-  Time time;                   ///< Time.
-  MotionDerivative derivative; ///< Derivative.
-  bool jacobian;               ///< Jacobian flag.
-};
-
-template <typename TScalar>
 struct TemporalMotionResult {
   // Definitions.
   using Derivative = Eigen::Matrix<TScalar, Eigen::Dynamic, 1>;

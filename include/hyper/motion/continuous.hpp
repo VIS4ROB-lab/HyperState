@@ -27,7 +27,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
 
   using Element = typename Base::Element;
   using Elements = typename Base::Elements;
-  using Query = typename Base::Query;
+  using Derivative = typename Base::Derivative;
   using Result = typename Base::Result;
 
   /// Default constructor.
@@ -53,16 +53,20 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \param interpolator Interpolator.
   auto setInterpolator(const TemporalInterpolator<Scalar>*) -> void;
 
-  /// Evaluates the motion.
-  /// \param query Temporal motion query.
-  /// \return True on success.
-  auto evaluate(const Query& query) const -> Result final;
+  /// Evaluates this.
+  /// \param time Query time.
+  /// \param derivative Query derivative.
+  /// \param jacobians Jacobians evaluation flag.
+  /// \return Result.
+  auto evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> Result final;
 
-  /// Evaluates the motion.
-  /// \param query Temporal motion query.
-  /// \param inputs Input pointers.
-  /// \return True on success.
-  auto evaluate(const Query& query, const Scalar* const* inputs) const -> Result final;
+  /// Evaluates this.
+  /// \param time Query time.
+  /// \param derivative Query derivative.
+  /// \param jacobians Jacobians evaluation flag.
+  /// \param elements Element pointers.
+  /// \return Result.
+  auto evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> Result final;
 
  private:
   // Definitions.

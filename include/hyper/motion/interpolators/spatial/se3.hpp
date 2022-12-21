@@ -28,22 +28,24 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   static constexpr auto kDimTangent = Tangent::kNumParameters;
 
   /// Evaluates this.
-  /// \param query Temporal motion query.
   /// \param layout Temporal interpolator layout.
-  /// \param weights Weights.
-  /// \param inputs Inputs.
+  /// \param weights Interpolation weights.
+  /// \param variables Interpolation variables.
+  /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
-  [[nodiscard]] static auto evaluate(const TemporalMotionQuery<Scalar>& query,
+  [[nodiscard]] static auto evaluate(
       const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
-      const Scalar* const* inputs) -> TemporalMotionResult<Scalar>;
+      const Pointers<const Scalar>& variables,
+      const bool jacobians) -> TemporalMotionResult<Scalar>;
 
  private:
   template <MotionDerivative TMotionDerivative>
-  [[nodiscard]] static auto evaluate(const TemporalMotionQuery<Scalar>& query,
+  [[nodiscard]] static auto evaluate(
       const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
-      const Scalar* const* inputs) -> TemporalMotionResult<Scalar>;
+      const Pointers<const Scalar>& variables,
+      const bool jacobians) -> TemporalMotionResult<Scalar>;
 };
 
 } // namespace hyper
