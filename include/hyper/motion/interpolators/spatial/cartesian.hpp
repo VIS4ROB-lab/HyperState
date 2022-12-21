@@ -30,19 +30,20 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   static constexpr auto kDimTangent = Tangent::kNumParameters;
 
   /// Evaluates this.
-  /// \param layout Temporal interpolator layout.
   /// \param weights Interpolation weights.
   /// \param variables Interpolation variables.
+  /// \param offset Offset into variables.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
   [[nodiscard]] static auto evaluate(
-      const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
       const Pointers<const Scalar>& variables,
+      const Index& offset,
       const bool jacobians) -> TemporalMotionResult<Scalar> {
-    // Sanity checks.
-    DCHECK_EQ(weights.rows(), layout.inner_input_size);
-    DCHECK_EQ(variables.size(), layout.outer_input_size);
+    // Definitions.
+    using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
+
+    const auto num_variables = weights.rows();
     const auto num_derivatives = weights.cols();
 
     // Allocate result.
@@ -51,7 +52,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
     xs.reserve(num_derivatives);
     Js.reserve(num_derivatives);
 
-    if (layout.outer_input_size == 1) {
+    if (variables.size() == 1) {
       for (Index k = 0; k < num_derivatives; ++k) {
         if (k == 0) {
           xs.emplace_back(Eigen::Map<const Input>{variables[0]}.variable());
@@ -67,37 +68,36 @@ class SpatialInterpolator<Stamped<TVariable>> final {
       }
     } else {
       // Compute indices.
-      const auto start_idx = layout.left_input_padding;
-      const auto end_idx = start_idx + layout.inner_input_size - 1;
+      const auto end_idx = offset + num_variables;
+      const auto last_idx = end_idx - 1;
 
-      // Evaluate increments.
-      using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
-      auto increments = Increments{kDimTangent, end_idx - start_idx + 1};
-      increments.col(0).noalias() = Eigen::Map<const Input>{variables[start_idx]}.variable();
+      // Compute increments.
+      auto increments = Increments{kDimTangent, num_variables};
+      increments.col(0).noalias() = Eigen::Map<const Input>{variables[offset]}.variable();
 
-      for (auto i = start_idx; i < end_idx; ++i) {
-        const auto x = Eigen::Map<const Input>{variables[i]};
-        const auto y = Eigen::Map<const Input>{variables[i + 1]};
-        increments.col(i - start_idx + 1).noalias() = y.variable() - x.variable();
+      for (auto i = offset + 1; i < end_idx; ++i) {
+        const auto x = Eigen::Map<const Input>{variables[i - 1]};
+        const auto y = Eigen::Map<const Input>{variables[i]};
+        increments.col(i - offset).noalias() = y.variable() - x.variable();
       }
 
       for (Index k = 0; k < num_derivatives; ++k) {
         xs.emplace_back(increments * weights.col(k));
 
         if (jacobians) {
-          Js.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, layout.outer_input_size * kNumInputParameters));
+          Js.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, variables.size() * kNumInputParameters));
 
           if (k == 0) {
-            Js[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{1} - weights(1, k));
+            Js[k].template middleCols<kNumInputParameters>(offset * kNumInputParameters).diagonal().setConstant(Scalar{1} - weights(1, k));
           } else {
-            Js[k].template middleCols<kNumInputParameters>(start_idx * kNumInputParameters).diagonal().setConstant(Scalar{-1} * weights(1, k));
+            Js[k].template middleCols<kNumInputParameters>(offset * kNumInputParameters).diagonal().setConstant(Scalar{-1} * weights(1, k));
           }
 
-          for (auto j = start_idx + 1; j < end_idx; ++j) {
+          for (auto j = offset + 1; j < last_idx; ++j) {
             Js[k].template middleCols<kNumInputParameters>(j * kNumInputParameters).diagonal().setConstant(weights(j, k) - weights(j + 1, k));
           }
 
-          Js[k].template middleCols<kNumInputParameters>(end_idx * kNumInputParameters).diagonal().setConstant(weights(end_idx, k));
+          Js[k].template middleCols<kNumInputParameters>(last_idx * kNumInputParameters).diagonal().setConstant(weights(last_idx, k));
         }
       }
     }

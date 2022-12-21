@@ -82,7 +82,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& d
 
   const auto offset = layout.left_input_margin - 1;
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
-  return SpatialInterpolator<Element>::evaluate(layout, weights, variables, jacobians);
+  return SpatialInterpolator<Element>::evaluate(weights, variables, layout.left_input_padding, jacobians);
 }
 
 template <typename TVariable>

@@ -28,23 +28,23 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   static constexpr auto kDimTangent = Tangent::kNumParameters;
 
   /// Evaluates this.
-  /// \param layout Temporal interpolator layout.
   /// \param weights Interpolation weights.
   /// \param variables Interpolation variables.
+  /// \param offset Offset into variables.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
   [[nodiscard]] static auto evaluate(
-      const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
       const Pointers<const Scalar>& variables,
+      const Index& offset,
       const bool jacobians) -> TemporalMotionResult<Scalar>;
 
  private:
   template <MotionDerivative TMotionDerivative>
   [[nodiscard]] static auto evaluate(
-      const TemporalInterpolatorLayout<Index>& layout,
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
       const Pointers<const Scalar>& variables,
+      const Index& offset,
       const bool jacobians) -> TemporalMotionResult<Scalar>;
 };
 
