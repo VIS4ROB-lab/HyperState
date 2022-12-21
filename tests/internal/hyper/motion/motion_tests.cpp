@@ -40,8 +40,8 @@ class CartesianMotionTests : public testing::Test {
 
   /// Set up.
   auto SetUp() -> void final {
-    auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
-    motion_ = ContinuousMotion<Value>{std::move(interpolator)};
+    motion_ = ContinuousMotion<Value>{&interpolator_};
+    interpolator_.setOrder(kDegree + 1);
   }
 
   /// Sets a random motion.
@@ -118,6 +118,7 @@ class CartesianMotionTests : public testing::Test {
 
  private:
   Motion motion_;
+  Interpolator interpolator_;
 };
 
 TYPED_TEST_SUITE_P(CartesianMotionTests);
@@ -171,8 +172,8 @@ class ManifoldMotionTests : public testing::Test {
 
   /// Set up.
   auto SetUp() -> void final {
-    auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
-    motion_ = ContinuousMotion<Value>{std::move(interpolator)};
+    motion_ = ContinuousMotion<Value>{&interpolator_};
+    interpolator_.setOrder(kDegree + 1);
   }
 
   /// Checks the derivatives.
@@ -263,6 +264,7 @@ class ManifoldMotionTests : public testing::Test {
 
  private:
   Motion motion_;
+  Interpolator interpolator_;
 };
 
 TYPED_TEST_SUITE_P(ManifoldMotionTests);

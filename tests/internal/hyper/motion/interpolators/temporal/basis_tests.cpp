@@ -55,7 +55,8 @@ TEST(BasisInterpolatorTests, Theory) {
 TEST(BasisInterpolatorTests, Duality) {
   constexpr auto kMaxDegree = 5;
   for (Index i = 0; i < kMaxDegree; ++i) {
-    Interpolator interpolator{i + 1};
+    Interpolator interpolator;
+    interpolator.setOrder(i + 1);
     interpolator.setNonUniform();
     const auto layout = interpolator.layout();
 

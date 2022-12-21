@@ -30,9 +30,12 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Query = typename Base::Query;
   using Result = typename Base::Result;
 
-  /// Constructor from temporal interpolator.
-  /// \param temporal_interpolator Temporal interpolator.
-  explicit ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& temporal_interpolator = nullptr);
+  /// Default constructor.
+  ContinuousMotion();
+
+  /// Constructor from interpolator.
+  /// \param interpolator Interpolator.
+  explicit ContinuousMotion(const TemporalInterpolator<Scalar>* interpolator);
 
   /// Evaluates the range.
   /// \return Range.
@@ -44,11 +47,11 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
 
   /// Interpolator accessor.
   /// \return Interpolator.
-  [[nodiscard]] auto interpolator() const -> const std::unique_ptr<TemporalInterpolator<Scalar>>&;
+  [[nodiscard]] auto interpolator() const -> const TemporalInterpolator<Scalar>*;
 
-  /// Interpolator modifier.
-  /// \return Interpolator.
-  [[nodiscard]] auto interpolator() -> std::unique_ptr<TemporalInterpolator<Scalar>>&;
+  /// Interpolator setter.
+  /// \param interpolator Interpolator.
+  auto setInterpolator(const TemporalInterpolator<Scalar>*) -> void;
 
   /// Evaluates the motion.
   /// \param query Temporal motion query.
@@ -70,7 +73,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \return Iterators and number of elements between them.
   auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index>;
 
-  std::unique_ptr<TemporalInterpolator<Scalar>> temporal_interpolator_; ///< Temporal interpolator.
+  const TemporalInterpolator<Scalar>* interpolator_; ///< Interpolator.
 };
 
 } // namespace hyper

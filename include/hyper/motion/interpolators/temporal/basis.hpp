@@ -25,8 +25,7 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   using OrderMatrix = typename Base::OrderMatrix;
 
   /// Default constructor.
-  /// \param order Order.
-  explicit BasisInterpolator(const Index& order);
+  BasisInterpolator();
 
   /// Order setter.
   /// \param order Order.

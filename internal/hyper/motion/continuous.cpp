@@ -11,13 +11,16 @@
 namespace hyper {
 
 template <typename TVariable>
-ContinuousMotion<TVariable>::ContinuousMotion(std::unique_ptr<TemporalInterpolator<Scalar>>&& temporal_interpolator)
-    : temporal_interpolator_{std::move(temporal_interpolator)} {}
+ContinuousMotion<TVariable>::ContinuousMotion() = default;
+
+template <typename TVariable>
+ContinuousMotion<TVariable>::ContinuousMotion(const TemporalInterpolator<Scalar>* interpolator) {
+  setInterpolator(interpolator);
+}
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::range() const -> Range {
-  DCHECK(temporal_interpolator_ != nullptr);
-  const auto layout = temporal_interpolator_->layout();
+  const auto layout = interpolator()->layout();
   DCHECK_LE(layout.outer_input_size, this->elements_.size());
   const auto v0_itr = std::next(this->elements_.cbegin(), layout.left_input_margin - 1);
   const auto vn_itr = std::next(this->elements_.crbegin(), layout.right_input_margin - 1);
@@ -36,13 +39,14 @@ auto ContinuousMotion<TVariable>::pointers(const Time& time) const -> Pointers<E
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::interpolator() const -> const std::unique_ptr<TemporalInterpolator<Scalar>>& {
-  return temporal_interpolator_;
+auto ContinuousMotion<TVariable>::interpolator() const -> const TemporalInterpolator<Scalar>* {
+  return interpolator_;
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::interpolator() -> std::unique_ptr<TemporalInterpolator<Scalar>>& {
-  return const_cast<std::unique_ptr<TemporalInterpolator<Scalar>>&>(std::as_const(*this).interpolator());
+auto ContinuousMotion<TVariable>::setInterpolator(const TemporalInterpolator<Scalar>* interpolator) -> void {
+  DCHECK(interpolator != nullptr);
+  interpolator_ = interpolator;
 }
 
 template <typename TVariable>
@@ -58,8 +62,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Query& query) const -> Result {
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* const* inputs) const -> Result {
   // Fetch layout.
-  DCHECK(temporal_interpolator_ != nullptr);
-  const auto layout = temporal_interpolator_->layout();
+  const auto layout = interpolator()->layout();
 
   // Split pointers.
   using Timestamps = std::vector<Scalar>;
@@ -76,14 +79,14 @@ auto ContinuousMotion<TVariable>::evaluate(const Query& query, const Scalar* con
   }
 
   const auto offset = layout.left_input_margin - 1;
-  const auto weights = temporal_interpolator_->evaluate(query.time, query.derivative, ts, offset);
+  const auto weights = interpolator()->evaluate(query.time, query.derivative, ts, offset);
   return SpatialInterpolator<Element>::evaluate(query, layout, weights, p_vs.data());
 }
 
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
   DCHECK(range().contains(time)) << "Range does not contain time.";
-  const auto layout = temporal_interpolator_->layout();
+  const auto layout = interpolator()->layout();
 
   DCHECK_LE(layout.outer_input_size, this->elements_.size());
   const auto itr = this->elements_.upper_bound(time);
