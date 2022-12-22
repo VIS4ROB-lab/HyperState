@@ -93,7 +93,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& d
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
   SpatialInterpolator<Element>::evaluate(weights, variables, results.outputs_, results.jacobians_, layout.left_input_padding, jacobians);
 
-  std::cout << "N " << results.memory_.transpose() << std::endl;
+  //std::cout << "N " << results.memory_.transpose() << std::endl;
 
   TemporalMotionResult<Scalar> res;
   for (auto i = 0; i < results.outputs_.size(); ++i) {
