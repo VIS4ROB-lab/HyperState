@@ -83,16 +83,32 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& d
   }
 
   NewResult results(derivative, layout.outer_input_size, jacobians);
-  std::cout << "N" << results.memory_.size() << std::endl;
+  // std::cout << "N " << results.memory_ << std::endl;
 
-  for (auto i = 0; i < results.outputs_.size(); ++i) {
+  /* for (auto i = 0; i < results.outputs_.size(); ++i) {
     std::cout << results.outputs_[i] - results.memory_.data() << std::endl;
-  }
-
+  } */
 
   const auto offset = layout.left_input_margin - 1;
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
-  return SpatialInterpolator<Element>::evaluate(weights, variables, results.outputs_, results.jacobians_, layout.left_input_padding, jacobians);
+  SpatialInterpolator<Element>::evaluate(weights, variables, results.outputs_, results.jacobians_, layout.left_input_padding, jacobians);
+
+  std::cout << "N " << results.memory_.transpose() << std::endl;
+
+  TemporalMotionResult<Scalar> res;
+  for (auto i = 0; i < results.outputs_.size(); ++i) {
+    if (i == 0) {
+      res.derivatives.emplace_back(Eigen::Map<TVariable>{results.outputs_[i]});
+    } else {
+      res.derivatives.emplace_back(Eigen::Map<Tangent<TVariable>>{results.outputs_[i]});
+    }
+  }
+
+  for (auto i = 0; i < results.jacobians_.size(); ++i) {
+    res.jacobians.emplace_back(Eigen::Map<Jacobian<Scalar, Tangent<TVariable>::kNumParameters, Eigen::Dynamic>>{results.jacobians_[i][0], Tangent<TVariable>::kNumParameters, layout.outer_input_size * Element::kNumParameters});
+  }
+
+  return res;
 }
 
 template <typename TVariable>

@@ -33,23 +33,23 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   /// \param offset Offset into variables.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
-  [[nodiscard]] static auto evaluate(
+  static auto evaluate(
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
       const Pointers<const Scalar>& variables,
       const Pointers<Scalar>& outputs,
       const std::vector<Pointers<Scalar>>& jacobians,
       const Index& offset,
-      const bool old_jacobians) -> TemporalMotionResult<Scalar>;
+      bool old_jacobians) -> bool;
 
  private:
   template <MotionDerivative TMotionDerivative>
-  [[nodiscard]] static auto evaluate(
+  static auto evaluate(
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
       const Pointers<const Scalar>& variables,
       const Pointers<Scalar>& outputs,
       const std::vector<Pointers<Scalar>>& jacobians,
       const Index& offset,
-      const bool old_jacobians) -> TemporalMotionResult<Scalar>;
+      bool old_jacobians) -> bool;
 };
 
 } // namespace hyper

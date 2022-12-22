@@ -30,7 +30,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
     const Pointers<Scalar>& outputs,
     const std::vector<Pointers<Scalar>>& jacobians,
     const Index& offset,
-    const bool old_jacobians) -> TemporalMotionResult<Scalar> {
+    const bool old_jacobians) -> bool {
   const auto derivative = static_cast<MotionDerivative>(weights.cols() - 1);
   switch (derivative) {
     case MotionDerivative::VALUE:
@@ -52,7 +52,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
     const Pointers<Scalar>& outputs,
     const std::vector<Pointers<Scalar>>& jacobians,
     const Index& offset,
-    const bool old_jacobians) -> TemporalMotionResult<Scalar> {
+    const bool old_jacobians) -> bool {
   // Definitions.
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
@@ -64,7 +64,6 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
   // Allocate result.
   TemporalMotionResult<Scalar> result;
   auto& [xs, Js] = result;
-  xs.reserve(TMotionDerivative + 1);
   Js.reserve(TMotionDerivative + 1);
 
   // Compute indices.
@@ -256,15 +255,15 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
     }
   }
 
-  xs.emplace_back(SE3<Scalar>{R, x});
+  Eigen::Map<Manifold>{outputs[MotionDerivative::VALUE]} = SE3<Scalar>{R, x};
   if constexpr (MotionDerivative::VALUE < TMotionDerivative) {
-    xs.emplace_back(v);
+    Eigen::Map<Tangent>{outputs[MotionDerivative::VELOCITY]} = v;
     if constexpr (MotionDerivative::VELOCITY < TMotionDerivative) {
-      xs.emplace_back(a);
+      Eigen::Map<Tangent>{outputs[MotionDerivative::ACCELERATION]} = a;
     }
   }
 
-  return result;
+  return true;
 }
 
 } // namespace hyper
