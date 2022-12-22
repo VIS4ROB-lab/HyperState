@@ -36,16 +36,20 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   [[nodiscard]] static auto evaluate(
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
       const Pointers<const Scalar>& variables,
+      const Pointers<Scalar>& outputs,
+      const std::vector<Pointers<Scalar>>& jacobians,
       const Index& offset,
-      const bool jacobians) -> TemporalMotionResult<Scalar>;
+      const bool old_jacobians) -> TemporalMotionResult<Scalar>;
 
  private:
   template <MotionDerivative TMotionDerivative>
   [[nodiscard]] static auto evaluate(
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
       const Pointers<const Scalar>& variables,
+      const Pointers<Scalar>& outputs,
+      const std::vector<Pointers<Scalar>>& jacobians,
       const Index& offset,
-      const bool jacobians) -> TemporalMotionResult<Scalar>;
+      const bool old_jacobians) -> TemporalMotionResult<Scalar>;
 };
 
 } // namespace hyper

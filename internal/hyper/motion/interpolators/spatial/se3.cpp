@@ -27,16 +27,18 @@ inline auto TranslationJacobian(TMatrix& matrix, const Index& index) {
 auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
     const Eigen::Ref<const MatrixX<Scalar>>& weights,
     const Pointers<const Scalar>& variables,
+    const Pointers<Scalar>& outputs,
+    const std::vector<Pointers<Scalar>>& jacobians,
     const Index& offset,
-    const bool jacobians) -> TemporalMotionResult<Scalar> {
+    const bool old_jacobians) -> TemporalMotionResult<Scalar> {
   const auto derivative = static_cast<MotionDerivative>(weights.cols() - 1);
   switch (derivative) {
     case MotionDerivative::VALUE:
-      return evaluate<MotionDerivative::VALUE>(weights, variables, offset, jacobians);
+      return evaluate<MotionDerivative::VALUE>(weights, variables, outputs, jacobians, offset, old_jacobians);
     case MotionDerivative::VELOCITY:
-      return evaluate<MotionDerivative::VELOCITY>(weights, variables, offset, jacobians);
+      return evaluate<MotionDerivative::VELOCITY>(weights, variables, outputs, jacobians, offset, old_jacobians);
     case MotionDerivative::ACCELERATION:
-      return evaluate<MotionDerivative::ACCELERATION>(weights, variables, offset, jacobians);
+      return evaluate<MotionDerivative::ACCELERATION>(weights, variables, outputs, jacobians, offset, old_jacobians);
     default:
       LOG(FATAL) << "Requested derivative is not available.";
       return {};
@@ -47,8 +49,10 @@ template <MotionDerivative TMotionDerivative>
 auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
     const Eigen::Ref<const MatrixX<Scalar>>& weights,
     const Pointers<const Scalar>& variables,
+    const Pointers<Scalar>& outputs,
+    const std::vector<Pointers<Scalar>>& jacobians,
     const Index& offset,
-    const bool jacobians) -> TemporalMotionResult<Scalar> {
+    const bool old_jacobians) -> TemporalMotionResult<Scalar> {
   // Definitions.
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
@@ -73,7 +77,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
   Tangent v = Tangent::Zero();
   Tangent a = Tangent::Zero();
 
-  if (!jacobians) {
+  if (!old_jacobians) {
     // Retrieves first input.
     const auto T_0 = Eigen::Map<const Input>{variables[offset]}.variable();
 

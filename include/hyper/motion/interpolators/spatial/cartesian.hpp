@@ -38,8 +38,10 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   [[nodiscard]] static auto evaluate(
       const Eigen::Ref<const MatrixX<Scalar>>& weights,
       const Pointers<const Scalar>& variables,
+      const Pointers<Scalar>& outputs,
+      const std::vector<Pointers<Scalar>>& jacobians,
       const Index& offset,
-      const bool jacobians) -> TemporalMotionResult<Scalar> {
+      const bool old_jacobians) -> TemporalMotionResult<Scalar> {
     // Definitions.
     using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
 
@@ -56,12 +58,12 @@ class SpatialInterpolator<Stamped<TVariable>> final {
       for (Index k = 0; k < num_derivatives; ++k) {
         if (k == 0) {
           xs.emplace_back(Eigen::Map<const Input>{variables[0]}.variable());
-          if (jacobians) {
+          if (old_jacobians) {
             Js.emplace_back(JacobianX<Scalar>::Identity(kDimTangent, kNumInputParameters));
           }
         } else {
           xs.emplace_back(MatrixX<Scalar>::Zero(kDimManifold, 1));
-          if (jacobians) {
+          if (old_jacobians) {
             Js.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, kNumInputParameters));
           }
         }
@@ -84,7 +86,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
       for (Index k = 0; k < num_derivatives; ++k) {
         xs.emplace_back(increments * weights.col(k));
 
-        if (jacobians) {
+        if (old_jacobians) {
           Js.emplace_back(JacobianX<Scalar>::Zero(kDimTangent, variables.size() * kNumInputParameters));
 
           if (k == 0) {

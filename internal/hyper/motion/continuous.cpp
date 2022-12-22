@@ -1,6 +1,8 @@
 /// This file is subject to the terms and conditions defined in
 /// the 'LICENSE' file, which is part of this repository.
 
+#include <iostream>
+
 #include <glog/logging.h>
 
 #include "hyper/matrix.hpp"
@@ -80,9 +82,17 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& d
     stamps.emplace_back(p_element_i[Element::kStampOffset]);
   }
 
+  NewResult results(derivative, layout.outer_input_size, jacobians);
+  std::cout << "N" << results.memory_.size() << std::endl;
+
+  for (auto i = 0; i < results.outputs_.size(); ++i) {
+    std::cout << results.outputs_[i] - results.memory_.data() << std::endl;
+  }
+
+
   const auto offset = layout.left_input_margin - 1;
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
-  return SpatialInterpolator<Element>::evaluate(weights, variables, layout.left_input_padding, jacobians);
+  return SpatialInterpolator<Element>::evaluate(weights, variables, results.outputs_, results.jacobians_, layout.left_input_padding, jacobians);
 }
 
 template <typename TVariable>

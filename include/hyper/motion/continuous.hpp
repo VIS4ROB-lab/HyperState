@@ -30,6 +30,46 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Derivative = typename Base::Derivative;
   using Result = typename Base::Result;
 
+  struct NewResult {
+    static constexpr auto kManifoldSize = TVariable::kNumParameters;
+    static constexpr auto kTangentSize = Tangent<TVariable>::kNumParameters;
+    static constexpr auto kJacobianSize = kTangentSize * Element::kNumParameters;
+
+    NewResult(const Derivative& derivative, const Index& num_variables, bool jacobians) {
+      auto parametersSize = kManifoldSize + derivative * kTangentSize;
+      if (!jacobians) {
+        memory_.setZero(parametersSize);
+      } else {
+        auto jacobiansSize = num_variables * (kJacobianSize + derivative * kJacobianSize);
+        memory_.setZero(parametersSize + jacobiansSize);
+      }
+
+      auto data = memory_.data();
+      outputs_.emplace_back(data);
+      data += kManifoldSize;
+
+      for (auto i = 0; i < derivative; ++i) {
+        outputs_.emplace_back(data);
+        data += kTangentSize;
+      }
+
+      if (jacobians) {
+        jacobians_.resize(derivative + 1);
+        for (auto i = 0; i < derivative + 1; ++i) {
+          jacobians_[i].reserve(num_variables);
+          for (auto j = 0; j < num_variables; ++j) {
+            jacobians_[i].emplace_back(data);
+            data += kJacobianSize;
+          }
+        }
+      }
+    }
+
+    VectorX<Scalar> memory_;
+    Pointers<Scalar> outputs_;
+    std::vector<Pointers<Scalar>> jacobians_;
+  };
+
   /// Default constructor.
   ContinuousMotion();
 
