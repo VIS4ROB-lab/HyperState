@@ -24,13 +24,7 @@ inline auto TranslationJacobian(TMatrix& matrix, const Index& index) {
 
 } // namespace
 
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
-    const Eigen::Ref<const MatrixX<Scalar>>& weights,
-    const Pointers<const Scalar>& variables,
-    const Pointers<Scalar>& outputs,
-    const std::vector<Pointers<Scalar>>& jacobians,
-    const Index& offset,
-    const bool old_jacobians) -> bool {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians& jacobians, const Index& offset, const bool old_jacobians) -> bool {
   const auto derivative = static_cast<MotionDerivative>(weights.cols() - 1);
   switch (derivative) {
     case MotionDerivative::VALUE:
@@ -46,13 +40,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
 }
 
 template <MotionDerivative TMotionDerivative>
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(
-    const Eigen::Ref<const MatrixX<Scalar>>& weights,
-    const Pointers<const Scalar>& variables,
-    const Pointers<Scalar>& outputs,
-    const std::vector<Pointers<Scalar>>& jacobians,
-    const Index& offset,
-    const bool old_jacobians) -> bool {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians& jacobians, const Index& offset, const bool old_jacobians) -> bool {
   // Definitions.
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;

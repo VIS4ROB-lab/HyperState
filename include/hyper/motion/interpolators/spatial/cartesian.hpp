@@ -25,6 +25,11 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   using Manifold = TVariable;
   using Tangent = hyper::Tangent<TVariable>;
 
+  using Variables = Pointers<const Scalar>;
+  using Weights = Eigen::Ref<const MatrixX<Scalar>>;
+  using Outputs = Pointers<Scalar>;
+  using Jacobians = std::vector<Pointers<Scalar>>;
+
   // Constants.
   static constexpr auto kDimManifold = Manifold::kNumParameters;
   static constexpr auto kDimTangent = Tangent::kNumParameters;
@@ -35,13 +40,7 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   /// \param offset Offset into variables.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
-  static auto evaluate(
-      const Eigen::Ref<const MatrixX<Scalar>>& weights,
-      const Pointers<const Scalar>& variables,
-      const Pointers<Scalar>& outputs,
-      const std::vector<Pointers<Scalar>>& jacobians,
-      const Index& offset,
-      const bool old_jacobians) -> bool {
+  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians& jacobians, const Index& offset, const bool old_jacobians) -> bool {
     // Definitions.
     using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
 
@@ -51,14 +50,14 @@ class SpatialInterpolator<Stamped<TVariable>> final {
     if (variables.size() == 1) {
       for (Index k = 0; k < num_derivatives; ++k) {
         if (k == 0) {
-          Eigen::Map<Manifold>{outputs[0]} = Eigen::Map<const Manifold>{variables[0]};
+          Eigen::Map<TVariable>{outputs[0]} = Eigen::Map<const TVariable>{variables[0]};
           if (old_jacobians) {
-            Eigen::Map<JacobianNM<Tangent, Manifold>>{jacobians[0][0]}.setIdentity();
+            Eigen::Map<JacobianNM<Tangent, TVariable>>{jacobians[0][0]}.setIdentity();
           }
         } else {
           Eigen::Map<Tangent>{outputs[k]}.setZero();
           if (old_jacobians) {
-            Eigen::Map<JacobianNM<Tangent, Manifold>>{jacobians[k][0]}.setZero();
+            Eigen::Map<JacobianNM<Tangent, TVariable>>{jacobians[k][0]}.setZero();
           }
         }
       }
