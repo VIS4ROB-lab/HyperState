@@ -31,10 +31,7 @@ class CartesianMotionTests : public testing::Test {
   using StampedValue = Stamped<Value>;
 
   using Policy = SpatialInterpolator<StampedValue>;
-
-  using Input = typename Policy::Input;
   using Tangent = typename Policy::Tangent;
-
   using Motion = ContinuousMotion<Value>;
 
   /// Set up.
@@ -47,10 +44,10 @@ class CartesianMotionTests : public testing::Test {
   auto setRandomMotion() -> void {
     const auto min_num_variables = motion_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
-      Input input;
-      input.stamp() = 0.25 * i;
-      input.variable() = Value::Random();
-      motion_.elements().insert(input);
+      StampedValue stamped_value;
+      stamped_value.stamp() = 0.25 * i;
+      stamped_value.variable() = Value::Random();
+      motion_.elements().insert(stamped_value);
     }
   }
 
@@ -87,19 +84,19 @@ class CartesianMotionTests : public testing::Test {
       // Allocate Jacobian.
       JacobianX<Scalar> Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Value::kNumParameters, num_inputs * Input::kNumParameters);
+      Jn_i.setZero(Value::kNumParameters, num_inputs * StampedValue::kNumParameters);
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
-        auto input_j = Eigen::Map<Input>{inputs[j]->asVector().data()};
+        auto input_j = Eigen::Map<StampedValue>{inputs[j]->asVector().data()};
 
         for (Index k = 0; k < input_j.size() - 1; ++k) {
-          const Input tmp = input_j;
+          const StampedValue tmp = input_j;
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable() += tau;
 
           const auto d_result = motion_.evaluate(stamp, derivative, false);
-          Jn_i.col(j * Input::kNumParameters + k) = (d_result.derivatives.at(i) - result.derivatives.at(i)).transpose() / kNumericIncrement;
+          Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivatives.at(i) - result.derivatives.at(i)).transpose() / kNumericIncrement;
 
           input_j = tmp;
         }
@@ -148,20 +145,17 @@ class ManifoldMotionTests : public testing::Test {
   using StampedValue = Stamped<Value>;
 
   using Policy = SpatialInterpolator<StampedValue>;
-
-  using Input = typename Policy::Input;
   using Tangent = typename Policy::Tangent;
-
   using Motion = ContinuousMotion<Value>;
 
   /// Sets a random motion.
   auto setRandomMotion() -> void {
     const auto min_num_variables = motion_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
-      Input input;
-      input.stamp() = 0.25 * i;
-      input.variable() = Value::Random();
-      motion_.elements().insert(input);
+      StampedValue stamped_value;
+      stamped_value.stamp() = 0.25 * i;
+      stamped_value.variable() = Value::Random();
+      motion_.elements().insert(stamped_value);
     }
   }
 
@@ -218,14 +212,14 @@ class ManifoldMotionTests : public testing::Test {
       // Allocate Jacobian.
       JacobianX<Scalar> Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Tangent::kNumParameters, num_inputs * Input::kNumParameters);
+      Jn_i.setZero(Tangent::kNumParameters, num_inputs * StampedValue::kNumParameters);
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
-        auto input_j = Eigen::Map<Input>{inputs[j]->asVector().data()};
+        auto input_j = Eigen::Map<StampedValue>{inputs[j]->asVector().data()};
 
         for (Index k = 0; k < Tangent::kNumParameters; ++k) {
-          const Input tmp = input_j;
+          const StampedValue tmp = input_j;
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable().rotation() *= tau.angular().toManifold();
           input_j.variable().translation() += tau.linear();
@@ -235,16 +229,16 @@ class ManifoldMotionTests : public testing::Test {
           if (i == 0) {
             const auto value = result.template derivativeAs<SE3<Scalar>>(0);
             const auto d_value = d_result.template derivativeAs<SE3<Scalar>>(0);
-            Jn_i.col(j * Input::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
-            Jn_i.col(j * Input::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
+            Jn_i.col(j * StampedValue::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
+            Jn_i.col(j * StampedValue::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
           } else {
-            Jn_i.col(j * Input::kNumParameters + k) = (d_result.derivatives.at(i) - result.derivatives.at(i)) / kNumericIncrement;
+            Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivatives.at(i) - result.derivatives.at(i)) / kNumericIncrement;
           }
 
           input_j = tmp;
         }
 
-        Jn_i.template middleCols<Input::kNumParameters - 1>(j * Input::kNumParameters) = Jn_i.template middleCols<Tangent::kNumParameters>(j * Input::kNumParameters) * SE3JacobianAdapter(inputs[j]->asVector().data());
+        Jn_i.template middleCols<StampedValue::kNumParameters - 1>(j * StampedValue::kNumParameters) = Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedValue::kNumParameters) * SE3JacobianAdapter(inputs[j]->asVector().data());
       }
 
       // Compare Jacobians.

@@ -14,9 +14,6 @@ template <>
 class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
  public:
   // Definitions.
-  using Input = Stamped<SE3<Scalar>>;
-
-  // Definitions.
   using Index = Eigen::Index;
   // using Scalar = typename SE3<Scalar>::Scalar;
 
@@ -38,11 +35,11 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   /// \param offset Offset into variables.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
-  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians& jacobians, const Index& offset, const bool old_jacobians) -> bool;
+  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool;
 
  private:
   template <MotionDerivative TMotionDerivative>
-  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians& jacobians, const Index& offset, const bool old_jacobians) -> bool;
+  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool;
 };
 
 } // namespace hyper

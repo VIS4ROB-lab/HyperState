@@ -7,23 +7,23 @@
 
 namespace hyper {
 
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians& jacobians, const Index& offset, const bool old_jacobians) -> bool {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool {
   const auto derivative = static_cast<MotionDerivative>(weights.cols() - 1);
   switch (derivative) {
     case MotionDerivative::VALUE:
-      return evaluate<MotionDerivative::VALUE>(weights, variables, outputs, jacobians, offset, old_jacobians);
+      return evaluate<MotionDerivative::VALUE>(weights, variables, outputs, jacobians, offset);
     case MotionDerivative::VELOCITY:
-      return evaluate<MotionDerivative::VELOCITY>(weights, variables, outputs, jacobians, offset, old_jacobians);
+      return evaluate<MotionDerivative::VELOCITY>(weights, variables, outputs, jacobians, offset);
     case MotionDerivative::ACCELERATION:
-      return evaluate<MotionDerivative::ACCELERATION>(weights, variables, outputs, jacobians, offset, old_jacobians);
+      return evaluate<MotionDerivative::ACCELERATION>(weights, variables, outputs, jacobians, offset);
     default:
       LOG(FATAL) << "Requested derivative is not available.";
-      return {};
+      return false;
   }
 }
 
 template <MotionDerivative TMotionDerivative>
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians& jacobians, const Index& offset, const bool old_jacobians) -> bool {
+auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool {
   // Definitions.
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
@@ -47,7 +47,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
   Tangent v = Tangent::Zero();
   Tangent a = Tangent::Zero();
 
-  if (!old_jacobians) {
+  if (!jacobians) {
     // Retrieves first input.
     const auto T_0 = Eigen::Map<const Manifold>{variables[offset]};
 
@@ -126,7 +126,6 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
     std::vector<std::vector<Eigen::Map<JacobianNM<Tangent::Angular>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>> Js_x;
 
     adapters.reserve(num_variables);
-
     for (Index i = 0; i < num_variables; ++i) {
       adapters.emplace_back(SU2JacobianAdapter(variables[i] + Manifold::kRotationOffset));
     }
@@ -137,9 +136,9 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
       Js_r.reserve(num_variables);
       Js_x.reserve(num_variables);
       for (Index i = 0; i < num_variables; ++i) {
-        adapters.emplace_back(SU2JacobianAdapter(variables[i] + Manifold::kRotationOffset));
-        Js_r[k].emplace_back(jacobians[k][i] + Manifold::kRotationOffset * Tangent::kNumParameters + Tangent::kAngularOffset);
-        Js_x[k].emplace_back(jacobians[k][i] + Manifold::kTranslationOffset * Tangent::kNumParameters + Tangent::kLinearOffset);
+        const auto data = (*jacobians)[k][i];
+        Js_r[k].emplace_back(data + Manifold::kRotationOffset * Tangent::kNumParameters + Tangent::kAngularOffset);
+        Js_x[k].emplace_back(data + Manifold::kTranslationOffset * Tangent::kNumParameters + Tangent::kLinearOffset);
       }
     }
 

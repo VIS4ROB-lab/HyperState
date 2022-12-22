@@ -16,9 +16,6 @@ template <typename TVariable>
 class SpatialInterpolator<Stamped<TVariable>> final {
  public:
   // Definitions.
-  using Input = Stamped<TVariable>;
-
-  // Definitions.
   using Index = Eigen::Index;
   using Scalar = typename TVariable::Scalar;
 
@@ -40,59 +37,47 @@ class SpatialInterpolator<Stamped<TVariable>> final {
   /// \param offset Offset into variables.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
-  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians& jacobians, const Index& offset, const bool old_jacobians) -> bool {
+  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool {
     // Definitions.
     using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
+    using Jacobian = JacobianNM<Tangent, Manifold>;
 
+    // Constants.
     const auto num_variables = weights.rows();
     const auto num_derivatives = weights.cols();
+    const auto last_idx = offset + num_variables - 1;
 
-    if (variables.size() == 1) {
-      for (Index k = 0; k < num_derivatives; ++k) {
-        if (k == 0) {
-          Eigen::Map<TVariable>{outputs[0]} = Eigen::Map<const TVariable>{variables[0]};
-          if (old_jacobians) {
-            Eigen::Map<JacobianNM<Tangent, TVariable>>{jacobians[0][0]}.setIdentity();
-          }
-        } else {
-          Eigen::Map<Tangent>{outputs[k]}.setZero();
-          if (old_jacobians) {
-            Eigen::Map<JacobianNM<Tangent, TVariable>>{jacobians[k][0]}.setZero();
-          }
-        }
-      }
-    } else {
-      // Compute indices.
-      const auto end_idx = offset + num_variables;
-      const auto last_idx = end_idx - 1;
+    // Compute increments.
+    auto increments = Increments{kDimTangent, num_variables};
+    increments.col(0).noalias() = Eigen::Map<const Manifold>{variables[offset]};
 
-      // Compute increments.
-      auto increments = Increments{kDimTangent, num_variables};
-      increments.col(0).noalias() = Eigen::Map<const Manifold>{variables[offset]};
+    for (auto i = offset; i < last_idx; ++i) {
+      increments.col(i - offset + 1).noalias() = Eigen::Map<const Manifold>{variables[i + 1]} - Eigen::Map<const Manifold>{variables[i]};
+    }
 
-      for (auto i = offset + 1; i < end_idx; ++i) {
-        increments.col(i - offset).noalias() = Eigen::Map<const Manifold>{variables[i]} - Eigen::Map<const Manifold>{variables[i - 1]};
+    for (Index k = 0; k < num_derivatives; ++k) {
+      // Evaluate values.
+      if (k == 0) {
+        Eigen::Map<Manifold>{outputs[0]} = increments * weights.col(0);
+      } else {
+        Eigen::Map<Tangent>{outputs[k]} = increments * weights.col(k);
       }
 
-      for (Index k = 0; k < num_derivatives; ++k) {
-        if (k == 0) {
-          Eigen::Map<Manifold>{outputs[0]} = increments * weights.col(0);
-        } else {
-          Eigen::Map<Tangent>{outputs[k]} = increments * weights.col(k);
-        }
-
-        if (old_jacobians) {
+      // Evaluate Jacobians.
+      if (jacobians) {
+        const auto& Js = *jacobians;
+        if (variables.size() > 1) {
           if (k == 0) {
-            Eigen::Map<JacobianNM<Tangent, Manifold>>{jacobians[0][offset]}.diagonal().setConstant(Scalar{1} - weights(1, k));
+            Eigen::Map<Jacobian>{Js[0][offset]}.diagonal().setConstant(Scalar{1} - weights(1, k));
           } else {
-            Eigen::Map<JacobianNM<Tangent, Manifold>>{jacobians[k][offset]}.diagonal().setConstant(Scalar{-1} * weights(1, k));
+            Eigen::Map<Jacobian>{Js[k][offset]}.diagonal().setConstant(Scalar{-1} * weights(1, k));
           }
-
-          for (auto j = offset + 1; j < last_idx; ++j) {
-            Eigen::Map<JacobianNM<Tangent, Manifold>>{jacobians[k][j]}.diagonal().setConstant(weights(j, k) - weights(j + 1, k));
+          for (auto i = offset + 1; i < last_idx; ++i) {
+            Eigen::Map<Jacobian>{Js[k][i]}.diagonal().setConstant(weights(i, k) - weights(i + 1, k));
           }
-
-          Eigen::Map<JacobianNM<Tangent, Manifold>>{jacobians[k][last_idx]}.diagonal().setConstant(weights(last_idx, k));
+          Eigen::Map<Jacobian>{Js[k][last_idx]}.diagonal().setConstant(weights(last_idx, k));
+        } else if (k == 0) {
+          Eigen::Map<Jacobian>{Js[0][offset]}.diagonal().setConstant(Scalar{1});
         }
       }
     }
