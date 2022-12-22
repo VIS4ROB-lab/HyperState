@@ -30,7 +30,7 @@ class CartesianMotionTests : public testing::Test {
   using Value = typename std::tuple_element<1, TArgs>::type;
   using StampedValue = Stamped<Value>;
 
-  using Policy = SpatialInterpolator<StampedValue>;
+  using Policy = SpatialInterpolator<Value>;
   using Tangent = typename Policy::Tangent;
   using Motion = ContinuousMotion<Value>;
 
@@ -144,7 +144,7 @@ class ManifoldMotionTests : public testing::Test {
   using Value = typename std::tuple_element<1, TArgs>::type;
   using StampedValue = Stamped<Value>;
 
-  using Policy = SpatialInterpolator<StampedValue>;
+  using Policy = SpatialInterpolator<Value>;
   using Tangent = typename Policy::Tangent;
   using Motion = ContinuousMotion<Value>;
 

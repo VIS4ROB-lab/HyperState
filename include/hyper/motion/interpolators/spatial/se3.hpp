@@ -10,20 +10,20 @@
 
 namespace hyper {
 
-template <>
-class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
+template <typename TScalar>
+class SpatialInterpolator<SE3<TScalar>> final {
  public:
   // Definitions.
   using Index = Eigen::Index;
-  // using Scalar = typename SE3<Scalar>::Scalar;
+  using Scalar = TScalar;
 
-  using Manifold = SE3<Scalar>;
-  using Tangent = hyper::Tangent<SE3<Scalar>>;
+  using Manifold = SE3<TScalar>;
+  using Tangent = hyper::Tangent<SE3<TScalar>>;
 
-  using Variables = Pointers<const Scalar>;
-  using Weights = Eigen::Ref<const MatrixX<Scalar>>;
-  using Outputs = Pointers<Scalar>;
-  using Jacobians = std::vector<Pointers<Scalar>>;
+  using Variables = Pointers<const TScalar>;
+  using Weights = Eigen::Ref<const MatrixX<TScalar>>;
+  using Outputs = Pointers<TScalar>;
+  using Jacobians = std::vector<Pointers<TScalar>>;
 
   // Constants.
   static constexpr auto kDimManifold = Manifold::kNumParameters;
@@ -35,10 +35,6 @@ class SpatialInterpolator<Stamped<SE3<Scalar>>> final {
   /// \param offset Offset into variables.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Temporal motion results.
-  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool;
-
- private:
-  template <MotionDerivative TMotionDerivative>
   static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool;
 };
 

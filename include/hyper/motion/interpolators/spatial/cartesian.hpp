@@ -13,7 +13,7 @@
 namespace hyper {
 
 template <typename TVariable>
-class SpatialInterpolator<Stamped<TVariable>> final {
+class SpatialInterpolator final {
  public:
   // Definitions.
   using Index = Eigen::Index;

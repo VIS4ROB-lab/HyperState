@@ -7,23 +7,8 @@
 
 namespace hyper {
 
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool {
-  const auto derivative = static_cast<MotionDerivative>(weights.cols() - 1);
-  switch (derivative) {
-    case MotionDerivative::VALUE:
-      return evaluate<MotionDerivative::VALUE>(weights, variables, outputs, jacobians, offset);
-    case MotionDerivative::VELOCITY:
-      return evaluate<MotionDerivative::VELOCITY>(weights, variables, outputs, jacobians, offset);
-    case MotionDerivative::ACCELERATION:
-      return evaluate<MotionDerivative::ACCELERATION>(weights, variables, outputs, jacobians, offset);
-    default:
-      LOG(FATAL) << "Requested derivative is not available.";
-      return false;
-  }
-}
-
-template <MotionDerivative TMotionDerivative>
-auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool {
+template <typename TScalar>
+auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool {
   // Definitions.
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
@@ -35,11 +20,9 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
   constexpr auto kAcceleration = MotionDerivative::ACCELERATION;
 
   const auto num_variables = weights.rows();
-  // const auto num_derivatives = weights.cols();
-
-  // Compute indices.
-  const auto end_idx = offset + num_variables;
-  const auto last_idx = end_idx - 1;
+  const auto num_derivatives = weights.cols();
+  const auto derivative = num_derivatives - 1;
+  const auto last_idx = offset + num_variables - 1;
 
   // Allocate accumulators.
   Rotation R = Rotation::Identity();
@@ -50,41 +33,6 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
   if (!jacobians) {
     // Retrieves first input.
     const auto T_0 = Eigen::Map<const Manifold>{variables[offset]};
-
-    /* Allocate accumulators.
-    Rotation R = T_0.rotation();
-    Translation x = T_0.translation();
-    Tangent v = Tangent::Zero();
-    Tangent a = Tangent::Zero();
-
-    for (Index i = offset; i < last_idx; ++i) {
-      const auto T_a = Eigen::Map<const Manifold>{inputs[i]}.variable();
-      const auto T_b = Eigen::Map<const Manifold>{inputs[i + 1]}.variable();
-      const auto w0_i = weights(i - offset + 1, Derivative::VALUE);
-
-      const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
-      const auto d_ab = R_ab.toTangent();
-      const auto x_ab = Translation{T_b.translation() - T_a.translation()};
-      const auto w_ab = SU2Tangent{w0_i * d_ab};
-      const auto R_i = w_ab.toManifold();
-      const auto x_i = Translation{w0_i * x_ab};
-
-      R *= R_i;
-      x += x_i;
-
-      if constexpr (Derivative::VALUE < TMotionDerivative) {
-        const auto i_R_i = R_i.groupInverse();
-        const auto w1_i = weights(i - offset + 1, Derivative::VELOCITY);
-        v.angular() = i_R_i * v.angular() + w1_i * d_ab;
-        v.linear() += w1_i * x_ab;
-
-        if constexpr (Derivative::VELOCITY < TMotionDerivative) {
-          const auto w2_i = weights(i - offset + 1, Derivative::ACCELERATION);
-          a.angular() = i_R_i * a.angular() + w1_i * v.angular().cross(d_ab) + w2_i * d_ab;
-          a.linear() += w2_i * x_ab;
-        }
-      }
-    } */
 
     for (Index i = last_idx; offset < i; --i) {
       const auto T_a = Eigen::Map<const Manifold>{variables[i - 1]};
@@ -98,7 +46,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
       const auto R_i = w_ab.toManifold();
       const auto x_i = Translation{w0_i * x_ab};
 
-      if constexpr (kValue < TMotionDerivative) {
+      if (kValue < derivative) {
         const auto i_R = R.groupInverse().matrix();
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto w1_i = weights(i - offset, kVelocity);
@@ -106,7 +54,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
         v.angular() += w1_i_i_R_d_ab;
         v.linear() += w1_i * x_ab;
 
-        if constexpr (kVelocity < TMotionDerivative) {
+        if (kVelocity < derivative) {
           const auto w2_i = weights(i - offset, kAcceleration);
           a.angular() += w2_i * i_R_d_ab - v.angular().cross(w1_i_i_R_d_ab);
           a.linear() += w2_i * x_ab;
@@ -123,16 +71,16 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
   } else {
     std::vector<JacobianNM<SU2Tangent, SU2<Scalar>>> adapters;
     std::vector<std::vector<Eigen::Map<JacobianNM<SU2Tangent, SU2<Scalar>>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>> Js_r;
-    std::vector<std::vector<Eigen::Map<JacobianNM<Tangent::Angular>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>> Js_x;
+    std::vector<std::vector<Eigen::Map<JacobianNM<typename Tangent::Angular>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>> Js_x;
 
     adapters.reserve(num_variables);
     for (Index i = 0; i < num_variables; ++i) {
       adapters.emplace_back(SU2JacobianAdapter(variables[i] + Manifold::kRotationOffset));
     }
 
-    Js_r.resize(TMotionDerivative + 1);
-    Js_x.resize(TMotionDerivative + 1);
-    for (Index k = 0; k < TMotionDerivative + 1; ++k) {
+    Js_r.resize(num_derivatives);
+    Js_x.resize(num_derivatives);
+    for (Index k = 0; k < num_derivatives; ++k) {
       Js_r.reserve(num_variables);
       Js_x.reserve(num_variables);
       for (Index i = 0; i < num_variables; ++i) {
@@ -165,7 +113,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
       Js_x[kValue][i - 1].diagonal().setConstant(-w0_i);
 
       // Velocity update.
-      if constexpr (kValue < TMotionDerivative) {
+      if (kValue < derivative) {
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto i_R_d_ab_x = i_R_d_ab.hat();
         const auto w1_i = weights(i - offset, kVelocity);
@@ -189,7 +137,7 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
         }
 
         // Acceleration update.
-        if constexpr (kVelocity < TMotionDerivative) {
+        if (kVelocity < derivative) {
           const auto w2_i = weights(i - offset, kAcceleration);
           const auto w1_i_i_R_d_ab_x = w1_i_i_R_d_ab.hat();
 
@@ -233,14 +181,16 @@ auto SpatialInterpolator<Stamped<SE3<Scalar>>>::evaluate(const Weights& weights,
   }
 
   Eigen::Map<Manifold>{outputs[kValue]} = SE3<Scalar>{R, x};
-  if constexpr (kValue < TMotionDerivative) {
+  if (kValue < derivative) {
     Eigen::Map<Tangent>{outputs[kVelocity]} = v;
-    if constexpr (kVelocity < TMotionDerivative) {
+    if (kVelocity < derivative) {
       Eigen::Map<Tangent>{outputs[kAcceleration]} = a;
     }
   }
 
   return true;
 }
+
+template class SpatialInterpolator<SE3<double>>;
 
 } // namespace hyper
