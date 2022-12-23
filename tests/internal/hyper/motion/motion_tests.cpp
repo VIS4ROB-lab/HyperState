@@ -265,7 +265,7 @@ TYPED_TEST_P(ManifoldMotionTests, Derivatives) {
 TYPED_TEST_P(ManifoldMotionTests, Jacobians) {
   this->setRandomMotion();
   for (auto i = 0; i < TestFixture::kNumIterations; ++i) {
-    EXPECT_TRUE(this->checkJacobians(1));
+    EXPECT_TRUE(this->checkJacobians(2));
   }
 }
 

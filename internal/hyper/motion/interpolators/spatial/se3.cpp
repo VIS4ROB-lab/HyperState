@@ -56,7 +56,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
 
         if (kVelocity < derivative) {
           const auto w2_i = weights(i - offset, kAcceleration);
-          a.angular() += w2_i * i_R_d_ab - v.angular().cross(w1_i_i_R_d_ab);
+          a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());
           a.linear() += w2_i * x_ab;
         }
       }
@@ -106,10 +106,10 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
       const auto i_R = R.groupInverse().matrix();
       const auto i_R_ab = R_ab.groupInverse().matrix();
 
-      const auto J_x_a = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
+      const auto J_x_0 = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
 
       // Update left value Jacobian.
-      Js_r[kValue][i - 1].noalias() = -J_x_a * i_R_ab * adapters[i - 1];
+      Js_r[kValue][i - 1].noalias() = -J_x_0 * i_R_ab * adapters[i - 1];
       Js_x[kValue][i - 1].diagonal().setConstant(-w0_i);
 
       // Velocity update.
@@ -122,18 +122,17 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
         v.angular() += w1_i_i_R_d_ab;
         v.linear() += w1_i * x_ab;
 
-        const auto J_v_a = (w1_i * i_R * J_d_ab_R_ab).eval();
-        const auto J_v_b = (w1_i * i_R_d_ab_x).eval();
+        const auto i_R_J_d_ab_R_ab = (i_R * J_d_ab_R_ab).eval();
+        const auto J_v_0 = (w1_i * i_R_J_d_ab_R_ab).eval();
+        const auto J_v_1 = (w1_i * i_R_d_ab_x).eval();
 
-        // Update velocity Jacobians.
-        Js_r[kVelocity][i - 1].noalias() = -J_v_a * i_R_ab * adapters[i - 1];
+        // Update left velocity Jacobians.
+        Js_r[kVelocity][i - 1].noalias() = -J_v_0 * i_R_ab * adapters[i - 1];
         Js_x[kVelocity][i - 1].diagonal().setConstant(-w1_i);
-        Js_r[kVelocity][i].noalias() += J_v_a * adapters[i] + J_v_b * Js_r[kValue][i];
-        Js_x[kVelocity][i].diagonal().array() += w1_i;
 
         // Propagate velocity updates.
         for (Index k = last_idx; i < k; --k) {
-          Js_r[kVelocity][k].noalias() += J_v_b * Js_r[kValue][k];
+          Js_r[kVelocity][k].noalias() += J_v_1 * Js_r[kValue][k];
         }
 
         // Acceleration update.
@@ -145,25 +144,30 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
           a.linear() += w2_i * x_ab;
 
           const auto v_x = v.angular().hat();
-          const auto J_a_a = (w2_i * i_R * J_d_ab_R_ab).eval();
-          const auto J_a_b = (w2_i * i_R_d_ab_x).eval();
-          const auto J_a_c = (J_a_b - v_x * J_v_b).eval();
+          const auto J_a_0 = (w2_i * i_R_J_d_ab_R_ab).eval();
+          const auto J_a_1 = (w1_i_i_R_d_ab_x - v_x).eval();
+          const auto J_a_2 = (w2_i * i_R_d_ab_x).eval();
+          const auto J_a_3 = (J_a_2 - v_x * J_v_1).eval();
 
           // Update acceleration Jacobians.
-          Js_r[kAcceleration][i - 1].noalias() = -J_a_a * i_R_ab * adapters[i - 1] + (w1_i_i_R_d_ab_x - v_x) * Js_r[kVelocity][i - 1];
+          Js_r[kAcceleration][i - 1].noalias() = -J_a_0 * i_R_ab * adapters[i - 1] + J_a_1 * Js_r[kVelocity][i - 1];
           Js_x[kAcceleration][i - 1].diagonal().setConstant(-w2_i);
-          Js_r[kAcceleration][i].noalias() += J_a_a * adapters[i] + J_a_b * Js_r[kValue][i] + (w1_i_i_R_d_ab_x - v_x) * Js_r[kVelocity][i];
+          Js_r[kAcceleration][i].noalias() += (J_a_0 + J_a_1 * J_v_0) * adapters[i] + (J_a_2 + J_a_1 * J_v_1) * Js_r[kValue][i] + w1_i_i_R_d_ab_x * Js_r[kVelocity][i];
           Js_x[kAcceleration][i].diagonal().array() += w2_i;
 
           // Propagate acceleration updates.
           for (Index k = last_idx; i < k; --k) {
-            Js_r[kAcceleration][k].noalias() += J_a_c * Js_r[kValue][k] + w1_i_i_R_d_ab_x * Js_r[kVelocity][k];
+            Js_r[kAcceleration][k].noalias() += J_a_3 * Js_r[kValue][k] + w1_i_i_R_d_ab_x * Js_r[kVelocity][k];
           }
         }
+
+        // Update right velocity Jacobian.
+        Js_r[kVelocity][i].noalias() += J_v_0 * adapters[i] + J_v_1 * Js_r[kValue][i];
+        Js_x[kVelocity][i].diagonal().array() += w1_i;
       }
 
       // Update right value Jacobian.
-      Js_r[kValue][i].noalias() += J_x_a * adapters[i];
+      Js_r[kValue][i].noalias() += J_x_0 * adapters[i];
       Js_x[kValue][i].diagonal().array() += w0_i;
 
       // Value update.
