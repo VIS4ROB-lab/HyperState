@@ -51,6 +51,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto w1_i = weights(i - offset, kVelocity);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
+
         v.angular() += w1_i_i_R_d_ab;
         v.linear() += w1_i * x_ab;
 
@@ -69,17 +70,16 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
     x = T_0.translation() + x;
 
   } else {
-    std::vector<JacobianNM<SU2Tangent, SU2<Scalar>>> adapters;
-    std::vector<std::vector<Eigen::Map<JacobianNM<SU2Tangent, SU2<Scalar>>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>> Js_r;
-    std::vector<std::vector<Eigen::Map<JacobianNM<typename Tangent::Angular>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>> Js_x;
+    // Definitions.
+    using AdapterJacobians = std::vector<JacobianNM<SU2Tangent, SU2<Scalar>>>;
+    using MappedRotationJacobians = std::vector<std::vector<Eigen::Map<JacobianNM<typename Tangent::Angular, SU2<Scalar>>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>>;
+    using MappedTranslationJacobians = std::vector<std::vector<Eigen::Map<JacobianNM<typename Tangent::Linear>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>>;
 
-    adapters.reserve(num_variables);
-    for (Index i = 0; i < num_variables; ++i) {
-      adapters.emplace_back(SU2JacobianAdapter(variables[i] + Manifold::kRotationOffset));
-    }
-
+    MappedRotationJacobians Js_r;
+    MappedTranslationJacobians Js_x;
     Js_r.resize(num_derivatives);
     Js_x.resize(num_derivatives);
+
     for (Index k = 0; k < num_derivatives; ++k) {
       Js_r.reserve(num_variables);
       Js_x.reserve(num_variables);
@@ -88,6 +88,13 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
         Js_r[k].emplace_back(data + Manifold::kRotationOffset * Tangent::kNumParameters + Tangent::kAngularOffset);
         Js_x[k].emplace_back(data + Manifold::kTranslationOffset * Tangent::kNumParameters + Tangent::kLinearOffset);
       }
+    }
+
+    AdapterJacobians Js_a;
+    Js_a.reserve(num_variables);
+
+    for (Index i = 0; i < num_variables; ++i) {
+      Js_a.emplace_back(SU2JacobianAdapter(variables[i] + Manifold::kRotationOffset));
     }
 
     for (Index i = last_idx; offset < i; --i) {
@@ -109,7 +116,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
       const auto J_x_0 = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
 
       // Update left value Jacobian.
-      Js_r[kValue][i - 1].noalias() = -J_x_0 * i_R_ab * adapters[i - 1];
+      Js_r[kValue][i - 1].noalias() = -J_x_0 * i_R_ab * Js_a[i - 1];
       Js_x[kValue][i - 1].diagonal().setConstant(-w0_i);
 
       // Velocity update.
@@ -127,7 +134,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
         const auto J_v_1 = (w1_i * i_R_d_ab_x).eval();
 
         // Update left velocity Jacobians.
-        Js_r[kVelocity][i - 1].noalias() = -J_v_0 * i_R_ab * adapters[i - 1];
+        Js_r[kVelocity][i - 1].noalias() = -J_v_0 * i_R_ab * Js_a[i - 1];
         Js_x[kVelocity][i - 1].diagonal().setConstant(-w1_i);
 
         // Propagate velocity updates.
@@ -150,9 +157,9 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
           const auto J_a_3 = (J_a_2 - v_x * J_v_1).eval();
 
           // Update acceleration Jacobians.
-          Js_r[kAcceleration][i - 1].noalias() = -J_a_0 * i_R_ab * adapters[i - 1] + J_a_1 * Js_r[kVelocity][i - 1];
+          Js_r[kAcceleration][i - 1].noalias() = -J_a_0 * i_R_ab * Js_a[i - 1] + J_a_1 * Js_r[kVelocity][i - 1];
           Js_x[kAcceleration][i - 1].diagonal().setConstant(-w2_i);
-          Js_r[kAcceleration][i].noalias() += (J_a_0 + J_a_1 * J_v_0) * adapters[i] + (J_a_2 + J_a_1 * J_v_1) * Js_r[kValue][i] + w1_i_i_R_d_ab_x * Js_r[kVelocity][i];
+          Js_r[kAcceleration][i].noalias() += (J_a_0 + J_a_1 * J_v_0) * Js_a[i] + (J_a_2 + J_a_1 * J_v_1) * Js_r[kValue][i] + w1_i_i_R_d_ab_x * Js_r[kVelocity][i];
           Js_x[kAcceleration][i].diagonal().array() += w2_i;
 
           // Propagate acceleration updates.
@@ -162,12 +169,12 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
         }
 
         // Update right velocity Jacobian.
-        Js_r[kVelocity][i].noalias() += J_v_0 * adapters[i] + J_v_1 * Js_r[kValue][i];
+        Js_r[kVelocity][i].noalias() += J_v_0 * Js_a[i] + J_v_1 * Js_r[kValue][i];
         Js_x[kVelocity][i].diagonal().array() += w1_i;
       }
 
       // Update right value Jacobian.
-      Js_r[kValue][i].noalias() += J_x_0 * adapters[i];
+      Js_r[kValue][i].noalias() += J_x_0 * Js_a[i];
       Js_x[kValue][i].diagonal().array() += w0_i;
 
       // Value update.
@@ -175,7 +182,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
       x = x_i + x;
     }
 
-    Js_r[kValue][offset].noalias() += R.groupInverse().matrix() * adapters[offset];
+    Js_r[kValue][offset].noalias() += R.groupInverse().matrix() * Js_a[offset];
     Js_x[kValue][offset].diagonal().array() += Scalar{1};
 
     const auto T_a = Eigen::Map<const Manifold>{variables[offset]};
