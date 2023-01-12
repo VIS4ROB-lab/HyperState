@@ -20,7 +20,9 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
  public:
   // Definitions.
   using Base = TemporalMotion<TVariable>;
+
   using Scalar = typename Base::Scalar;
+  using Index = typename Base::Index;
 
   using Time = typename Base::Time;
   using Range = typename Base::Range;
@@ -41,7 +43,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
 
   /// Time-based pointers accessor.
   /// \return Time-based pointers.
-  [[nodiscard]] virtual auto pointers(const Time& time) const -> Pointers<Element> final;
+  [[nodiscard]] virtual auto pointers(const Time& time) const -> std::vector<Element*> final;
 
   /// Interpolator accessor.
   /// \return Interpolator.

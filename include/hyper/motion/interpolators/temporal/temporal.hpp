@@ -12,6 +12,8 @@ template <typename TScalar>
 class TemporalInterpolator {
  public:
   // Definitions.
+  using Index = Eigen::Index;
+
   using Scalar = TScalar;
   using Layout = TemporalInterpolatorLayout<Index>;
   using Weights = MatrixX<Scalar>;

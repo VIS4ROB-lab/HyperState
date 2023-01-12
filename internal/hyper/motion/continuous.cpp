@@ -31,9 +31,9 @@ auto ContinuousMotion<TVariable>::range() const -> Range {
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::pointers(const Time& time) const -> Pointers<Element> {
+auto ContinuousMotion<TVariable>::pointers(const Time& time) const -> std::vector<Element*> {
   const auto& [begin, end, num_inputs] = iterators(time);
-  Pointers<Element> pointers;
+  std::vector<Element*> pointers;
   pointers.reserve(num_inputs);
   std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
   DCHECK_EQ(pointers.size(), num_inputs);
@@ -54,7 +54,7 @@ auto ContinuousMotion<TVariable>::setInterpolator(const TemporalInterpolator<Sca
 template <typename TVariable>
 auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> {
   const auto& [begin, end, num_inputs] = iterators(time);
-  Pointers<const Scalar> pointers;
+  std::vector<const Scalar*> pointers;
   pointers.reserve(num_inputs);
   std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return element.data(); });
   DCHECK_EQ(pointers.size(), num_inputs);
@@ -70,7 +70,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& deriva
   const auto layout = interpolator()->layout();
 
   // Split pointers.
-  Pointers<const Scalar> variables;
+  std::vector<const Scalar*> variables;
   variables.reserve(layout.outer_input_size);
 
   Stamps stamps;
@@ -86,7 +86,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& deriva
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
 
   auto result = TemporalMotionResult<TVariable>{derivative, layout.outer_input_size, jacobians};
-  SpatialInterpolator<TVariable>::evaluate(weights, variables, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding, Element::kNumParameters);
+  SpatialInterpolator<TVariable>::evaluate(variables, weights, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding, Element::kNumParameters);
   return result;
 }
 

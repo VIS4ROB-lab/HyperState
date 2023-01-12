@@ -8,7 +8,6 @@
 
 #include <glog/logging.h>
 
-#include "hyper/definitions.hpp"
 #include "hyper/motion/motion.hpp"
 #include "hyper/range.hpp"
 #include "hyper/variables/abstract.hpp"
@@ -22,7 +21,9 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
  public:
   // Definitions.
   using Base = Motion<typename TVariable::Scalar>;
+
   using Scalar = typename Base::Scalar;
+  using Index = typename Base::Index;
 
   using Time = Scalar;
   using Range = hyper::Range<Time, BoundaryPolicy::INCLUSIVE>;
@@ -63,7 +64,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
 
   /// Time-based pointers accessor.
   /// \return Time-based pointers.
-  [[nodiscard]] virtual auto pointers(const Time& time) const -> Pointers<Element> = 0;
+  [[nodiscard]] virtual auto pointers(const Time& time) const -> std::vector<Element*> = 0;
 
   /// Evaluates the motion.
   /// \param query Temporal motion query.

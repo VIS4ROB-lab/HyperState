@@ -16,6 +16,9 @@
 
 namespace hyper::tests {
 
+using Index = Eigen::Index;
+
+using Scalar = double;
 using CartesianMotionTestTypes = ::testing::Types<std::tuple<BasisInterpolator<Scalar, Eigen::Dynamic>, Position<Scalar>>>;
 
 template <typename TArgs>

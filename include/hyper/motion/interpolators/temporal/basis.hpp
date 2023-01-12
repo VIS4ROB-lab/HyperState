@@ -17,6 +17,8 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   // Definitions.
   using Base = PolynomialInterpolator<TScalar, TOrder>;
 
+  using Index = typename Base::Index;
+
   using Scalar = typename Base::Scalar;
   using Layout = typename Base::Layout;
 

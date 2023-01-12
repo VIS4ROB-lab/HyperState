@@ -17,25 +17,30 @@ class SpatialInterpolator final {
  public:
   // Definitions.
   using Index = Eigen::Index;
+
   using Scalar = typename TVariable::Scalar;
 
   using Manifold = TVariable;
   using Tangent = hyper::Tangent<TVariable>;
+
+  using Inputs = std::vector<const Scalar*>;
   using Weights = Eigen::Ref<const MatrixX<Scalar>>;
+  using Outputs = std::vector<Scalar*>;
+  using Jacobians = std::vector<Scalar*>;
 
   // Constants.
   static constexpr auto kDimManifold = Manifold::kNumParameters;
   static constexpr auto kDimTangent = Tangent::kNumParameters;
 
   /// Evaluate this.
+  /// \param inputs Inputs.
   /// \param weights Weights.
-  /// \param variables Variables.
   /// \param outputs Outputs.
   /// \param jacobians Jacobians.
   /// \param offset Offset.
   /// \param stride Jacobian stride.
   /// \return True on success.
-  static auto evaluate(const Weights& weights, const Pointers<const Scalar>& variables, const Pointers<Scalar>& outputs, const Pointers<Scalar>* jacobians, const Index& offset, const Index& stride = kDimManifold) -> bool {
+  static auto evaluate(const Inputs& inputs, const Weights& weights, const Outputs& outputs, const Jacobians* jacobians, const Index& offset, const Index& stride = kDimManifold) -> bool {
     // Definitions.
     using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
     using Jacobian = JacobianNM<Tangent, Manifold>;
@@ -47,10 +52,10 @@ class SpatialInterpolator final {
 
     // Compute increments.
     auto increments = Increments{kDimTangent, num_variables};
-    increments.col(0).noalias() = Eigen::Map<const Manifold>{variables[offset]};
+    increments.col(0).noalias() = Eigen::Map<const Manifold>{inputs[offset]};
 
     for (auto i = offset; i < last_idx; ++i) {
-      increments.col(i - offset + 1).noalias() = Eigen::Map<const Manifold>{variables[i + 1]} - Eigen::Map<const Manifold>{variables[i]};
+      increments.col(i - offset + 1).noalias() = Eigen::Map<const Manifold>{inputs[i + 1]} - Eigen::Map<const Manifold>{inputs[i]};
     }
 
     for (Index k = 0; k < num_derivatives; ++k) {
@@ -64,7 +69,7 @@ class SpatialInterpolator final {
       // Evaluate Jacobians.
       if (jacobians) {
         const auto increment = (kDimTangent * stride);
-        if (variables.size() > 1) {
+        if (inputs.size() > 1) {
           if (k == 0) {
             Eigen::Map<Jacobian>{(*jacobians)[0] + offset * increment}.diagonal().setConstant(Scalar{1} - weights(1, k));
           } else {

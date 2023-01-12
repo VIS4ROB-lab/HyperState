@@ -8,7 +8,6 @@
 
 #include <glog/logging.h>
 
-#include "hyper/definitions.hpp"
 #include "hyper/variables/groups/forward.hpp"
 #include "hyper/variables/jacobian.hpp"
 
@@ -38,6 +37,12 @@ class ContinuousMotion;
 
 template <typename TVariable>
 struct TemporalMotionResult {
+  // Definitions.
+  using Index = Eigen::Index;
+
+  using Scalar = typename TVariable::Scalar;
+  using Pointers = std::vector<Scalar*>;
+
   /// Constructor.
   /// \param k Derivative order.
   /// \param num_inputs Number of inputs.
@@ -107,8 +112,8 @@ struct TemporalMotionResult {
     return Eigen::Map<const Tangent<TVariable>>{outputs[2]};
   }
 
-  Pointers<Scalar> outputs;
-  Pointers<Scalar> jacobians;
+  Pointers outputs;
+  Pointers jacobians;
 
  private:
   // Definitions.

@@ -13,6 +13,8 @@ class Motion {
   // Definitions.
   using Scalar = TScalar;
 
+  using Index = Eigen::Index;
+
   /// Virtual default destructor.
   virtual ~Motion() = default;
 };

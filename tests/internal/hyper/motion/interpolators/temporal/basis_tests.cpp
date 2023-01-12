@@ -6,13 +6,15 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include "hyper/definitions.hpp"
 #include "hyper/motion/interpolators/temporal/basis.hpp"
 
 namespace hyper::tests {
 
+using Scalar = double;
 using Interpolator = BasisInterpolator<Scalar, Eigen::Dynamic>;
 using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+
+using Index = Eigen::Index;
 using IndexMatrix = std::map<Index, Matrix>;
 
 constexpr auto kNumericTolerance = 1e-7;
@@ -60,6 +62,7 @@ TEST(BasisInterpolatorTests, Duality) {
     interpolator.setNonUniform();
     const auto layout = interpolator.layout();
 
+    using Times = std::vector<Scalar>;
     Times times(layout.outer_input_size);
     std::iota(times.begin(), times.end(), 1 - layout.left_input_margin);
 

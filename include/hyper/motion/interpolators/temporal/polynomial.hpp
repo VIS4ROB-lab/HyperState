@@ -15,6 +15,8 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   // Definitions.
   using Base = TemporalInterpolator<TScalar>;
 
+  using Index = typename Base::Index;
+
   using Scalar = typename Base::Scalar;
   using Layout = typename Base::Layout;
 
