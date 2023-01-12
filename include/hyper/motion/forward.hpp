@@ -9,6 +9,8 @@
 #include <glog/logging.h>
 
 #include "hyper/definitions.hpp"
+#include "hyper/variables/groups/forward.hpp"
+#include "hyper/variables/jacobian.hpp"
 
 namespace hyper {
 
@@ -34,36 +36,91 @@ class DiscreteMotion;
 template <typename TVariable>
 class ContinuousMotion;
 
-template <typename TScalar>
+template <typename TVariable>
 struct TemporalMotionResult {
+  /// Constructor.
+  /// \param k Derivative order.
+  /// \param num_inputs Number of inputs.
+  /// \param jacobian Jacobian evaluation flag.
+  TemporalMotionResult(const Index& k, const Index& num_inputs, bool jacobian = false) : num_inputs_{num_inputs}, num_derivatives_{k + 1} {
+    // Allocate memory.
+    if (!jacobian) {
+      memory_.setZero(TVariable::kNumParameters + (num_derivatives_ - 1) * Tangent<TVariable>::kNumParameters);
+    } else {
+      memory_.setZero(TVariable::kNumParameters + (num_derivatives_ - 1) * Tangent<TVariable>::kNumParameters +
+                      num_derivatives_ * num_inputs_ * Tangent<TVariable>::kNumParameters * Stamped<TVariable>::kNumParameters);
+    }
+
+    // Insert value pointer.
+    auto data = memory_.data();
+    outputs.reserve(num_derivatives_);
+    outputs.emplace_back(data);
+    data += TVariable::kNumParameters;
+
+    // Insert derivative pointers.
+    for (Index i = 0; i < (num_derivatives_ - 1); ++i) {
+      outputs.emplace_back(data);
+      data += Tangent<TVariable>::kNumParameters;
+    }
+
+    // Insert Jacobian pointers.
+    if (jacobian) {
+      jacobians.resize(num_derivatives_);
+      for (Index i = 0; i < num_derivatives_; ++i) {
+        jacobians[i].reserve(num_inputs_);
+        for (Index j = 0; j < num_inputs_; ++j) {
+          jacobians[i].emplace_back(data);
+          data += Tangent<TVariable>::kNumParameters * Stamped<TVariable>::kNumParameters;
+        }
+      }
+    }
+  }
+
+  /// Derivative accessor.
+  /// \param k Derivative order.
+  /// \return k-th derivative.
+  auto derivative(const Index& k) const {
+    using Output = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+    return Eigen::Map<const Output>{outputs[k], (k == 0) ? TVariable::kNumParameters : Tangent<TVariable>::kNumParameters};
+  }
+
+  /// Jacobian accessor.
+  /// \param k Derivative order.
+  /// \return k-th Jacobian.
+  auto jacobian(const Index& k) const {
+    using Jacobian = Eigen::Matrix<Scalar, Tangent<TVariable>::kNumParameters, Eigen::Dynamic>;
+    return Eigen::Map<const Jacobian>{jacobians[k][0], Tangent<TVariable>::kNumParameters, num_inputs_ * Stamped<TVariable>::kNumParameters};
+  }
+
+  /// Value accessor.
+  /// \return Value.
+  auto value() const {
+    return Eigen::Map<const TVariable>{outputs[MotionDerivative::VALUE]};
+  }
+
+  /// Velocity accessor.
+  /// \return Velocity.
+  auto velocity() const {
+    return Eigen::Map<const Tangent<TVariable>>{outputs[MotionDerivative::VELOCITY]};
+  }
+
+  /// Acceleration accessor.
+  /// \return Acceleration.
+  auto acceleration() const {
+    return Eigen::Map<const Tangent<TVariable>>{outputs[MotionDerivative::ACCELERATION]};
+  }
+
+  Pointers<Scalar> outputs;
+  std::vector<Pointers<Scalar>> jacobians;
+
+ private:
   // Definitions.
-  using Derivative = Eigen::Matrix<TScalar, Eigen::Dynamic, 1>;
-  using Jacobian = Eigen::Matrix<TScalar, Eigen::Dynamic, Eigen::Dynamic>;
-  using Derivatives = std::vector<Derivative>;
-  using Jacobians = std::vector<Jacobian>;
+  using Memory = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
-  /// Value accessor.
-  /// \tparam TDerived Derived type.
-  /// \param index Input index.
-  /// \return Value.
-  template <typename TDerived>
-  inline auto derivativeAs(const Index index) const {
-    DCHECK_LT(index, derivatives.size());
-    return Eigen::Map<const TDerived>{derivatives[index].data()};
-  }
-
-  /// Value accessor.
-  /// \tparam TDerived Derived type.
-  /// \param index Input index.
-  /// \return Value.
-  template <typename TDerived>
-  inline auto derivativeAs(const Index index) {
-    DCHECK_LT(index, derivatives.size());
-    return Eigen::Map<TDerived>{derivatives[index].data()};
-  }
-
-  mutable Derivatives derivatives; ///< Derivatives.
-  mutable Jacobians jacobians;     ///< Jacobians.
+  // Members.
+  Index num_inputs_;
+  Index num_derivatives_;
+  Memory memory_;
 };
 
 } // namespace hyper

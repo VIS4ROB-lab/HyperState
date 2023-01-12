@@ -52,7 +52,7 @@ auto ContinuousMotion<TVariable>::setInterpolator(const TemporalInterpolator<Sca
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> Result {
+auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> {
   const auto& [begin, end, num_inputs] = iterators(time);
   Pointers<const Scalar> pointers;
   pointers.reserve(num_inputs);
@@ -62,7 +62,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& d
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> Result {
+auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> {
   // Definitions.
   using Stamps = std::vector<Scalar>;
 
@@ -78,37 +78,16 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& d
 
   for (Index i = 0; i < layout.outer_input_size; ++i) {
     const auto p_element_i = elements[i];
-    variables.emplace_back(p_element_i + Element::kVariableOffset);
     stamps.emplace_back(p_element_i[Element::kStampOffset]);
+    variables.emplace_back(p_element_i + Element::kVariableOffset);
   }
-
-  NewResult results(derivative, layout.outer_input_size, jacobians);
-  // std::cout << "N " << results.memory_ << std::endl;
-
-  /* for (auto i = 0; i < results.outputs_.size(); ++i) {
-    std::cout << results.outputs_[i] - results.memory_.data() << std::endl;
-  } */
 
   const auto offset = layout.left_input_margin - 1;
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
-  SpatialInterpolator<TVariable>::evaluate(weights, variables, results.outputs_, jacobians ? &results.jacobians_ : nullptr, layout.left_input_padding);
 
-  // std::cout << "N " << results.memory_.transpose() << std::endl;
-
-  TemporalMotionResult<Scalar> res;
-  for (auto i = 0; i < results.outputs_.size(); ++i) {
-    if (i == 0) {
-      res.derivatives.emplace_back(Eigen::Map<TVariable>{results.outputs_[i]});
-    } else {
-      res.derivatives.emplace_back(Eigen::Map<Tangent<TVariable>>{results.outputs_[i]});
-    }
-  }
-
-  for (auto i = 0; i < results.jacobians_.size(); ++i) {
-    res.jacobians.emplace_back(Eigen::Map<Jacobian<Scalar, Tangent<TVariable>::kNumParameters, Eigen::Dynamic>>{results.jacobians_[i][0], Tangent<TVariable>::kNumParameters, layout.outer_input_size * Element::kNumParameters});
-  }
-
-  return res;
+  auto result = TemporalMotionResult<TVariable>{derivative, layout.outer_input_size, jacobians};
+  SpatialInterpolator<TVariable>::evaluate(weights, variables, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding);
+  return result;
 }
 
 template <typename TVariable>

@@ -45,7 +45,6 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   };
 
   using Elements = std::set<Element, ElementCompare>;
-  using Result = TemporalMotionResult<Scalar>;
 
   /// Evaluates the range.
   /// \return Range.
@@ -76,7 +75,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> Result = 0;
+  virtual auto evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> = 0;
 
   /// Evaluates this.
   /// \param time Query time.
@@ -84,7 +83,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   /// \param jacobians Jacobians evaluation flag.
   /// \param elements Element pointers.
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> Result = 0;
+  virtual auto evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> = 0;
 
  protected:
   Elements elements_; ///< Elements.

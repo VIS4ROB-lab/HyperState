@@ -61,8 +61,8 @@ class CartesianMotionTests : public testing::Test {
     const auto d_result = motion_.evaluate(stamp + kNumericIncrement, derivative, false);
 
     for (auto i = 1; i <= degree; ++i) {
-      const auto dx = ((d_result.derivatives.at(i - 1) - result.derivatives.at(i - 1)) / kNumericIncrement).eval();
-      if (!dx.isApprox(result.derivatives.at(i), kNumericTolerance)) return false;
+      const auto dx = ((d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement).eval();
+      if (!dx.isApprox(result.derivative(i), kNumericTolerance)) return false;
     }
 
     return true;
@@ -96,14 +96,14 @@ class CartesianMotionTests : public testing::Test {
           input_j.variable() += tau;
 
           const auto d_result = motion_.evaluate(stamp, derivative, false);
-          Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivatives.at(i) - result.derivatives.at(i)).transpose() / kNumericIncrement;
+          Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivative(i) - result.derivative(i)).transpose() / kNumericIncrement;
 
           input_j = tmp;
         }
       }
 
       // Compare Jacobians.
-      if (!Jn_i.isApprox(result.jacobians.at(i), kNumericTolerance)) return false;
+      if (!Jn_i.isApprox(result.jacobian(i), kNumericTolerance)) return false;
     }
 
     return true;
@@ -174,8 +174,8 @@ class ManifoldMotionTests : public testing::Test {
     const auto result = motion_.evaluate(stamp, derivative, false);
     const auto d_result = motion_.evaluate(stamp + kNumericIncrement, derivative, false);
 
-    const auto value = result.template derivativeAs<SE3<Scalar>>(0);
-    const auto d_value = d_result.template derivativeAs<SE3<Scalar>>(0);
+    const auto value = result.value();
+    const auto d_value = d_result.value();
 
     for (Index i = 1; i <= degree; ++i) {
       Tangent dx;
@@ -188,10 +188,10 @@ class ManifoldMotionTests : public testing::Test {
         dx.angular() = d_algebra.toTangent();
         dx.linear() = (d_value.translation() - value.translation()) / kNumericIncrement;
       } else {
-        dx = (d_result.derivatives.at(i - 1) - result.derivatives.at(i - 1)) / kNumericIncrement;
+        dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement;
       }
 
-      if (!dx.isApprox(result.derivatives[i], kNumericTolerance)) return false;
+      if (!dx.isApprox(result.derivative(i), kNumericTolerance)) return false;
     }
 
     return true;
@@ -227,12 +227,12 @@ class ManifoldMotionTests : public testing::Test {
           const auto d_result = motion_.evaluate(stamp, derivative, false);
 
           if (i == 0) {
-            const auto value = result.template derivativeAs<SE3<Scalar>>(0);
-            const auto d_value = d_result.template derivativeAs<SE3<Scalar>>(0);
+            const auto value = result.value();
+            const auto d_value = d_result.value();
             Jn_i.col(j * StampedValue::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
             Jn_i.col(j * StampedValue::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
           } else {
-            Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivatives.at(i) - result.derivatives.at(i)) / kNumericIncrement;
+            Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivative(i) - result.derivative(i)) / kNumericIncrement;
           }
 
           input_j = tmp;
@@ -242,7 +242,7 @@ class ManifoldMotionTests : public testing::Test {
       }
 
       // Compare Jacobians.
-      if (!Jn_i.isApprox(result.jacobians.at(i), kNumericTolerance)) return false;
+      if (!Jn_i.isApprox(result.jacobian(i), kNumericTolerance)) return false;
     }
 
     return true;

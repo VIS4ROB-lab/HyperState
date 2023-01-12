@@ -28,47 +28,6 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Element = typename Base::Element;
   using Elements = typename Base::Elements;
   using Derivative = typename Base::Derivative;
-  using Result = typename Base::Result;
-
-  struct NewResult {
-    static constexpr auto kManifoldSize = TVariable::kNumParameters;
-    static constexpr auto kTangentSize = Tangent<TVariable>::kNumParameters;
-    static constexpr auto kJacobianSize = kTangentSize * Element::kNumParameters;
-
-    NewResult(const Derivative& derivative, const Index& num_variables, bool jacobians) {
-      auto parametersSize = kManifoldSize + derivative * kTangentSize;
-      if (!jacobians) {
-        memory_.setZero(parametersSize);
-      } else {
-        auto jacobiansSize = num_variables * (kJacobianSize + derivative * kJacobianSize);
-        memory_.setZero(parametersSize + jacobiansSize);
-      }
-
-      auto data = memory_.data();
-      outputs_.emplace_back(data);
-      data += kManifoldSize;
-
-      for (auto i = 0; i < derivative; ++i) {
-        outputs_.emplace_back(data);
-        data += kTangentSize;
-      }
-
-      if (jacobians) {
-        jacobians_.resize(derivative + 1);
-        for (auto i = 0; i < derivative + 1; ++i) {
-          jacobians_[i].reserve(num_variables);
-          for (auto j = 0; j < num_variables; ++j) {
-            jacobians_[i].emplace_back(data);
-            data += kJacobianSize;
-          }
-        }
-      }
-    }
-
-    VectorX<Scalar> memory_;
-    Pointers<Scalar> outputs_;
-    std::vector<Pointers<Scalar>> jacobians_;
-  };
 
   /// Default constructor.
   ContinuousMotion();
@@ -98,7 +57,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Result.
-  auto evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> Result final;
+  auto evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> final;
 
   /// Evaluates this.
   /// \param time Query time.
@@ -106,7 +65,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \param jacobians Jacobians evaluation flag.
   /// \param elements Element pointers.
   /// \return Result.
-  auto evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> Result final;
+  auto evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> final;
 
  private:
   // Definitions.
