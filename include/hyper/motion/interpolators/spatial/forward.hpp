@@ -3,14 +3,11 @@
 
 #pragma once
 
-#include "hyper/state/forward.hpp"
+#include "hyper/motion/forward.hpp"
 
 namespace hyper {
 
-class AbstractInterpolator;
-
-class PolynomialInterpolator;
-
-class BasisInterpolator;
+template <typename TVariable>
+class SpatialInterpolator;
 
 } // namespace hyper

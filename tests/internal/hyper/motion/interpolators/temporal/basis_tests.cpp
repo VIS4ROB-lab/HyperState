@@ -6,12 +6,15 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include "hyper/state/interpolators/basis.hpp"
+#include "hyper/motion/interpolators/temporal/basis.hpp"
 
 namespace hyper::tests {
 
-using Interpolator = BasisInterpolator;
+using Scalar = double;
+using Interpolator = BasisInterpolator<Scalar, Eigen::Dynamic>;
 using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+
+using Index = Eigen::Index;
 using IndexMatrix = std::map<Index, Matrix>;
 
 constexpr auto kNumericTolerance = 1e-7;
@@ -54,14 +57,17 @@ TEST(BasisInterpolatorTests, Theory) {
 TEST(BasisInterpolatorTests, Duality) {
   constexpr auto kMaxDegree = 5;
   for (Index i = 0; i < kMaxDegree; ++i) {
-    Interpolator interpolator{i, false};
+    Interpolator interpolator;
+    interpolator.setOrder(i + 1);
+    interpolator.setNonUniform();
     const auto layout = interpolator.layout();
 
-    Stamps stamps(layout.outer.size);
-    std::iota(stamps.begin(), stamps.end(), 1 - layout.outerPadding().left);
+    using Times = std::vector<Scalar>;
+    Times times(layout.outer_input_size);
+    std::iota(times.begin(), times.end(), 1 - layout.left_input_margin);
 
     const auto M0 = Interpolator::Mixing(i + 1);
-    const auto M1 = interpolator.mixing(stamps);
+    const auto M1 = interpolator.mixing(times);
     EXPECT_TRUE(M0.isApprox(M1, kNumericTolerance));
   }
 }
