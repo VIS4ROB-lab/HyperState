@@ -65,13 +65,10 @@ struct TemporalMotionResult {
 
     // Insert Jacobian pointers.
     if (jacobian) {
-      jacobians.resize(num_derivatives_);
+      jacobians.reserve(num_derivatives_);
       for (Index i = 0; i < num_derivatives_; ++i) {
-        jacobians[i].reserve(num_inputs_);
-        for (Index j = 0; j < num_inputs_; ++j) {
-          jacobians[i].emplace_back(data);
-          data += Tangent<TVariable>::kNumParameters * Stamped<TVariable>::kNumParameters;
-        }
+        jacobians.emplace_back(data);
+        data += num_inputs_ * Tangent<TVariable>::kNumParameters * Stamped<TVariable>::kNumParameters;
       }
     }
   }
@@ -89,7 +86,7 @@ struct TemporalMotionResult {
   /// \return k-th Jacobian.
   auto jacobian(const Index& k) const {
     using Jacobian = Eigen::Matrix<Scalar, Tangent<TVariable>::kNumParameters, Eigen::Dynamic>;
-    return Eigen::Map<const Jacobian>{jacobians[k][0], Tangent<TVariable>::kNumParameters, num_inputs_ * Stamped<TVariable>::kNumParameters};
+    return Eigen::Map<const Jacobian>{jacobians[k], Tangent<TVariable>::kNumParameters, num_inputs_ * Stamped<TVariable>::kNumParameters};
   }
 
   /// Value accessor.
@@ -111,7 +108,7 @@ struct TemporalMotionResult {
   }
 
   Pointers<Scalar> outputs;
-  std::vector<Pointers<Scalar>> jacobians;
+  Pointers<Scalar> jacobians;
 
  private:
   // Definitions.

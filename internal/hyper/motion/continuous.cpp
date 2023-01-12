@@ -86,7 +86,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& d
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
 
   auto result = TemporalMotionResult<TVariable>{derivative, layout.outer_input_size, jacobians};
-  SpatialInterpolator<TVariable>::evaluate(weights, variables, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding);
+  SpatialInterpolator<TVariable>::evaluate(weights, variables, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding, Element::kNumParameters);
   return result;
 }
 

@@ -21,23 +21,21 @@ class SpatialInterpolator final {
 
   using Manifold = TVariable;
   using Tangent = hyper::Tangent<TVariable>;
-
-  using Variables = Pointers<const Scalar>;
   using Weights = Eigen::Ref<const MatrixX<Scalar>>;
-  using Outputs = Pointers<Scalar>;
-  using Jacobians = std::vector<Pointers<Scalar>>;
 
   // Constants.
   static constexpr auto kDimManifold = Manifold::kNumParameters;
   static constexpr auto kDimTangent = Tangent::kNumParameters;
 
-  /// Evaluates this.
-  /// \param weights Interpolation weights.
-  /// \param variables Interpolation variables.
-  /// \param offset Offset into variables.
-  /// \param jacobians Jacobians evaluation flag.
-  /// \return Temporal motion results.
-  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool {
+  /// Evaluate this.
+  /// \param weights Weights.
+  /// \param variables Variables.
+  /// \param outputs Outputs.
+  /// \param jacobians Jacobians.
+  /// \param offset Offset.
+  /// \param stride Jacobian stride.
+  /// \return True on success.
+  static auto evaluate(const Weights& weights, const Pointers<const Scalar>& variables, const Pointers<Scalar>& outputs, const Pointers<Scalar>* jacobians, const Index& offset, const Index& stride = kDimManifold) -> bool {
     // Definitions.
     using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
     using Jacobian = JacobianNM<Tangent, Manifold>;
@@ -65,19 +63,19 @@ class SpatialInterpolator final {
 
       // Evaluate Jacobians.
       if (jacobians) {
-        const auto& Js = *jacobians;
+        const auto increment = (kDimTangent * stride);
         if (variables.size() > 1) {
           if (k == 0) {
-            Eigen::Map<Jacobian>{Js[0][offset]}.diagonal().setConstant(Scalar{1} - weights(1, k));
+            Eigen::Map<Jacobian>{(*jacobians)[0] + offset * increment}.diagonal().setConstant(Scalar{1} - weights(1, k));
           } else {
-            Eigen::Map<Jacobian>{Js[k][offset]}.diagonal().setConstant(Scalar{-1} * weights(1, k));
+            Eigen::Map<Jacobian>{(*jacobians)[k] + offset * increment}.diagonal().setConstant(Scalar{-1} * weights(1, k));
           }
           for (auto i = offset + 1; i < last_idx; ++i) {
-            Eigen::Map<Jacobian>{Js[k][i]}.diagonal().setConstant(weights(i, k) - weights(i + 1, k));
+            Eigen::Map<Jacobian>{(*jacobians)[k] + i * increment}.diagonal().setConstant(weights(i, k) - weights(i + 1, k));
           }
-          Eigen::Map<Jacobian>{Js[k][last_idx]}.diagonal().setConstant(weights(last_idx, k));
+          Eigen::Map<Jacobian>{(*jacobians)[k] + last_idx * increment}.diagonal().setConstant(weights(last_idx, k));
         } else if (k == 0) {
-          Eigen::Map<Jacobian>{Js[0][offset]}.diagonal().setConstant(Scalar{1});
+          Eigen::Map<Jacobian>{(*jacobians)[0] + offset * increment}.diagonal().setConstant(Scalar{1});
         }
       }
     }

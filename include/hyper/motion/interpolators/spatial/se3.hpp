@@ -19,23 +19,21 @@ class SpatialInterpolator<SE3<TScalar>> final {
 
   using Manifold = SE3<TScalar>;
   using Tangent = hyper::Tangent<SE3<TScalar>>;
-
-  using Variables = Pointers<const TScalar>;
   using Weights = Eigen::Ref<const MatrixX<TScalar>>;
-  using Outputs = Pointers<TScalar>;
-  using Jacobians = std::vector<Pointers<TScalar>>;
 
   // Constants.
   static constexpr auto kDimManifold = Manifold::kNumParameters;
   static constexpr auto kDimTangent = Tangent::kNumParameters;
 
-  /// Evaluates this.
-  /// \param weights Interpolation weights.
-  /// \param variables Interpolation variables.
-  /// \param offset Offset into variables.
-  /// \param jacobians Jacobians evaluation flag.
-  /// \return Temporal motion results.
-  static auto evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool;
+  /// Evaluate this.
+  /// \param weights Weights.
+  /// \param variables Variables.
+  /// \param outputs Outputs.
+  /// \param jacobians Jacobians.
+  /// \param offset Offset.
+  /// \param stride Jacobian stride.
+  /// \return True on success.
+  static auto evaluate(const Weights& weights, const Pointers<const TScalar>& variables, const Pointers<TScalar>& outputs, const Pointers<TScalar>* jacobians, const Index& offset, const Index& stride = kDimManifold) -> bool;
 };
 
 } // namespace hyper

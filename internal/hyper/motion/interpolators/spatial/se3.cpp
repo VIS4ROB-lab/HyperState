@@ -8,7 +8,7 @@
 namespace hyper {
 
 template <typename TScalar>
-auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const Variables& variables, const Outputs& outputs, const Jacobians* jacobians, const Index& offset) -> bool {
+auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const Pointers<const TScalar>& variables, const Pointers<TScalar>& outputs, const Pointers<TScalar>* jacobians, const Index& offset, const Index& stride) -> bool {
   // Definitions.
   using Rotation = typename SE3<Scalar>::Rotation;
   using Translation = typename SE3<Scalar>::Translation;
@@ -83,10 +83,10 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const V
     for (Index k = 0; k < num_derivatives; ++k) {
       Js_r.reserve(num_variables);
       Js_x.reserve(num_variables);
+      const auto increment = (kDimTangent * stride);
       for (Index i = 0; i < num_variables; ++i) {
-        const auto data = (*jacobians)[k][i];
-        Js_r[k].emplace_back(data + Manifold::kRotationOffset * Tangent::kNumParameters + Tangent::kAngularOffset);
-        Js_x[k].emplace_back(data + Manifold::kTranslationOffset * Tangent::kNumParameters + Tangent::kLinearOffset);
+        Js_r[k].emplace_back((*jacobians)[k] + i * increment + Manifold::kRotationOffset * Tangent::kNumParameters + Tangent::kAngularOffset);
+        Js_x[k].emplace_back((*jacobians)[k] + i * increment + Manifold::kTranslationOffset * Tangent::kNumParameters + Tangent::kLinearOffset);
       }
     }
 
