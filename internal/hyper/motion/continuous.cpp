@@ -52,7 +52,7 @@ auto ContinuousMotion<TVariable>::setInterpolator(const TemporalInterpolator<Sca
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> {
+auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> {
   const auto& [begin, end, num_inputs] = iterators(time);
   Pointers<const Scalar> pointers;
   pointers.reserve(num_inputs);
@@ -62,7 +62,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& d
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Derivative& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> {
+auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> {
   // Definitions.
   using Stamps = std::vector<Scalar>;
 

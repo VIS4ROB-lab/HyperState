@@ -12,7 +12,6 @@ class Motion {
  public:
   // Definitions.
   using Scalar = TScalar;
-  using Derivative = MotionDerivative;
 
   /// Virtual default destructor.
   virtual ~Motion() = default;

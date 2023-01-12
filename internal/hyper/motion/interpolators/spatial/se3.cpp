@@ -15,9 +15,9 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Weights& weights, const P
   using SU2Tangent = hyper::Tangent<SU2<Scalar>>;
 
   // Constants.
-  constexpr auto kValue = MotionDerivative::VALUE;
-  constexpr auto kVelocity = MotionDerivative::VELOCITY;
-  constexpr auto kAcceleration = MotionDerivative::ACCELERATION;
+  constexpr auto kValue = 0;
+  constexpr auto kVelocity = 1;
+  constexpr auto kAcceleration = 2;
 
   const auto num_variables = weights.rows();
   const auto num_derivatives = weights.cols();

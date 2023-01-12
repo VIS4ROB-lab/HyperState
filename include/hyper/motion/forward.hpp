@@ -92,19 +92,19 @@ struct TemporalMotionResult {
   /// Value accessor.
   /// \return Value.
   auto value() const {
-    return Eigen::Map<const TVariable>{outputs[MotionDerivative::VALUE]};
+    return Eigen::Map<const TVariable>{outputs[0]};
   }
 
   /// Velocity accessor.
   /// \return Velocity.
   auto velocity() const {
-    return Eigen::Map<const Tangent<TVariable>>{outputs[MotionDerivative::VELOCITY]};
+    return Eigen::Map<const Tangent<TVariable>>{outputs[1]};
   }
 
   /// Acceleration accessor.
   /// \return Acceleration.
   auto acceleration() const {
-    return Eigen::Map<const Tangent<TVariable>>{outputs[MotionDerivative::ACCELERATION]};
+    return Eigen::Map<const Tangent<TVariable>>{outputs[2]};
   }
 
   Pointers<Scalar> outputs;

@@ -12,8 +12,6 @@ template <typename TScalar>
 class TemporalInterpolator {
  public:
   // Definitions.
-  using Index = Eigen::Index;
-
   using Scalar = TScalar;
   using Layout = TemporalInterpolatorLayout<Index>;
   using Weights = MatrixX<Scalar>;
@@ -31,7 +29,7 @@ class TemporalInterpolator {
   /// \param timestamps Adjacent timestamps.
   /// \param offset Offset to (left) central timestamp.
   /// \return Weights.
-  virtual auto evaluate(const Scalar& time, const MotionDerivative& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights = 0;
+  virtual auto evaluate(const Scalar& time, const Index& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights = 0;
 };
 
 } // namespace hyper

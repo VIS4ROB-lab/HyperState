@@ -15,7 +15,6 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   // Definitions.
   using Base = TemporalInterpolator<TScalar>;
 
-  using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
   using Layout = typename Base::Layout;
 
@@ -57,7 +56,7 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   /// \param timestamps Adjacent timestamps.
   /// \param offset Offset to (left) central timestamp.
   /// \return Weights.
-  auto evaluate(const Scalar& time, const MotionDerivative& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights final;
+  auto evaluate(const Scalar& time, const Index& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights final;
 
  protected:
   bool is_uniform_{true}; ///< Uniformity flag.

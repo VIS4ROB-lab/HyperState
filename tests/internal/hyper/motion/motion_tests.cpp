@@ -56,9 +56,8 @@ class CartesianMotionTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = motion_.range().sample();
-    const auto derivative = static_cast<MotionDerivative>(degree);
-    const auto result = motion_.evaluate(stamp, derivative, false);
-    const auto d_result = motion_.evaluate(stamp + kNumericIncrement, derivative, false);
+    const auto result = motion_.evaluate(stamp, degree, false);
+    const auto d_result = motion_.evaluate(stamp + kNumericIncrement, degree, false);
 
     for (auto i = 1; i <= degree; ++i) {
       const auto dx = ((d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement).eval();
@@ -75,8 +74,7 @@ class CartesianMotionTests : public testing::Test {
     for (Index i = 0; i <= degree; ++i) {
       // Evaluate analytic Jacobian.
       const auto stamp = motion_.range().sample();
-      const auto derivative = static_cast<MotionDerivative>(i);
-      const auto result = motion_.evaluate(stamp, derivative, true);
+      const auto result = motion_.evaluate(stamp, i, true);
 
       // Retrieve inputs.
       const auto inputs = motion_.pointers(stamp);
@@ -95,7 +93,7 @@ class CartesianMotionTests : public testing::Test {
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable() += tau;
 
-          const auto d_result = motion_.evaluate(stamp, derivative, false);
+          const auto d_result = motion_.evaluate(stamp, i, false);
           Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivative(i) - result.derivative(i)).transpose() / kNumericIncrement;
 
           input_j = tmp;
@@ -170,9 +168,8 @@ class ManifoldMotionTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
     const auto stamp = motion_.range().sample();
-    const auto derivative = static_cast<MotionDerivative>(degree);
-    const auto result = motion_.evaluate(stamp, derivative, false);
-    const auto d_result = motion_.evaluate(stamp + kNumericIncrement, derivative, false);
+    const auto result = motion_.evaluate(stamp, degree, false);
+    const auto d_result = motion_.evaluate(stamp + kNumericIncrement, degree, false);
 
     const auto value = result.value();
     const auto d_value = d_result.value();
@@ -203,8 +200,7 @@ class ManifoldMotionTests : public testing::Test {
   auto checkJacobians(const Index degree = kDegree) -> bool {
     for (Index i = 0; i <= degree; ++i) {
       const auto stamp = motion_.range().sample();
-      const auto derivative = static_cast<MotionDerivative>(degree);
-      const auto result = motion_.evaluate(stamp, derivative, true);
+      const auto result = motion_.evaluate(stamp, degree, true);
 
       // Retrieve inputs.
       const auto inputs = motion_.pointers(stamp);
@@ -224,7 +220,7 @@ class ManifoldMotionTests : public testing::Test {
           input_j.variable().rotation() *= tau.angular().toManifold();
           input_j.variable().translation() += tau.linear();
 
-          const auto d_result = motion_.evaluate(stamp, derivative, false);
+          const auto d_result = motion_.evaluate(stamp, degree, false);
 
           if (i == 0) {
             const auto value = result.value();
