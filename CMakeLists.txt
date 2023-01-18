@@ -1,6 +1,5 @@
 # Check CMake version.
 cmake_minimum_required(VERSION 3.16)
-enable_language(CXX)
 
 # Includes.
 include(FetchContent)
@@ -13,6 +12,7 @@ if(PROJECT_IS_TOP_LEVEL)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_STANDARD_REQUIRED YES)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -fconcepts -Wall -Wextra -Wnon-virtual-dtor -pedantic")
+    option(HYPER_BUILD_TESTING "Build tests." TRUE)
 endif()
 
 # Define libraries and aliases.
@@ -21,7 +21,7 @@ add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCE_FILES})
 add_library(Hyper::Motion ALIAS ${PROJECT_NAME})
 
 # Fetch (external) content.
-FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG d2cc27383b986f8e3c2e3f668f178d30b4b13ebf)
+FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG e07343d67514664d347dcdbc7067993f4df20dfd)
 FetchContent_MakeAvailable(HyperVariables)
 
 # Find Eigen target if not present.
@@ -44,7 +44,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SO
 target_link_libraries(${PROJECT_NAME} PUBLIC Hyper::Variables)
 
 # Build tests.
-option(HYPER_BUILD_TESTING "Build tests." TRUE)
 if (HYPER_BUILD_TESTING)
     add_subdirectory(${PROJECT_SOURCE_DIR}/apps/tests)
 endif (HYPER_BUILD_TESTING)
