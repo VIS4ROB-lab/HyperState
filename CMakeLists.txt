@@ -8,12 +8,12 @@ include(FetchContent)
 project(HyperMotion VERSION 22.07.01 DESCRIPTION "" HOMEPAGE_URL https://github.com/VIS4ROB-lab/HyperState LANGUAGES CXX)
 
 # Set properties.
-if(PROJECT_IS_TOP_LEVEL)
+if (PROJECT_IS_TOP_LEVEL)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_STANDARD_REQUIRED YES)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -fconcepts -Wall -Wextra -Wnon-virtual-dtor -pedantic")
-    option(HYPER_BUILD_TESTING "Build tests." TRUE)
-endif()
+    option(HYPER_BUILD_TESTS "Build tests." TRUE)
+endif ()
 
 # Define libraries and aliases.
 file(GLOB_RECURSE PROJECT_SOURCE_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/internal/*.hpp ${PROJECT_SOURCE_DIR}/internal/*.cpp)
@@ -21,7 +21,7 @@ add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCE_FILES})
 add_library(Hyper::Motion ALIAS ${PROJECT_NAME})
 
 # Fetch (external) content.
-FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG e07343d67514664d347dcdbc7067993f4df20dfd)
+FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG d5eba12b780f09c72f064e30a270b66e4a1a7580)
 FetchContent_MakeAvailable(HyperVariables)
 
 # Find Eigen target if not present.
@@ -44,6 +44,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SO
 target_link_libraries(${PROJECT_NAME} PUBLIC Hyper::Variables)
 
 # Build tests.
-if (HYPER_BUILD_TESTING)
+if (HYPER_BUILD_TESTS)
     add_subdirectory(${PROJECT_SOURCE_DIR}/apps/tests)
-endif (HYPER_BUILD_TESTING)
+endif (HYPER_BUILD_TESTS)

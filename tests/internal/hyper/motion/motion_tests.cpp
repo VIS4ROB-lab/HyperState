@@ -14,32 +14,34 @@
 #include "hyper/variables/adapters.hpp"
 #include "hyper/variables/groups/se3.hpp"
 
-namespace hyper::tests {
+namespace hyper::state::tests {
 
-using Index = Eigen::Index;
-
-using Scalar = double;
-using CartesianMotionTestTypes = ::testing::Types<std::tuple<BasisInterpolator<Scalar, Eigen::Dynamic>, Position<Scalar>>>;
+using CartesianMotionTestTypes = ::testing::Types<std::tuple<BasisInterpolator<double, Eigen::Dynamic>, variables::Position<double>>>;
 
 template <typename TArgs>
 class CartesianMotionTests : public testing::Test {
  public:
+  // Constants.
   static constexpr auto kDegree = 3;
   static constexpr auto kNumIterations = 20;
   static constexpr auto kNumericIncrement = 1e-8;
   static constexpr auto kNumericTolerance = 1e-6;
 
+  // Definitions.
+  using Index = Eigen::Index;
   using Interpolator = typename std::tuple_element<0, TArgs>::type;
-  using Value = typename std::tuple_element<1, TArgs>::type;
-  using StampedValue = Stamped<Value>;
+  using Manifold = typename std::tuple_element<1, TArgs>::type;
 
-  using Policy = SpatialInterpolator<Value>;
-  using Tangent = typename Policy::Tangent;
-  using Motion = ContinuousMotion<Value>;
+  using Scalar = typename Manifold::Scalar;
+  using Tangent = variables::Tangent<Manifold>;
+  using StampedManifold = variables::Stamped<Manifold>;
+  using Motion = ContinuousMotion<Manifold>;
+
+  using Jacobian = variables::JacobianX<Scalar>;
 
   /// Set up.
   auto SetUp() -> void final {
-    motion_ = ContinuousMotion<Value>{&interpolator_};
+    motion_ = ContinuousMotion<Manifold>{&interpolator_};
     interpolator_.setOrder(kDegree + 1);
   }
 
@@ -47,10 +49,10 @@ class CartesianMotionTests : public testing::Test {
   auto setRandomMotion() -> void {
     const auto min_num_variables = motion_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
-      StampedValue stamped_value;
-      stamped_value.stamp() = 0.25 * i;
-      stamped_value.variable() = Value::Random();
-      motion_.elements().insert(stamped_value);
+      StampedManifold stamped_manifold;
+      stamped_manifold.stamp() = 0.25 * i;
+      stamped_manifold.variable() = Manifold::Random();
+      motion_.elements().insert(stamped_manifold);
     }
   }
 
@@ -64,7 +66,8 @@ class CartesianMotionTests : public testing::Test {
 
     for (auto i = 1; i <= degree; ++i) {
       const auto dx = ((d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement).eval();
-      if (!dx.isApprox(result.derivative(i), kNumericTolerance)) return false;
+      if (!dx.isApprox(result.derivative(i), kNumericTolerance))
+        return false;
     }
 
     return true;
@@ -83,28 +86,29 @@ class CartesianMotionTests : public testing::Test {
       const auto inputs = motion_.pointers(stamp);
 
       // Allocate Jacobian.
-      JacobianX<Scalar> Jn_i;
+      Jacobian Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Value::kNumParameters, num_inputs * StampedValue::kNumParameters);
+      Jn_i.setZero(Manifold::kNumParameters, num_inputs * StampedManifold::kNumParameters);
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
-        auto input_j = Eigen::Map<StampedValue>{inputs[j]->asVector().data()};
+        auto input_j = Eigen::Map<StampedManifold>{inputs[j]->asVector().data()};
 
         for (Index k = 0; k < input_j.size() - 1; ++k) {
-          const StampedValue tmp = input_j;
+          const StampedManifold tmp = input_j;
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable() += tau;
 
           const auto d_result = motion_.evaluate(stamp, i, false);
-          Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivative(i) - result.derivative(i)).transpose() / kNumericIncrement;
+          Jn_i.col(j * StampedManifold::kNumParameters + k) = (d_result.derivative(i) - result.derivative(i)).transpose() / kNumericIncrement;
 
           input_j = tmp;
         }
       }
 
       // Compare Jacobians.
-      if (!Jn_i.isApprox(result.jacobian(i), kNumericTolerance)) return false;
+      if (!Jn_i.isApprox(result.jacobian(i), kNumericTolerance))
+        return false;
     }
 
     return true;
@@ -131,38 +135,45 @@ TYPED_TEST_P(CartesianMotionTests, Jacobians) {
   }
 }
 
-using ManifoldMotionTestTypes = ::testing::Types<std::tuple<BasisInterpolator<Scalar, Eigen::Dynamic>, SE3<Scalar>>>;
+using ManifoldMotionTestTypes = ::testing::Types<std::tuple<BasisInterpolator<double, Eigen::Dynamic>, variables::SE3<double>>>;
 
 template <typename TArgs>
 class ManifoldMotionTests : public testing::Test {
  public:
+  // Constants.
   static constexpr auto kDegree = 3;
   static constexpr auto kNumIterations = 20;
   static constexpr auto kNumericIncrement = 1e-8;
   static constexpr auto kNumericTolerance = 1e-6;
 
+  // Definitions.
+  using Index = Eigen::Index;
   using Interpolator = typename std::tuple_element<0, TArgs>::type;
-  using Value = typename std::tuple_element<1, TArgs>::type;
-  using StampedValue = Stamped<Value>;
+  using Manifold = typename std::tuple_element<1, TArgs>::type;
 
-  using Policy = SpatialInterpolator<Value>;
-  using Tangent = typename Policy::Tangent;
-  using Motion = ContinuousMotion<Value>;
+  using Scalar = typename Manifold::Scalar;
+  using Tangent = variables::Tangent<Manifold>;
+  using StampedManifold = variables::Stamped<Manifold>;
+  using Motion = ContinuousMotion<Manifold>;
+
+  using SU2 = variables::SU2<Scalar>;
+  using SU2Algebra = variables::Algebra<SU2>;
+  using Jacobian = variables::JacobianX<Scalar>;
 
   /// Sets a random motion.
   auto setRandomMotion() -> void {
     const auto min_num_variables = motion_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
-      StampedValue stamped_value;
-      stamped_value.stamp() = 0.25 * i;
-      stamped_value.variable() = Value::Random();
-      motion_.elements().insert(stamped_value);
+      StampedManifold stamped_manifold;
+      stamped_manifold.stamp() = 0.25 * i;
+      stamped_manifold.variable() = Manifold::Random();
+      motion_.elements().insert(stamped_manifold);
     }
   }
 
   /// Set up.
   auto SetUp() -> void final {
-    motion_ = ContinuousMotion<Value>{&interpolator_};
+    motion_ = ContinuousMotion<Manifold>{&interpolator_};
     interpolator_.setOrder(kDegree + 1);
   }
 
@@ -181,9 +192,9 @@ class ManifoldMotionTests : public testing::Test {
       Tangent dx;
 
       if (i == 1) {
-        SU2<Scalar> d_su2;
-        Algebra<SU2<Scalar>> d_algebra;
-        d_su2 = SU2<Scalar>{(d_value.rotation().coeffs() - value.rotation().coeffs()) / kNumericIncrement};
+        SU2 d_su2;
+        SU2Algebra d_algebra;
+        d_su2 = SU2{(d_value.rotation().coeffs() - value.rotation().coeffs()) / kNumericIncrement};
         d_algebra = value.rotation().groupInverse().groupPlus(d_su2).coeffs();
         dx.angular() = d_algebra.toTangent();
         dx.linear() = (d_value.translation() - value.translation()) / kNumericIncrement;
@@ -191,7 +202,8 @@ class ManifoldMotionTests : public testing::Test {
         dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement;
       }
 
-      if (!dx.isApprox(result.derivative(i), kNumericTolerance)) return false;
+      if (!dx.isApprox(result.derivative(i), kNumericTolerance))
+        return false;
     }
 
     return true;
@@ -209,16 +221,16 @@ class ManifoldMotionTests : public testing::Test {
       const auto inputs = motion_.pointers(stamp);
 
       // Allocate Jacobian.
-      JacobianX<Scalar> Jn_i;
+      Jacobian Jn_i;
       const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Tangent::kNumParameters, num_inputs * StampedValue::kNumParameters);
+      Jn_i.setZero(Tangent::kNumParameters, num_inputs * StampedManifold::kNumParameters);
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
-        auto input_j = Eigen::Map<StampedValue>{inputs[j]->asVector().data()};
+        auto input_j = Eigen::Map<StampedManifold>{inputs[j]->asVector().data()};
 
         for (Index k = 0; k < Tangent::kNumParameters; ++k) {
-          const StampedValue tmp = input_j;
+          const StampedManifold tmp = input_j;
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable().rotation() *= tau.angular().toManifold();
           input_j.variable().translation() += tau.linear();
@@ -228,20 +240,22 @@ class ManifoldMotionTests : public testing::Test {
           if (i == 0) {
             const auto value = result.value();
             const auto d_value = d_result.value();
-            Jn_i.col(j * StampedValue::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
-            Jn_i.col(j * StampedValue::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
+            Jn_i.col(j * StampedManifold::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
+            Jn_i.col(j * StampedManifold::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
           } else {
-            Jn_i.col(j * StampedValue::kNumParameters + k) = (d_result.derivative(i) - result.derivative(i)) / kNumericIncrement;
+            Jn_i.col(j * StampedManifold::kNumParameters + k) = (d_result.derivative(i) - result.derivative(i)) / kNumericIncrement;
           }
 
           input_j = tmp;
         }
 
-        Jn_i.template middleCols<StampedValue::kNumParameters - 1>(j * StampedValue::kNumParameters) = Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedValue::kNumParameters) * SE3JacobianAdapter(inputs[j]->asVector().data());
+        Jn_i.template middleCols<StampedManifold::kNumParameters - 1>(j * StampedManifold::kNumParameters) =
+            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedManifold::kNumParameters) * variables::SE3JacobianAdapter(inputs[j]->asVector().data());
       }
 
       // Compare Jacobians.
-      if (!Jn_i.isApprox(result.jacobian(i), kNumericTolerance)) return false;
+      if (!Jn_i.isApprox(result.jacobian(i), kNumericTolerance))
+        return false;
     }
 
     return true;
@@ -274,4 +288,4 @@ INSTANTIATE_TYPED_TEST_SUITE_P(HyperTests, CartesianMotionTests, CartesianMotion
 REGISTER_TYPED_TEST_SUITE_P(ManifoldMotionTests, Derivatives, Jacobians);
 INSTANTIATE_TYPED_TEST_SUITE_P(HyperTests, ManifoldMotionTests, ManifoldMotionTestTypes);
 
-} // namespace hyper::tests
+}  // namespace hyper::state::tests

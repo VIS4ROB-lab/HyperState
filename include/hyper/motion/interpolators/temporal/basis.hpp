@@ -5,7 +5,7 @@
 
 #include "hyper/motion/interpolators/temporal/polynomial.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 /// Basis spline (i.e. B-Spline) interpolator for
 /// uniform and non-uniform separation between bases and
@@ -46,4 +46,4 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   [[nodiscard]] auto mixing(const std::vector<Scalar>& times) const -> OrderMatrix final;
 };
 
-} // namespace hyper
+}  // namespace hyper::state

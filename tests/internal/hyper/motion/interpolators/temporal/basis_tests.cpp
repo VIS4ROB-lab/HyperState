@@ -8,7 +8,7 @@
 
 #include "hyper/motion/interpolators/temporal/basis.hpp"
 
-namespace hyper::tests {
+namespace hyper::state::tests {
 
 using Scalar = double;
 using Interpolator = BasisInterpolator<Scalar, Eigen::Dynamic>;
@@ -72,4 +72,4 @@ TEST(BasisInterpolatorTests, Duality) {
   }
 }
 
-} // namespace hyper::tests
+}  // namespace hyper::state::tests

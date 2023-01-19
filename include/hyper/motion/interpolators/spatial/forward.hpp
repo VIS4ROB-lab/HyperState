@@ -5,9 +5,9 @@
 
 #include "hyper/motion/forward.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TVariable>
 class SpatialInterpolator;
 
-} // namespace hyper
+}  // namespace hyper::state

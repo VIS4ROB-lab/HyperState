@@ -5,7 +5,7 @@
 
 #include "hyper/motion/forward.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TScalar>
 class Motion {
@@ -19,4 +19,4 @@ class Motion {
   virtual ~Motion() = default;
 };
 
-} // namespace hyper
+}  // namespace hyper::state

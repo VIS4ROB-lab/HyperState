@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename T>
 concept Integral = std::is_integral_v<T>;
@@ -18,12 +18,7 @@ template <typename T>
 concept Real = Integral<T> || Float<T>;
 
 /// Boundary policy enum.
-enum class BoundaryPolicy {
-  INCLUSIVE,
-  LOWER_INCLUSIVE_ONLY,
-  UPPER_INCLUSIVE_ONLY,
-  EXCLUSIVE
-};
+enum class BoundaryPolicy { INCLUSIVE, LOWER_INCLUSIVE_ONLY, UPPER_INCLUSIVE_ONLY, EXCLUSIVE };
 
 template <typename Type, BoundaryPolicy boundary_policy>
   requires Integral<Type> || Real<Type>
@@ -31,9 +26,7 @@ class Range {
  public:
   /// Retrieves the boundary policy.
   /// \return Boundary policy.
-  [[nodiscard]] constexpr auto policy() const -> BoundaryPolicy {
-    return boundary_policy;
-  }
+  [[nodiscard]] constexpr auto policy() const -> BoundaryPolicy { return boundary_policy; }
 
   /// Returns the lower bound (considering the boundaries).
   /// \return Lower bound of this range.
@@ -56,9 +49,7 @@ class Range {
   /// Checks whether value if contained in range.
   /// \param type Query type.
   /// \return True if type is contained.
-  inline auto contains(const Type& type) const -> bool {
-    return !isSmaller(type) && !isGreater(type);
-  }
+  inline auto contains(const Type& type) const -> bool { return !isSmaller(type) && !isGreater(type); }
 
   /// Determines the size/length of the range.
   /// \param type Query type.
@@ -68,9 +59,7 @@ class Range {
   /// Determines if the range is empty.
   /// (i.e. lower bound is larger than upper bound).
   /// \return True if range is empty.
-  [[nodiscard]] auto empty() const -> bool {
-    return upperBound() < lowerBound();
-  }
+  [[nodiscard]] auto empty() const -> bool { return upperBound() < lowerBound(); }
 
   /// Samples a range by a sampling rate.
   /// \param rate Sampling rate.
@@ -101,7 +90,7 @@ class Range {
   /// Retrieves a random sample contained inside the range.
   /// \return Random sample.
   auto sample() const -> Type {
-    return lowerBound() + Type(std::rand()) / Type(RAND_MAX) * size(); // NOLINT
+    return lowerBound() + Type(std::rand()) / Type(RAND_MAX) * size();  // NOLINT
   }
 
   /// Retrieves the closest sample in the range.
@@ -200,7 +189,7 @@ struct BoundaryPolicyEvaluator {
   }
 };
 
-} // namespace internal
+}  // namespace internal
 
 // clang-format off
 
@@ -236,4 +225,4 @@ auto Range<Type, boundary_policy>::size() const -> Type {
 
 // clang-format on
 
-} // namespace hyper
+}  // namespace hyper::state

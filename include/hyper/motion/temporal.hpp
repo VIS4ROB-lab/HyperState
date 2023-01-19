@@ -10,11 +10,11 @@
 
 #include "hyper/motion/motion.hpp"
 #include "hyper/range.hpp"
-#include "hyper/variables/abstract.hpp"
 #include "hyper/variables/jacobian.hpp"
 #include "hyper/variables/stamped.hpp"
+#include "hyper/variables/variable.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TVariable>
 class TemporalMotion : public Motion<typename TVariable::Scalar> {
@@ -26,22 +26,16 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   using Index = typename Base::Index;
 
   using Time = Scalar;
-  using Range = hyper::Range<Time, BoundaryPolicy::INCLUSIVE>;
+  using Range = state::Range<Time, BoundaryPolicy::INCLUSIVE>;
 
-  using Element = Stamped<TVariable>;
+  using Element = variables::Stamped<TVariable>;
 
   // Element compare.
   struct ElementCompare {
     using is_transparent = std::true_type;
-    auto operator()(const Element& lhs, const Element& rhs) const -> bool {
-      return lhs.stamp() < rhs.stamp();
-    }
-    auto operator()(const Element& lhs, const Time& rhs) const -> bool {
-      return lhs.stamp() < rhs;
-    }
-    auto operator()(const Time& lhs, const Element& rhs) const -> bool {
-      return lhs < rhs.stamp();
-    }
+    auto operator()(const Element& lhs, const Element& rhs) const -> bool { return lhs.stamp() < rhs.stamp(); }
+    auto operator()(const Element& lhs, const Time& rhs) const -> bool { return lhs.stamp() < rhs; }
+    auto operator()(const Time& lhs, const Element& rhs) const -> bool { return lhs < rhs.stamp(); }
   };
 
   using Elements = std::set<Element, ElementCompare>;
@@ -52,23 +46,15 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
 
   /// Elements accessor.
   /// \return Elements.
-  auto elements() const -> const Elements& {
-    return elements_;
-  }
+  auto elements() const -> const Elements& { return elements_; }
 
   /// Elements modifier.
   /// \return Elements.
-  auto elements() -> Elements& {
-    return elements_;
-  }
+  auto elements() -> Elements& { return elements_; }
 
   /// Time-based pointers accessor.
   /// \return Time-based pointers.
   [[nodiscard]] virtual auto pointers(const Time& time) const -> std::vector<Element*> = 0;
-
-  /// Evaluates the motion.
-  /// \param query Temporal motion query.
-  /// \return True on success.
 
   /// Evaluates this.
   /// \param time Query time.
@@ -86,7 +72,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> = 0;
 
  protected:
-  Elements elements_; ///< Elements.
+  Elements elements_;  ///< Elements.
 };
 
-} // namespace hyper
+}  // namespace hyper::state

@@ -13,7 +13,7 @@
 #include "hyper/motion/temporal.hpp"
 #include "hyper/variables/stamped.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TVariable>
 class ContinuousMotion : public TemporalMotion<TVariable> {
@@ -77,7 +77,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \return Iterators and number of elements between them.
   auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index>;
 
-  const TemporalInterpolator<Scalar>* interpolator_; ///< Interpolator.
+  const TemporalInterpolator<Scalar>* interpolator_;  ///< Interpolator.
 };
 
-} // namespace hyper
+}  // namespace hyper::state

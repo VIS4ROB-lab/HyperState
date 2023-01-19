@@ -5,14 +5,22 @@
 #include "hyper/variables/adapters.hpp"
 #include "hyper/variables/stamped.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TScalar>
-auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Inputs& inputs, const Weights& weights, const Outputs& outputs, const Jacobians* jacobians, const Index& offset, const Index& stride) -> bool {
+auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Inputs& inputs, const Weights& weights, const Outputs& outputs, const Jacobians* jacobians, const Index& offset,
+                                                            const Index& stride) -> bool {
   // Definitions.
-  using Rotation = typename SE3<TScalar>::Rotation;
-  using Translation = typename SE3<TScalar>::Translation;
-  using SU2Tangent = hyper::Tangent<SU2<TScalar>>;
+  using Rotation = typename Manifold::Rotation;
+  using Translation = typename Manifold::Translation;
+
+  using SU2 = variables::SU2<TScalar>;
+  using SU2Tangent = variables::Tangent<SU2>;
+  using SU2Jacobian = variables::JacobianNM<SU2Tangent>;
+  using SU2Adapter = variables::JacobianNM<SU2Tangent, SU2>;
+
+  using AngularJacobian = variables::JacobianNM<typename Tangent::Angular, Rotation>;
+  using LinearJacobian = variables::JacobianNM<typename Tangent::Linear, Translation>;
 
   // Constants.
   constexpr auto kValue = 0;
@@ -71,12 +79,12 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Inputs& inputs, const Wei
 
   } else {
     // Definitions.
-    using AdapterJacobians = std::vector<JacobianNM<SU2Tangent, SU2<TScalar>>>;
-    using MappedRotationJacobians = std::vector<std::vector<Eigen::Map<JacobianNM<typename Tangent::Angular, SU2<TScalar>>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>>;
-    using MappedTranslationJacobians = std::vector<std::vector<Eigen::Map<JacobianNM<typename Tangent::Linear>, 0, Eigen::OuterStride<Tangent::kNumParameters>>>>;
+    using SU2Adapters = std::vector<SU2Adapter>;
+    using AngularJacobians = std::vector<std::vector<Eigen::Map<AngularJacobian, 0, Eigen::OuterStride<Tangent::kNumParameters>>>>;
+    using TranslationJacobians = std::vector<std::vector<Eigen::Map<LinearJacobian, 0, Eigen::OuterStride<Tangent::kNumParameters>>>>;
 
-    MappedRotationJacobians Js_r;
-    MappedTranslationJacobians Js_x;
+    AngularJacobians Js_r;
+    TranslationJacobians Js_x;
     Js_r.resize(num_derivatives);
     Js_x.resize(num_derivatives);
 
@@ -90,11 +98,11 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Inputs& inputs, const Wei
       }
     }
 
-    AdapterJacobians Js_a;
+    SU2Adapters Js_a;
     Js_a.reserve(num_variables);
 
     for (Index i = 0; i < num_variables; ++i) {
-      Js_a.emplace_back(SU2JacobianAdapter(inputs[i] + Manifold::kRotationOffset));
+      Js_a.emplace_back(variables::SU2JacobianAdapter(inputs[i] + Manifold::kRotationOffset));
     }
 
     for (Index i = last_idx; offset < i; --i) {
@@ -102,7 +110,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Inputs& inputs, const Wei
       const auto T_b = Eigen::Map<const Manifold>{inputs[i]};
       const auto w0_i = weights(i - offset, kValue);
 
-      JacobianNM<SU2Tangent> J_R_i_w_ab, J_d_ab_R_ab;
+      SU2Jacobian J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
       const auto d_ab = R_ab.toTangent(J_d_ab_R_ab.data());
       const auto x_ab = Translation{T_b.translation() - T_a.translation()};
@@ -191,7 +199,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Inputs& inputs, const Wei
     x = T_a.translation() + x;
   }
 
-  Eigen::Map<Manifold>{outputs[kValue]} = SE3<TScalar>{R, x};
+  Eigen::Map<Manifold>{outputs[kValue]} = Manifold{R, x};
   if (kValue < derivative) {
     Eigen::Map<Tangent>{outputs[kVelocity]} = v;
     if (kVelocity < derivative) {
@@ -202,6 +210,6 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Inputs& inputs, const Wei
   return true;
 }
 
-template class SpatialInterpolator<SE3<double>>;
+template class SpatialInterpolator<variables::SE3<double>>;
 
-} // namespace hyper
+}  // namespace hyper::state

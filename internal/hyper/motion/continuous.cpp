@@ -10,7 +10,7 @@
 #include "hyper/variables/groups/se3.hpp"
 #include "hyper/variables/stamped.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TVariable>
 ContinuousMotion<TVariable>::ContinuousMotion() = default;
@@ -102,7 +102,7 @@ auto ContinuousMotion<TVariable>::iterators(const Time& time) const -> std::tupl
   return {begin, end, layout.outer_input_size};
 }
 
-template class ContinuousMotion<Cartesian<double, 3>>;
-template class ContinuousMotion<SE3<double>>;
+template class ContinuousMotion<variables::Cartesian<double, 3>>;
+template class ContinuousMotion<variables::SE3<double>>;
 
-} // namespace hyper
+}  // namespace hyper::state
