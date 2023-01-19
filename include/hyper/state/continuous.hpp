@@ -41,9 +41,13 @@ class ContinuousState : public TemporalState<TVariable> {
   /// \return Range.
   [[nodiscard]] auto range() const -> Range final;
 
-  /// Time-based pointers accessor.
-  /// \return Time-based pointers.
-  [[nodiscard]] virtual auto pointers(const Time& time) const -> std::vector<Element*> final;
+  /// Element pointers accessor.
+  /// \return Pointers to elements.
+  [[nodiscard]] auto pointers() const -> std::vector<Element*> final;
+
+  /// Time-based element pointers accessor.
+  /// \return Time-based pointers to elements.
+  [[nodiscard]] auto pointers(const Time& time) const -> std::vector<Element*> final;
 
   /// Interpolator accessor.
   /// \return Interpolator.

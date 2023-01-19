@@ -52,8 +52,12 @@ class TemporalState : public State<typename TVariable::Scalar> {
   /// \return Elements.
   auto elements() -> Elements& { return elements_; }
 
-  /// Time-based pointers accessor.
-  /// \return Time-based pointers.
+  /// Element pointers accessor.
+  /// \return Pointers to elements.
+  [[nodiscard]] virtual auto pointers() const -> std::vector<Element*> = 0;
+
+  /// Time-based element pointers accessor.
+  /// \return Time-based pointers to elements.
   [[nodiscard]] virtual auto pointers(const Time& time) const -> std::vector<Element*> = 0;
 
   /// Evaluates this.

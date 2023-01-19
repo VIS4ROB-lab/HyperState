@@ -31,12 +31,20 @@ auto ContinuousState<TVariable>::range() const -> Range {
 }
 
 template <typename TVariable>
+auto ContinuousState<TVariable>::pointers() const -> std::vector<Element*> {
+  const auto& elements = this->elements_;
+  std::vector<Element*> pointers;
+  pointers.reserve(elements.size());
+  std::transform(elements.begin(), elements.end(), std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
+  return pointers;
+}
+
+template <typename TVariable>
 auto ContinuousState<TVariable>::pointers(const Time& time) const -> std::vector<Element*> {
   const auto& [begin, end, num_inputs] = iterators(time);
   std::vector<Element*> pointers;
   pointers.reserve(num_inputs);
   std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
-  DCHECK_EQ(pointers.size(), num_inputs);
   return pointers;
 }
 
