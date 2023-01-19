@@ -33,7 +33,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ./apps/tests/HyperMotionTests --gtest_output="xml:${{github.workspace}}/tests/junit/results.xml"
+        run: ./apps/tests/HyperStateTests --gtest_output="xml:${{github.workspace}}/tests/junit/results.xml"
 
       - name: Publish
         uses: EnricoMi/publish-unit-test-result-action@v2

@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <Eigen/Core>
 
-#include "hyper/range.hpp"
+#include "hyper/state/range.hpp"
 
 namespace hyper::state::tests {
 

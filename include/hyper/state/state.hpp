@@ -8,14 +8,14 @@
 namespace hyper::state {
 
 template <typename TScalar>
-class Motion {
+class State {
  public:
   // Definitions.
   using Index = Eigen::Index;
   using Scalar = TScalar;
 
   /// Virtual default destructor.
-  virtual ~Motion() = default;
+  virtual ~State() = default;
 };
 
 }  // namespace hyper::state

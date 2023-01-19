@@ -191,38 +191,34 @@ struct BoundaryPolicyEvaluator {
 
 }  // namespace internal
 
-// clang-format off
-
 template <typename Type, BoundaryPolicy boundary_policy>
-requires Integral<Type> || Real<Type>
+  requires Integral<Type> || Real<Type>
 auto Range<Type, boundary_policy>::lowerBound() const -> Type {
   return internal::BoundaryPolicyEvaluator<Type>::LowerBound(*this);
 }
 
 template <typename Type, BoundaryPolicy boundary_policy>
-requires Integral<Type> || Real<Type>
+  requires Integral<Type> || Real<Type>
 auto Range<Type, boundary_policy>::upperBound() const -> Type {
   return internal::BoundaryPolicyEvaluator<Type>::UpperBound(*this);
 }
 
 template <typename Type, BoundaryPolicy boundary_policy>
-requires Integral<Type> || Real<Type>
+  requires Integral<Type> || Real<Type>
 auto Range<Type, boundary_policy>::isSmaller(const Type& type) const -> bool {
   return internal::BoundaryPolicyEvaluator<Type>::IsSmaller(*this, type);
 }
 
 template <typename Type, BoundaryPolicy boundary_policy>
-requires Integral<Type> || Real<Type>
+  requires Integral<Type> || Real<Type>
 auto Range<Type, boundary_policy>::isGreater(const Type& type) const -> bool {
   return internal::BoundaryPolicyEvaluator<Type>::IsGreater(*this, type);
 }
 
 template <typename Type, BoundaryPolicy boundary_policy>
-requires Integral<Type> || Real<Type>
+  requires Integral<Type> || Real<Type>
 auto Range<Type, boundary_policy>::size() const -> Type {
   return internal::BoundaryPolicyEvaluator<Type>::Size(*this);
 }
-
-// clang-format on
 
 }  // namespace hyper::state

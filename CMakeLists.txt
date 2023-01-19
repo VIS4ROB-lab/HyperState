@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.16)
 include(FetchContent)
 
 # Define projects.
-project(HyperMotion VERSION 22.07.01 DESCRIPTION "" HOMEPAGE_URL https://github.com/VIS4ROB-lab/HyperState LANGUAGES CXX)
+project(HyperState VERSION 23.01.19 DESCRIPTION "" HOMEPAGE_URL https://github.com/VIS4ROB-lab/HyperState LANGUAGES CXX)
 
 # Set properties.
 if (PROJECT_IS_TOP_LEVEL)
@@ -18,7 +18,7 @@ endif ()
 # Define libraries and aliases.
 file(GLOB_RECURSE PROJECT_SOURCE_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/internal/*.hpp ${PROJECT_SOURCE_DIR}/internal/*.cpp)
 add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCE_FILES})
-add_library(Hyper::Motion ALIAS ${PROJECT_NAME})
+add_library(Hyper::State ALIAS ${PROJECT_NAME})
 
 # Fetch (external) content.
 FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG d5eba12b780f09c72f064e30a270b66e4a1a7580)

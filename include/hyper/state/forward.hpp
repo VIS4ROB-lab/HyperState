@@ -13,7 +13,7 @@
 
 namespace hyper::state {
 
-enum MotionDerivative {
+enum Derivative : Eigen::Index {
   VALUE = 0,
   VELOCITY = 1,
   ACCELERATION = 2,
@@ -21,22 +21,22 @@ enum MotionDerivative {
 };
 
 template <typename TScalar>
-class Motion;
+class State;
 
 template <typename TLabel, typename TVariable>
-class LabeledMotion;
+class LabeledState;
 
 template <typename TVariable>
-class TemporalMotion;
+class TemporalState;
 
 template <typename TVariable>
-class DiscreteMotion;
+class DiscreteState;
 
 template <typename TVariable>
-class ContinuousMotion;
+class ContinuousState;
 
 template <typename TVariable>
-struct TemporalMotionResult {
+struct Result {
   // Definitions.
   using Index = Eigen::Index;
   using Scalar = typename TVariable::Scalar;
@@ -50,7 +50,7 @@ struct TemporalMotionResult {
   /// \param k Derivative order.
   /// \param num_inputs Number of inputs.
   /// \param jacobian Jacobian evaluation flag.
-  TemporalMotionResult(const Index& k, const Index& num_inputs, bool jacobian = false) : num_inputs_{num_inputs}, num_derivatives_{k + 1} {
+  Result(const Index& k, const Index& num_inputs, bool jacobian = false) : num_inputs_{num_inputs}, num_derivatives_{k + 1} {
     // Allocate memory.
     if (!jacobian) {
       memory_.setZero(TVariable::kNumParameters + (num_derivatives_ - 1) * Tangent::kNumParameters);

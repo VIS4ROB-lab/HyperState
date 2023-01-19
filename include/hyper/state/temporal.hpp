@@ -8,19 +8,19 @@
 
 #include <glog/logging.h>
 
-#include "hyper/range.hpp"
 #include "hyper/state/state.hpp"
 #include "hyper/variables/jacobian.hpp"
 #include "hyper/variables/stamped.hpp"
 #include "hyper/variables/variable.hpp"
+#include "range.hpp"
 
 namespace hyper::state {
 
 template <typename TVariable>
-class TemporalMotion : public Motion<typename TVariable::Scalar> {
+class TemporalState : public State<typename TVariable::Scalar> {
  public:
   // Definitions.
-  using Base = Motion<typename TVariable::Scalar>;
+  using Base = State<typename TVariable::Scalar>;
 
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
@@ -61,7 +61,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> = 0;
+  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TVariable> = 0;
 
   /// Evaluates this.
   /// \param time Query time.
@@ -69,7 +69,7 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   /// \param jacobians Jacobians evaluation flag.
   /// \param elements Element pointers.
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> = 0;
+  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TVariable> = 0;
 
  protected:
   Elements elements_;  ///< Elements.

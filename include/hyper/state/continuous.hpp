@@ -16,10 +16,10 @@
 namespace hyper::state {
 
 template <typename TVariable>
-class ContinuousMotion : public TemporalMotion<TVariable> {
+class ContinuousState : public TemporalState<TVariable> {
  public:
   // Definitions.
-  using Base = TemporalMotion<TVariable>;
+  using Base = TemporalState<TVariable>;
 
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
@@ -31,11 +31,11 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Elements = typename Base::Elements;
 
   /// Default constructor.
-  ContinuousMotion();
+  ContinuousState();
 
   /// Constructor from interpolator.
   /// \param interpolator Interpolator.
-  explicit ContinuousMotion(const TemporalInterpolator<Scalar>* interpolator);
+  explicit ContinuousState(const TemporalInterpolator<Scalar>* interpolator);
 
   /// Evaluates the range.
   /// \return Range.
@@ -58,7 +58,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TVariable> final;
 
   /// Evaluates this.
   /// \param time Query time.
@@ -66,7 +66,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \param jacobians Jacobians evaluation flag.
   /// \param elements Element pointers.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TVariable> final;
 
  private:
   // Definitions.
