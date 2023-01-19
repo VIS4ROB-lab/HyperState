@@ -4,9 +4,9 @@
 #pragma once
 
 #include "hyper/matrix.hpp"
-#include "hyper/motion/interpolators/temporal/forward.hpp"
+#include "hyper/state/interpolators/temporal/forward.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TScalar>
 class TemporalInterpolator {
@@ -34,4 +34,4 @@ class TemporalInterpolator {
   virtual auto evaluate(const Scalar& time, const Index& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights = 0;
 };
 
-} // namespace hyper
+}  // namespace hyper::state

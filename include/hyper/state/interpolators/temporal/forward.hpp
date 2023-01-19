@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "hyper/motion/forward.hpp"
+#include "hyper/state/forward.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TScalar>
 class TemporalInterpolator;
@@ -27,4 +27,4 @@ struct TemporalInterpolatorLayout {
   const TIndex output_size;
 };
 
-} // namespace hyper
+}  // namespace hyper::state

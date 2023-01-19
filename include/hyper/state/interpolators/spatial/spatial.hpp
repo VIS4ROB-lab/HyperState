@@ -3,5 +3,5 @@
 
 #pragma once
 
-#include "hyper/motion/interpolators/spatial/cartesian.hpp"
-#include "hyper/motion/interpolators/spatial/se3.hpp"
+#include "hyper/state/interpolators/spatial/cartesian.hpp"
+#include "hyper/state/interpolators/spatial/se3.hpp"

@@ -3,9 +3,9 @@
 
 #include <glog/logging.h>
 
-#include "hyper/motion/interpolators/temporal/polynomial.hpp"
+#include "hyper/state/interpolators/temporal/polynomial.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TScalar, int TOrder>
 auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(const Index& order) -> OrderMatrix {
@@ -83,4 +83,4 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& time, const
 template class PolynomialInterpolator<double, 4>;
 template class PolynomialInterpolator<double, Eigen::Dynamic>;
 
-} // namespace hyper
+}  // namespace hyper::state

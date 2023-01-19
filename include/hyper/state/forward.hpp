@@ -11,9 +11,9 @@
 #include "hyper/variables/groups/forward.hpp"
 #include "hyper/variables/jacobian.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
-enum MotionDerivative {
+enum Derivative : Eigen::Index {
   VALUE = 0,
   VELOCITY = 1,
   ACCELERATION = 2,
@@ -21,39 +21,42 @@ enum MotionDerivative {
 };
 
 template <typename TScalar>
-class Motion;
+class State;
 
 template <typename TLabel, typename TVariable>
-class LabeledMotion;
+class LabeledState;
 
 template <typename TVariable>
-class TemporalMotion;
+class TemporalState;
 
 template <typename TVariable>
-class DiscreteMotion;
+class DiscreteState;
 
 template <typename TVariable>
-class ContinuousMotion;
+class ContinuousState;
 
 template <typename TVariable>
-struct TemporalMotionResult {
+struct Result {
   // Definitions.
   using Index = Eigen::Index;
-
   using Scalar = typename TVariable::Scalar;
+
+  using Variable = TVariable;
+  using Tangent = variables::Tangent<TVariable>;
+  using StampedVariable = variables::Stamped<TVariable>;
   using Pointers = std::vector<Scalar*>;
 
   /// Constructor.
   /// \param k Derivative order.
   /// \param num_inputs Number of inputs.
   /// \param jacobian Jacobian evaluation flag.
-  TemporalMotionResult(const Index& k, const Index& num_inputs, bool jacobian = false) : num_inputs_{num_inputs}, num_derivatives_{k + 1} {
+  Result(const Index& k, const Index& num_inputs, bool jacobian = false) : num_inputs_{num_inputs}, num_derivatives_{k + 1} {
     // Allocate memory.
     if (!jacobian) {
-      memory_.setZero(TVariable::kNumParameters + (num_derivatives_ - 1) * Tangent<TVariable>::kNumParameters);
+      memory_.setZero(TVariable::kNumParameters + (num_derivatives_ - 1) * Tangent::kNumParameters);
     } else {
-      memory_.setZero(TVariable::kNumParameters + (num_derivatives_ - 1) * Tangent<TVariable>::kNumParameters +
-                      num_derivatives_ * num_inputs_ * Tangent<TVariable>::kNumParameters * Stamped<TVariable>::kNumParameters);
+      memory_.setZero(TVariable::kNumParameters + (num_derivatives_ - 1) * Tangent::kNumParameters +
+                      num_derivatives_ * num_inputs_ * Tangent::kNumParameters * StampedVariable::kNumParameters);
     }
 
     // Insert value pointer.
@@ -65,7 +68,7 @@ struct TemporalMotionResult {
     // Insert derivative pointers.
     for (Index i = 0; i < (num_derivatives_ - 1); ++i) {
       outputs.emplace_back(data);
-      data += Tangent<TVariable>::kNumParameters;
+      data += Tangent::kNumParameters;
     }
 
     // Insert Jacobian pointers.
@@ -73,7 +76,7 @@ struct TemporalMotionResult {
       jacobians.reserve(num_derivatives_);
       for (Index i = 0; i < num_derivatives_; ++i) {
         jacobians.emplace_back(data);
-        data += num_inputs_ * Tangent<TVariable>::kNumParameters * Stamped<TVariable>::kNumParameters;
+        data += num_inputs_ * Tangent::kNumParameters * StampedVariable::kNumParameters;
       }
     }
   }
@@ -83,34 +86,28 @@ struct TemporalMotionResult {
   /// \return k-th derivative.
   auto derivative(const Index& k) const {
     using Output = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
-    return Eigen::Map<const Output>{outputs[k], (k == 0) ? TVariable::kNumParameters : Tangent<TVariable>::kNumParameters};
+    return Eigen::Map<const Output>{outputs[k], (k == 0) ? TVariable::kNumParameters : Tangent::kNumParameters};
   }
 
   /// Jacobian accessor.
   /// \param k Derivative order.
   /// \return k-th Jacobian.
   auto jacobian(const Index& k) const {
-    using Jacobian = Eigen::Matrix<Scalar, Tangent<TVariable>::kNumParameters, Eigen::Dynamic>;
-    return Eigen::Map<const Jacobian>{jacobians[k], Tangent<TVariable>::kNumParameters, num_inputs_ * Stamped<TVariable>::kNumParameters};
+    using Jacobian = Eigen::Matrix<Scalar, Tangent::kNumParameters, Eigen::Dynamic>;
+    return Eigen::Map<const Jacobian>{jacobians[k], Tangent::kNumParameters, num_inputs_ * StampedVariable::kNumParameters};
   }
 
   /// Value accessor.
   /// \return Value.
-  auto value() const {
-    return Eigen::Map<const TVariable>{outputs[0]};
-  }
+  auto value() const { return Eigen::Map<const TVariable>{outputs[0]}; }
 
   /// Velocity accessor.
   /// \return Velocity.
-  auto velocity() const {
-    return Eigen::Map<const Tangent<TVariable>>{outputs[1]};
-  }
+  auto velocity() const { return Eigen::Map<const Tangent>{outputs[1]}; }
 
   /// Acceleration accessor.
   /// \return Acceleration.
-  auto acceleration() const {
-    return Eigen::Map<const Tangent<TVariable>>{outputs[2]};
-  }
+  auto acceleration() const { return Eigen::Map<const Tangent>{outputs[2]}; }
 
   Pointers outputs;
   Pointers jacobians;
@@ -125,4 +122,4 @@ struct TemporalMotionResult {
   Memory memory_;
 };
 
-} // namespace hyper
+}  // namespace hyper::state

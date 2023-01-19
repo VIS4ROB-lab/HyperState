@@ -4,9 +4,9 @@
 #include <gtest/gtest.h>
 #include <Eigen/Core>
 
-#include "hyper/range.hpp"
+#include "hyper/state/range.hpp"
 
-namespace hyper::tests {
+namespace hyper::state::tests {
 
 constexpr auto kNumTrials = 10;
 
@@ -186,4 +186,4 @@ TYPED_TEST_P(RangeTests, Closest) {
 REGISTER_TYPED_TEST_SUITE_P(RangeTests, Empty, LowerBound, UpperBound, IsSmaller, IsGreater, Contains, Sample, Closest);
 INSTANTIATE_TYPED_TEST_SUITE_P(HyperTests, RangeTests, TestTypes);
 
-} // namespace hyper::tests
+}  // namespace hyper::state::tests

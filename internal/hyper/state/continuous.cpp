@@ -6,22 +6,22 @@
 #include <glog/logging.h>
 
 #include "hyper/matrix.hpp"
-#include "hyper/motion/continuous.hpp"
+#include "hyper/state/continuous.hpp"
 #include "hyper/variables/groups/se3.hpp"
 #include "hyper/variables/stamped.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TVariable>
-ContinuousMotion<TVariable>::ContinuousMotion() = default;
+ContinuousState<TVariable>::ContinuousState() = default;
 
 template <typename TVariable>
-ContinuousMotion<TVariable>::ContinuousMotion(const TemporalInterpolator<Scalar>* interpolator) {
+ContinuousState<TVariable>::ContinuousState(const TemporalInterpolator<Scalar>* interpolator) {
   setInterpolator(interpolator);
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::range() const -> Range {
+auto ContinuousState<TVariable>::range() const -> Range {
   const auto layout = interpolator()->layout();
   DCHECK_LE(layout.outer_input_size, this->elements_.size());
   const auto v0_itr = std::next(this->elements_.cbegin(), layout.left_input_margin - 1);
@@ -31,28 +31,36 @@ auto ContinuousMotion<TVariable>::range() const -> Range {
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::pointers(const Time& time) const -> std::vector<Element*> {
-  const auto& [begin, end, num_inputs] = iterators(time);
+auto ContinuousState<TVariable>::pointers() const -> std::vector<Element*> {
+  const auto& elements = this->elements_;
   std::vector<Element*> pointers;
-  pointers.reserve(num_inputs);
-  std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
-  DCHECK_EQ(pointers.size(), num_inputs);
+  pointers.reserve(elements.size());
+  std::transform(elements.begin(), elements.end(), std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
   return pointers;
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::interpolator() const -> const TemporalInterpolator<Scalar>* {
+auto ContinuousState<TVariable>::pointers(const Time& time) const -> std::vector<Element*> {
+  const auto& [begin, end, num_inputs] = iterators(time);
+  std::vector<Element*> pointers;
+  pointers.reserve(num_inputs);
+  std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
+  return pointers;
+}
+
+template <typename TVariable>
+auto ContinuousState<TVariable>::interpolator() const -> const TemporalInterpolator<Scalar>* {
   return interpolator_;
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::setInterpolator(const TemporalInterpolator<Scalar>* interpolator) -> void {
+auto ContinuousState<TVariable>::setInterpolator(const TemporalInterpolator<Scalar>* interpolator) -> void {
   DCHECK(interpolator != nullptr);
   interpolator_ = interpolator;
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> {
+auto ContinuousState<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TVariable> {
   const auto& [begin, end, num_inputs] = iterators(time);
   std::vector<const Scalar*> pointers;
   pointers.reserve(num_inputs);
@@ -62,7 +70,7 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& deriva
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> {
+auto ContinuousState<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TVariable> {
   // Definitions.
   using Stamps = std::vector<Scalar>;
 
@@ -85,13 +93,13 @@ auto ContinuousMotion<TVariable>::evaluate(const Time& time, const Index& deriva
   const auto offset = layout.left_input_margin - 1;
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
 
-  auto result = TemporalMotionResult<TVariable>{derivative, layout.outer_input_size, jacobians};
+  auto result = Result<TVariable>{derivative, layout.outer_input_size, jacobians};
   SpatialInterpolator<TVariable>::evaluate(variables, weights, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding, Element::kNumParameters);
   return result;
 }
 
 template <typename TVariable>
-auto ContinuousMotion<TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
+auto ContinuousState<TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
   DCHECK(range().contains(time)) << "Range does not contain time.";
   const auto layout = interpolator()->layout();
 
@@ -102,7 +110,7 @@ auto ContinuousMotion<TVariable>::iterators(const Time& time) const -> std::tupl
   return {begin, end, layout.outer_input_size};
 }
 
-template class ContinuousMotion<Cartesian<double, 3>>;
-template class ContinuousMotion<SE3<double>>;
+template class ContinuousState<variables::Cartesian<double, 3>>;
+template class ContinuousState<variables::SE3<double>>;
 
-} // namespace hyper
+}  // namespace hyper::state

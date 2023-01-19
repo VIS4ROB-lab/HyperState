@@ -3,9 +3,9 @@
 
 #include <glog/logging.h>
 
-#include "hyper/motion/interpolators/temporal/basis.hpp"
+#include "hyper/state/interpolators/temporal/basis.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 namespace {
 
@@ -30,7 +30,7 @@ auto uniformCoefficients(const TIndex& k) -> std::pair<Matrix<TScalar, TRows, TC
 
 /// Evaluates the weight precursor (i.e. non-cumulative matrix).
 template <typename TScalar, typename TIndex, int K>
-auto uniformRecursion(const TIndex& k) -> Matrix<TScalar, K, K> { // NOLINT
+auto uniformRecursion(const TIndex& k) -> Matrix<TScalar, K, K> {  // NOLINT
   using Matrix = Matrix<TScalar, K, K>;
 
   if (k == 1) {
@@ -88,7 +88,7 @@ auto coefficients(const std::vector<TScalar>& v, const TIndex& k) -> std::pair<M
 
 /// Evaluates the weight precursor (i.e. non-cumulative matrix).
 template <typename TScalar, typename TIndex, int K>
-auto nonUniformRecursion(const std::vector<TScalar>& v, const TIndex& k) -> Matrix<TScalar, K, K> { // NOLINT
+auto nonUniformRecursion(const std::vector<TScalar>& v, const TIndex& k) -> Matrix<TScalar, K, K> {  // NOLINT
   using Matrix = Matrix<TScalar, K, K>;
 
   if (k == 1) {
@@ -101,7 +101,7 @@ auto nonUniformRecursion(const std::vector<TScalar>& v, const TIndex& k) -> Matr
     matrix(0, 1) = TScalar{-1};
     matrix(1, 1) = TScalar{1};
     return matrix;
-  } else { // Recursion.
+  } else {  // Recursion.
     const auto [Ak, Bk] = coefficients<TScalar, TIndex, K>(v, k);
     const auto Mk = nonUniformRecursion<TScalar, TIndex, ((K > 1) ? (K - 1) : Eigen::Dynamic)>(v, k - 1);
     Matrix AkMk{k, k};
@@ -114,7 +114,7 @@ auto nonUniformRecursion(const std::vector<TScalar>& v, const TIndex& k) -> Matr
   }
 }
 
-} // namespace
+}  // namespace
 
 template <typename TScalar, int TOrder>
 BasisInterpolator<TScalar, TOrder>::BasisInterpolator() {
@@ -140,36 +140,33 @@ auto BasisInterpolator<TScalar, TOrder>::layout() const -> Layout {
   if (this->isUniform()) {
     if (order % 2 == 0) {
       const auto margin = order / 2;
-      return {
-          .outer_input_size = order,
-          .inner_input_size = order,
-          .left_input_margin = margin,
-          .right_input_margin = margin,
-          .left_input_padding = 0,
-          .right_input_padding = 0,
-          .output_size = order};
+      return {.outer_input_size = order,
+              .inner_input_size = order,
+              .left_input_margin = margin,
+              .right_input_margin = margin,
+              .left_input_padding = 0,
+              .right_input_padding = 0,
+              .output_size = order};
     } else {
       const auto margin = (order - 1) / 2;
-      return {
-          .outer_input_size = order,
-          .inner_input_size = order,
-          .left_input_margin = margin + 1,
-          .right_input_margin = margin,
-          .left_input_padding = 0,
-          .right_input_padding = 0,
-          .output_size = order};
+      return {.outer_input_size = order,
+              .inner_input_size = order,
+              .left_input_margin = margin + 1,
+              .right_input_margin = margin,
+              .left_input_padding = 0,
+              .right_input_padding = 0,
+              .output_size = order};
     }
   } else {
     const auto degree = order - 1;
     const auto padding = (degree - 1) / 2;
-    return {
-        .outer_input_size = 2 * degree,
-        .inner_input_size = order,
-        .left_input_margin = degree,
-        .right_input_margin = degree,
-        .left_input_padding = padding,
-        .right_input_padding = padding,
-        .output_size = order};
+    return {.outer_input_size = 2 * degree,
+            .inner_input_size = order,
+            .left_input_margin = degree,
+            .right_input_margin = degree,
+            .left_input_padding = padding,
+            .right_input_padding = padding,
+            .output_size = order};
   }
 }
 
@@ -187,4 +184,4 @@ auto BasisInterpolator<TScalar, TOrder>::mixing(const std::vector<Scalar>& times
 template class BasisInterpolator<double, 4>;
 template class BasisInterpolator<double, Eigen::Dynamic>;
 
-} // namespace hyper
+}  // namespace hyper::state

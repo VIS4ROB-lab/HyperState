@@ -3,21 +3,22 @@
 
 #pragma once
 
-#include "hyper/motion/interpolators/spatial/forward.hpp"
-#include "hyper/motion/interpolators/temporal/forward.hpp"
+#include "hyper/state/interpolators/spatial/forward.hpp"
+#include "hyper/state/interpolators/temporal/forward.hpp"
 
 #include "hyper/variables/groups/se3.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TScalar>
-class SpatialInterpolator<SE3<TScalar>> final {
+class SpatialInterpolator<variables::SE3<TScalar>> final {
  public:
   // Definitions.
   using Index = Eigen::Index;
 
-  using Manifold = SE3<TScalar>;
-  using Tangent = hyper::Tangent<SE3<TScalar>>;
+  using Manifold = variables::SE3<TScalar>;
+  using Tangent = variables::Tangent<Manifold>;
+  using Jacobian = variables::JacobianNM<Tangent, Manifold>;
 
   using Inputs = std::vector<const TScalar*>;
   using Weights = Eigen::Ref<const MatrixX<TScalar>>;
@@ -36,7 +37,8 @@ class SpatialInterpolator<SE3<TScalar>> final {
   /// \param offset Offset.
   /// \param stride Jacobian stride.
   /// \return True on success.
-  static auto evaluate(const Inputs& inputs, const Weights& weights, const Outputs& outputs, const Jacobians* jacobians, const Index& offset, const Index& stride = kDimManifold) -> bool;
+  static auto evaluate(const Inputs& inputs, const Weights& weights, const Outputs& outputs, const Jacobians* jacobians, const Index& offset, const Index& stride = kDimManifold)
+      -> bool;
 };
 
-} // namespace hyper
+}  // namespace hyper::state

@@ -8,21 +8,21 @@
 // #include <boost/container/flat_set.hpp>
 // #include <absl/container/btree_set.h>
 
-#include "hyper/motion/interpolators/spatial/spatial.hpp"
-#include "hyper/motion/interpolators/temporal/temporal.hpp"
-#include "hyper/motion/temporal.hpp"
+#include "hyper/state/interpolators/spatial/spatial.hpp"
+#include "hyper/state/interpolators/temporal/temporal.hpp"
+#include "hyper/state/temporal.hpp"
 #include "hyper/variables/stamped.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TVariable>
-class ContinuousMotion : public TemporalMotion<TVariable> {
+class ContinuousState : public TemporalState<TVariable> {
  public:
   // Definitions.
-  using Base = TemporalMotion<TVariable>;
+  using Base = TemporalState<TVariable>;
 
-  using Scalar = typename Base::Scalar;
   using Index = typename Base::Index;
+  using Scalar = typename Base::Scalar;
 
   using Time = typename Base::Time;
   using Range = typename Base::Range;
@@ -31,19 +31,23 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   using Elements = typename Base::Elements;
 
   /// Default constructor.
-  ContinuousMotion();
+  ContinuousState();
 
   /// Constructor from interpolator.
   /// \param interpolator Interpolator.
-  explicit ContinuousMotion(const TemporalInterpolator<Scalar>* interpolator);
+  explicit ContinuousState(const TemporalInterpolator<Scalar>* interpolator);
 
   /// Evaluates the range.
   /// \return Range.
   [[nodiscard]] auto range() const -> Range final;
 
-  /// Time-based pointers accessor.
-  /// \return Time-based pointers.
-  [[nodiscard]] virtual auto pointers(const Time& time) const -> std::vector<Element*> final;
+  /// Element pointers accessor.
+  /// \return Pointers to elements.
+  [[nodiscard]] auto pointers() const -> std::vector<Element*> final;
+
+  /// Time-based element pointers accessor.
+  /// \return Time-based pointers to elements.
+  [[nodiscard]] auto pointers(const Time& time) const -> std::vector<Element*> final;
 
   /// Interpolator accessor.
   /// \return Interpolator.
@@ -58,7 +62,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> TemporalMotionResult<TVariable> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TVariable> final;
 
   /// Evaluates this.
   /// \param time Query time.
@@ -66,7 +70,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \param jacobians Jacobians evaluation flag.
   /// \param elements Element pointers.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> TemporalMotionResult<TVariable> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TVariable> final;
 
  private:
   // Definitions.
@@ -77,7 +81,7 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   /// \return Iterators and number of elements between them.
   auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index>;
 
-  const TemporalInterpolator<Scalar>* interpolator_; ///< Interpolator.
+  const TemporalInterpolator<Scalar>* interpolator_;  ///< Interpolator.
 };
 
-} // namespace hyper
+}  // namespace hyper::state

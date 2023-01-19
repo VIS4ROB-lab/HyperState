@@ -4,10 +4,10 @@
 #pragma once
 
 #include "hyper/matrix.hpp"
-#include "hyper/motion/interpolators/temporal/temporal.hpp"
+#include "hyper/state/interpolators/temporal/temporal.hpp"
 #include "hyper/vector.hpp"
 
-namespace hyper {
+namespace hyper::state {
 
 template <typename TScalar, int TOrder>
 class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
@@ -61,10 +61,10 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   auto evaluate(const Scalar& time, const Index& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights final;
 
  protected:
-  bool is_uniform_{true}; ///< Uniformity flag.
+  bool is_uniform_{true};  ///< Uniformity flag.
 
-  OrderMatrix mixing_;      ///< Cached mixing matrix.
-  OrderMatrix polynomials_; ///< Cached polynomial derivatives.
+  OrderMatrix mixing_;       ///< Cached mixing matrix.
+  OrderMatrix polynomials_;  ///< Cached polynomial derivatives.
 };
 
-} // namespace hyper
+}  // namespace hyper::state
