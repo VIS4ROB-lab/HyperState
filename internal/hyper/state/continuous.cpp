@@ -32,10 +32,9 @@ auto ContinuousState<TVariable>::range() const -> Range {
 
 template <typename TVariable>
 auto ContinuousState<TVariable>::pointers() const -> std::vector<Element*> {
-  const auto& elements = this->elements_;
   std::vector<Element*> pointers;
-  pointers.reserve(elements.size());
-  std::transform(elements.begin(), elements.end(), std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
+  pointers.reserve(this->elements_.size());
+  std::transform(this->elements_.begin(), this->elements_.end(), std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
   return pointers;
 }
 
@@ -46,6 +45,23 @@ auto ContinuousState<TVariable>::pointers(const Time& time) const -> std::vector
   pointers.reserve(num_inputs);
   std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
   return pointers;
+}
+
+template <typename TVariable>
+auto ContinuousState<TVariable>::parameters() const -> std::vector<Scalar*> {
+  std::vector<Scalar*> parameters;
+  parameters.reserve(this->elements_.size());
+  std::transform(this->elements_.begin(), this->elements_.end(), std::back_inserter(parameters), [](const auto& element) { return const_cast<Scalar*>(element.data()); });
+  return parameters;
+}
+
+template <typename TVariable>
+auto ContinuousState<TVariable>::parameters(const Time& time) const -> std::vector<Scalar*> {
+  const auto& [begin, end, num_inputs] = iterators(time);
+  std::vector<Scalar*> parameters;
+  parameters.reserve(num_inputs);
+  std::transform(begin, end, std::back_inserter(parameters), [](const auto& element) { return const_cast<Scalar*>(element.data()); });
+  return parameters;
 }
 
 template <typename TVariable>

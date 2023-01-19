@@ -91,7 +91,7 @@ class CartesianStateTests : public testing::Test {
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
-        auto input_j = Eigen::Map<StampedManifold>{inputs[j]->asVector().data()};
+        auto input_j = Eigen::Map<StampedManifold>{inputs[j]->data()};
 
         for (Index k = 0; k < input_j.size() - 1; ++k) {
           const StampedManifold tmp = input_j;
@@ -226,7 +226,7 @@ class ManifoldStateTests : public testing::Test {
 
       // Evaluate Jacobian.
       for (Index j = 0; j < num_inputs; ++j) {
-        auto input_j = Eigen::Map<StampedManifold>{inputs[j]->asVector().data()};
+        auto input_j = Eigen::Map<StampedManifold>{inputs[j]->data()};
 
         for (Index k = 0; k < Tangent::kNumParameters; ++k) {
           const StampedManifold tmp = input_j;
@@ -249,7 +249,7 @@ class ManifoldStateTests : public testing::Test {
         }
 
         Jn_i.template middleCols<StampedManifold::kNumParameters - 1>(j * StampedManifold::kNumParameters) =
-            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedManifold::kNumParameters) * variables::SE3JacobianAdapter(inputs[j]->asVector().data());
+            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedManifold::kNumParameters) * variables::SE3JacobianAdapter(inputs[j]->data());
       }
 
       // Compare Jacobians.
