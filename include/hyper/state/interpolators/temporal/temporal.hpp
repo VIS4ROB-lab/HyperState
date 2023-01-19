@@ -4,7 +4,7 @@
 #pragma once
 
 #include "hyper/matrix.hpp"
-#include "hyper/motion/interpolators/temporal/forward.hpp"
+#include "hyper/state/interpolators/temporal/forward.hpp"
 
 namespace hyper::state {
 

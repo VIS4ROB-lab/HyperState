@@ -8,9 +8,9 @@
 // #include <boost/container/flat_set.hpp>
 // #include <absl/container/btree_set.h>
 
-#include "hyper/motion/interpolators/spatial/spatial.hpp"
-#include "hyper/motion/interpolators/temporal/temporal.hpp"
-#include "hyper/motion/temporal.hpp"
+#include "hyper/state/interpolators/spatial/spatial.hpp"
+#include "hyper/state/interpolators/temporal/temporal.hpp"
+#include "hyper/state/temporal.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper::state {
@@ -21,8 +21,8 @@ class ContinuousMotion : public TemporalMotion<TVariable> {
   // Definitions.
   using Base = TemporalMotion<TVariable>;
 
-  using Scalar = typename Base::Scalar;
   using Index = typename Base::Index;
+  using Scalar = typename Base::Scalar;
 
   using Time = typename Base::Time;
   using Range = typename Base::Range;

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "hyper/motion/forward.hpp"
+#include "hyper/state/forward.hpp"
 
 namespace hyper::state {
 
@@ -11,9 +11,8 @@ template <typename TScalar>
 class Motion {
  public:
   // Definitions.
-  using Scalar = TScalar;
-
   using Index = Eigen::Index;
+  using Scalar = TScalar;
 
   /// Virtual default destructor.
   virtual ~Motion() = default;

@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "hyper/motion/forward.hpp"
-#include "hyper/motion/interpolators/spatial/forward.hpp"
-#include "hyper/motion/interpolators/temporal/forward.hpp"
+#include "hyper/state/forward.hpp"
+#include "hyper/state/interpolators/spatial/forward.hpp"
+#include "hyper/state/interpolators/temporal/forward.hpp"
 
 #include "hyper/variables/cartesian.hpp"
 #include "hyper/variables/jacobian.hpp"

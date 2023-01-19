@@ -6,7 +6,7 @@
 #include <glog/logging.h>
 
 #include "hyper/matrix.hpp"
-#include "hyper/motion/continuous.hpp"
+#include "hyper/state/continuous.hpp"
 #include "hyper/variables/groups/se3.hpp"
 #include "hyper/variables/stamped.hpp"
 

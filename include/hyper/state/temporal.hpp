@@ -8,8 +8,8 @@
 
 #include <glog/logging.h>
 
-#include "hyper/motion/motion.hpp"
 #include "hyper/range.hpp"
+#include "hyper/state/state.hpp"
 #include "hyper/variables/jacobian.hpp"
 #include "hyper/variables/stamped.hpp"
 #include "hyper/variables/variable.hpp"
@@ -22,8 +22,8 @@ class TemporalMotion : public Motion<typename TVariable::Scalar> {
   // Definitions.
   using Base = Motion<typename TVariable::Scalar>;
 
-  using Scalar = typename Base::Scalar;
   using Index = typename Base::Index;
+  using Scalar = typename Base::Scalar;
 
   using Time = Scalar;
   using Range = state::Range<Time, BoundaryPolicy::INCLUSIVE>;

@@ -3,7 +3,7 @@
 
 #include <glog/logging.h>
 
-#include "hyper/motion/interpolators/temporal/basis.hpp"
+#include "hyper/state/interpolators/temporal/basis.hpp"
 
 namespace hyper::state {
 

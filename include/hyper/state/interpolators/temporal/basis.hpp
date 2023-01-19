@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "hyper/motion/interpolators/temporal/polynomial.hpp"
+#include "hyper/state/interpolators/temporal/polynomial.hpp"
 
 namespace hyper::state {
 

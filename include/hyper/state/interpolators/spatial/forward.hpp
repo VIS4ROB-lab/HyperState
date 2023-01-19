@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "hyper/motion/forward.hpp"
+#include "hyper/state/forward.hpp"
 
 namespace hyper::state {
 
