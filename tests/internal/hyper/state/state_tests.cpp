@@ -8,10 +8,8 @@
 #include "hyper/variables/forward.hpp"
 
 #include "hyper/state/continuous.hpp"
-#include "hyper/state/interpolators/spatial/spatial.hpp"
-#include "hyper/state/interpolators/temporal/basis.hpp"
-#include "hyper/variables/adapters.hpp"
-#include "hyper/variables/groups/se3.hpp"
+#include "hyper/state/interpolators/interpolators.hpp"
+#include "hyper/variables/groups/adapters.hpp"
 
 namespace hyper::state::tests {
 
@@ -249,7 +247,7 @@ class ManifoldStateTests : public testing::Test {
         }
 
         Jn_i.template middleCols<StampedManifold::kNumParameters - 1>(j * StampedManifold::kNumParameters) =
-            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedManifold::kNumParameters) * variables::SE3JacobianAdapter(inputs[j]->data());
+            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedManifold::kNumParameters) * variables::JacobianAdapter<Manifold>(inputs[j]->data());
       }
 
       // Compare Jacobians.

@@ -8,8 +8,7 @@
 // #include <boost/container/flat_set.hpp>
 // #include <absl/container/btree_set.h>
 
-#include "hyper/state/interpolators/spatial/spatial.hpp"
-#include "hyper/state/interpolators/temporal/temporal.hpp"
+#include "hyper/state/interpolators/interpolators.hpp"
 #include "hyper/state/temporal.hpp"
 #include "hyper/variables/stamped.hpp"
 

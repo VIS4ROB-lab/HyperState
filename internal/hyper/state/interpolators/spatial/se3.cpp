@@ -2,7 +2,7 @@
 /// the 'LICENSE' file, which is part of this repository.
 
 #include "hyper/state/interpolators/spatial/se3.hpp"
-#include "hyper/variables/adapters.hpp"
+#include "hyper/variables/groups/adapters.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper::state {
@@ -102,7 +102,7 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Inputs& inputs
     Js_a.reserve(num_variables);
 
     for (Index i = 0; i < num_variables; ++i) {
-      Js_a.emplace_back(variables::SU2JacobianAdapter(inputs[i] + Manifold::kRotationOffset));
+      Js_a.emplace_back(variables::JacobianAdapter<SU2>(inputs[i] + Manifold::kRotationOffset));
     }
 
     for (Index i = last_idx; offset < i; --i) {
