@@ -26,8 +26,8 @@ class ContinuousState : public TemporalState<TVariable> {
   using Time = typename Base::Time;
   using Range = typename Base::Range;
 
-  using Element = typename Base::Element;
-  using Elements = typename Base::Elements;
+  using StampedVariable = typename Base::StampedVariable;
+  using StampedVariables = typename Base::StampedVariables;
 
   /// Default constructor.
   ContinuousState();
@@ -40,21 +40,21 @@ class ContinuousState : public TemporalState<TVariable> {
   /// \return Range.
   [[nodiscard]] auto range() const -> Range final;
 
-  /// Element pointers accessor.
-  /// \return Pointers to elements.
-  [[nodiscard]] auto pointers() const -> std::vector<Element*> final;
+  /// Variable pointers accessor.
+  /// \return Pointers to (stamped) variables.
+  [[nodiscard]] auto variables() const -> std::vector<StampedVariable*> final;
 
-  /// Time-based element pointers accessor.
-  /// \return Time-based pointers to elements.
-  [[nodiscard]] auto pointers(const Time& time) const -> std::vector<Element*> final;
+  /// Time-based variable pointers accessor.
+  /// \return Time-based pointers to (stamped) variables.
+  [[nodiscard]] auto variables(const Time& time) const -> std::vector<StampedVariable*> final;
 
-  /// Element parameters accessor.
-  /// \return Pointers to parameters.
-  [[nodiscard]] auto parameters() const -> std::vector<Scalar*> final;
+  /// Parameter blocks accessor.
+  /// \return Pointers to parameter blocks.
+  [[nodiscard]] auto parameterBlocks() const -> std::vector<Scalar*> final;
 
-  /// Time-based parameters pointers accessor.
-  /// \return Time-based pointers to parameters.
-  [[nodiscard]] auto parameters(const Time& time) const -> std::vector<Scalar*> final;
+  /// Time-based parameter blocks accessor.
+  /// \return Time-based pointers to parameter blocks.
+  [[nodiscard]] auto parameterBlocks(const Time& time) const -> std::vector<Scalar*> final;
 
   /// Interpolator accessor.
   /// \return Interpolator.
@@ -81,7 +81,7 @@ class ContinuousState : public TemporalState<TVariable> {
 
  private:
   // Definitions.
-  using Iterator = typename Elements::const_iterator;
+  using Iterator = typename StampedVariables::const_iterator;
 
   /// Retrieves the iterators for a time.
   /// \param time Query time.

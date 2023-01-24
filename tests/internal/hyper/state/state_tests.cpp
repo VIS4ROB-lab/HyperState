@@ -57,9 +57,9 @@ class CartesianStateTests : public testing::Test {
   /// \param degree Maximum derivative degree.
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
-    const auto stamp = state_.range().sample();
-    const auto result = state_.evaluate(stamp, degree, false);
-    const auto d_result = state_.evaluate(stamp + kNumericIncrement, degree, false);
+    const auto time = state_.range().sample();
+    const auto result = state_.evaluate(time, degree, false);
+    const auto d_result = state_.evaluate(time + kNumericIncrement, degree, false);
 
     for (auto i = 1; i <= degree; ++i) {
       const auto dx = ((d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement).eval();
@@ -76,11 +76,11 @@ class CartesianStateTests : public testing::Test {
   auto checkJacobians(const Index degree = kDegree) -> bool {
     for (Index i = 0; i <= degree; ++i) {
       // Evaluate analytic Jacobian.
-      const auto stamp = state_.range().sample();
-      const auto result = state_.evaluate(stamp, i, true);
+      const auto time = state_.range().sample();
+      const auto result = state_.evaluate(time, i, true);
 
       // Retrieve inputs.
-      const auto inputs = state_.pointers(stamp);
+      const auto inputs = state_.variables(time);
 
       // Allocate Jacobian.
       Jacobian Jn_i;
@@ -96,7 +96,7 @@ class CartesianStateTests : public testing::Test {
           const Tangent tau = kNumericIncrement * Tangent::Unit(k);
           input_j.variable() += tau;
 
-          const auto d_result = state_.evaluate(stamp, i, false);
+          const auto d_result = state_.evaluate(time, i, false);
           Jn_i.col(j * StampedManifold::kNumParameters + k) = (d_result.derivative(i) - result.derivative(i)).transpose() / kNumericIncrement;
 
           input_j = tmp;
@@ -178,9 +178,9 @@ class ManifoldStateTests : public testing::Test {
   /// \param degree Maximum derivative degree.
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree = kDegree) -> bool {
-    const auto stamp = state_.range().sample();
-    const auto result = state_.evaluate(stamp, degree, false);
-    const auto d_result = state_.evaluate(stamp + kNumericIncrement, degree, false);
+    const auto time = state_.range().sample();
+    const auto result = state_.evaluate(time, degree, false);
+    const auto d_result = state_.evaluate(time + kNumericIncrement, degree, false);
 
     const auto value = result.value();
     const auto d_value = d_result.value();
@@ -211,11 +211,11 @@ class ManifoldStateTests : public testing::Test {
   /// \return True if numeric and analytic Jacobians are close.
   auto checkJacobians(const Index degree = kDegree) -> bool {
     for (Index i = 0; i <= degree; ++i) {
-      const auto stamp = state_.range().sample();
-      const auto result = state_.evaluate(stamp, degree, true);
+      const auto time = state_.range().sample();
+      const auto result = state_.evaluate(time, degree, true);
 
       // Retrieve inputs.
-      const auto inputs = state_.pointers(stamp);
+      const auto inputs = state_.variables(time);
 
       // Allocate Jacobian.
       Jacobian Jn_i;
@@ -232,7 +232,7 @@ class ManifoldStateTests : public testing::Test {
           input_j.variable().rotation() *= tau.angular().toManifold();
           input_j.variable().translation() += tau.linear();
 
-          const auto d_result = state_.evaluate(stamp, degree, false);
+          const auto d_result = state_.evaluate(time, degree, false);
 
           if (i == 0) {
             const auto value = result.value();

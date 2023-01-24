@@ -23,45 +23,47 @@ ContinuousState<TVariable>::ContinuousState(const TemporalInterpolator<Scalar>* 
 template <typename TVariable>
 auto ContinuousState<TVariable>::range() const -> Range {
   const auto layout = interpolator()->layout();
-  DCHECK_LE(layout.outer_input_size, this->elements_.size());
-  const auto v0_itr = std::next(this->elements_.cbegin(), layout.left_input_margin - 1);
-  const auto vn_itr = std::next(this->elements_.crbegin(), layout.right_input_margin - 1);
+  DCHECK_LE(layout.outer_input_size, this->stamped_variables_.size());
+  const auto v0_itr = std::next(this->stamped_variables_.cbegin(), layout.left_input_margin - 1);
+  const auto vn_itr = std::next(this->stamped_variables_.crbegin(), layout.right_input_margin - 1);
   DCHECK_LT(v0_itr->stamp(), vn_itr->stamp());
   return {v0_itr->stamp(), vn_itr->stamp()};
 }
 
 template <typename TVariable>
-auto ContinuousState<TVariable>::pointers() const -> std::vector<Element*> {
-  std::vector<Element*> pointers;
-  pointers.reserve(this->elements_.size());
-  std::transform(this->elements_.begin(), this->elements_.end(), std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
-  return pointers;
+auto ContinuousState<TVariable>::variables() const -> std::vector<StampedVariable*> {
+  std::vector<StampedVariable*> ptrs;
+  ptrs.reserve(this->stamped_variables_.size());
+  std::transform(this->stamped_variables_.begin(), this->stamped_variables_.end(), std::back_inserter(ptrs),
+                 [](const auto& element) { return const_cast<StampedVariable*>(&element); });
+  return ptrs;
 }
 
 template <typename TVariable>
-auto ContinuousState<TVariable>::pointers(const Time& time) const -> std::vector<Element*> {
+auto ContinuousState<TVariable>::variables(const Time& time) const -> std::vector<StampedVariable*> {
   const auto& [begin, end, num_inputs] = iterators(time);
-  std::vector<Element*> pointers;
-  pointers.reserve(num_inputs);
-  std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return const_cast<Element*>(&element); });
-  return pointers;
+  std::vector<StampedVariable*> ptrs;
+  ptrs.reserve(num_inputs);
+  std::transform(begin, end, std::back_inserter(ptrs), [](const auto& element) { return const_cast<StampedVariable*>(&element); });
+  return ptrs;
 }
 
 template <typename TVariable>
-auto ContinuousState<TVariable>::parameters() const -> std::vector<Scalar*> {
-  std::vector<Scalar*> parameters;
-  parameters.reserve(this->elements_.size());
-  std::transform(this->elements_.begin(), this->elements_.end(), std::back_inserter(parameters), [](const auto& element) { return const_cast<Scalar*>(element.data()); });
-  return parameters;
+auto ContinuousState<TVariable>::parameterBlocks() const -> std::vector<Scalar*> {
+  std::vector<Scalar*> ptrs;
+  ptrs.reserve(this->stamped_variables_.size());
+  std::transform(this->stamped_variables_.begin(), this->stamped_variables_.end(), std::back_inserter(ptrs),
+                 [](const auto& element) { return const_cast<Scalar*>(element.data()); });
+  return ptrs;
 }
 
 template <typename TVariable>
-auto ContinuousState<TVariable>::parameters(const Time& time) const -> std::vector<Scalar*> {
+auto ContinuousState<TVariable>::parameterBlocks(const Time& time) const -> std::vector<Scalar*> {
   const auto& [begin, end, num_inputs] = iterators(time);
-  std::vector<Scalar*> parameters;
-  parameters.reserve(num_inputs);
-  std::transform(begin, end, std::back_inserter(parameters), [](const auto& element) { return const_cast<Scalar*>(element.data()); });
-  return parameters;
+  std::vector<Scalar*> ptrs;
+  ptrs.reserve(num_inputs);
+  std::transform(begin, end, std::back_inserter(ptrs), [](const auto& element) { return const_cast<Scalar*>(element.data()); });
+  return ptrs;
 }
 
 template <typename TVariable>
@@ -102,15 +104,15 @@ auto ContinuousState<TVariable>::evaluate(const Time& time, const Index& derivat
 
   for (Index i = 0; i < layout.outer_input_size; ++i) {
     const auto p_element_i = elements[i];
-    stamps.emplace_back(p_element_i[Element::kStampOffset]);
-    variables.emplace_back(p_element_i + Element::kVariableOffset);
+    stamps.emplace_back(p_element_i[StampedVariable::kStampOffset]);
+    variables.emplace_back(p_element_i + StampedVariable::kVariableOffset);
   }
 
   const auto offset = layout.left_input_margin - 1;
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
 
   auto result = Result<TVariable>{derivative, layout.outer_input_size, jacobians};
-  SpatialInterpolator<TVariable>::evaluate(variables, weights, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding, Element::kNumParameters);
+  SpatialInterpolator<TVariable>::evaluate(variables, weights, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding, StampedVariable::kNumParameters);
   return result;
 }
 
@@ -119,8 +121,8 @@ auto ContinuousState<TVariable>::iterators(const Time& time) const -> std::tuple
   DCHECK(range().contains(time)) << "Range does not contain time.";
   const auto layout = interpolator()->layout();
 
-  DCHECK_LE(layout.outer_input_size, this->elements_.size());
-  const auto itr = this->elements_.upper_bound(time);
+  DCHECK_LE(layout.outer_input_size, this->stamped_variables_.size());
+  const auto itr = this->stamped_variables_.upper_bound(time);
   const auto begin = std::prev(itr, layout.left_input_margin);
   const auto end = std::next(itr, layout.right_input_margin);
   return {begin, end, layout.outer_input_size};
