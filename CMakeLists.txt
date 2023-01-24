@@ -12,6 +12,7 @@ if (PROJECT_IS_TOP_LEVEL)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_STANDARD_REQUIRED YES)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -fconcepts -Wall -Wextra -Wnon-virtual-dtor -pedantic")
+    option(HYPER_BUILD_WITH_CERES "Build with Ceres." FALSE)
     option(HYPER_BUILD_TESTS "Build tests." TRUE)
 endif ()
 
@@ -37,6 +38,13 @@ endif ()
 # Find glog target if not present.
 if (NOT TARGET glog::glog)
     find_package(glog REQUIRED)
+endif ()
+
+if (HYPER_BUILD_WITH_CERES)
+    # Find Ceres target if not present.
+    if (NOT TARGET Ceres::ceres)
+        find_package(Ceres REQUIRED)
+    endif ()
 endif ()
 
 # Add includes and link libraries.
