@@ -11,16 +11,16 @@ template <typename TScalar>
 auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Inputs& inputs, const Weights& weights, const Outputs& outputs, const Jacobians* jacobians, const Index& offset,
                                                             const Index& stride) -> bool {
   // Definitions.
-  using Rotation = typename Manifold::Rotation;
-  using Translation = typename Manifold::Translation;
+  using Rotation = typename Input::Rotation;
+  using Translation = typename Input::Translation;
 
   using SU2 = variables::SU2<TScalar>;
   using SU2Tangent = variables::Tangent<SU2>;
   using SU2Jacobian = variables::JacobianNM<SU2Tangent>;
   using SU2Adapter = variables::JacobianNM<SU2Tangent, SU2>;
 
-  using AngularJacobian = variables::JacobianNM<typename Tangent::Angular, Rotation>;
-  using LinearJacobian = variables::JacobianNM<typename Tangent::Linear, Translation>;
+  using AngularJacobian = variables::JacobianNM<typename TangentOutput::Angular, Rotation>;
+  using LinearJacobian = variables::JacobianNM<typename TangentOutput::Linear, Translation>;
 
   // Constants.
   constexpr auto kValue = 0;
@@ -35,16 +35,16 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Inputs& inputs
   // Allocate accumulators.
   Rotation R = Rotation::Identity();
   Translation x = Translation::Zero();
-  Tangent v = Tangent::Zero();
-  Tangent a = Tangent::Zero();
+  TangentOutput v = TangentOutput::Zero();
+  TangentOutput a = TangentOutput::Zero();
 
   if (!jacobians) {
     // Retrieves first input.
-    const auto T_0 = Eigen::Map<const Manifold>{inputs[offset]};
+    const auto T_0 = Eigen::Map<const Input>{inputs[offset]};
 
     for (Index i = last_idx; offset < i; --i) {
-      const auto T_a = Eigen::Map<const Manifold>{inputs[i - 1]};
-      const auto T_b = Eigen::Map<const Manifold>{inputs[i]};
+      const auto T_a = Eigen::Map<const Input>{inputs[i - 1]};
+      const auto T_b = Eigen::Map<const Input>{inputs[i]};
       const auto w0_i = weights(i - offset, kValue);
 
       const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
@@ -80,21 +80,22 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Inputs& inputs
   } else {
     // Definitions.
     using SU2Adapters = std::vector<SU2Adapter>;
-    using AngularJacobians = std::vector<std::vector<Eigen::Map<AngularJacobian, 0, Eigen::OuterStride<Tangent::kNumParameters>>>>;
-    using TranslationJacobians = std::vector<std::vector<Eigen::Map<LinearJacobian, 0, Eigen::OuterStride<Tangent::kNumParameters>>>>;
+    using AngularJacobians = std::vector<std::vector<Eigen::Map<AngularJacobian, 0, Eigen::OuterStride<TangentOutput::kNumParameters>>>>;
+    using TranslationJacobians = std::vector<std::vector<Eigen::Map<LinearJacobian, 0, Eigen::OuterStride<TangentOutput::kNumParameters>>>>;
 
     AngularJacobians Js_r;
     TranslationJacobians Js_x;
     Js_r.resize(num_derivatives);
     Js_x.resize(num_derivatives);
 
+    const auto increment = (TangentOutput::kNumParameters * stride);
+
     for (Index k = 0; k < num_derivatives; ++k) {
       Js_r.reserve(num_variables);
       Js_x.reserve(num_variables);
-      const auto increment = (kDimTangent * stride);
       for (Index i = 0; i < num_variables; ++i) {
-        Js_r[k].emplace_back((*jacobians)[k] + i * increment + Manifold::kRotationOffset * Tangent::kNumParameters + Tangent::kAngularOffset);
-        Js_x[k].emplace_back((*jacobians)[k] + i * increment + Manifold::kTranslationOffset * Tangent::kNumParameters + Tangent::kLinearOffset);
+        Js_r[k].emplace_back((*jacobians)[k] + i * increment + Input::kRotationOffset * TangentOutput::kNumParameters + TangentOutput::kAngularOffset);
+        Js_x[k].emplace_back((*jacobians)[k] + i * increment + Input::kTranslationOffset * TangentOutput::kNumParameters + TangentOutput::kLinearOffset);
       }
     }
 
@@ -102,12 +103,12 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Inputs& inputs
     Js_a.reserve(num_variables);
 
     for (Index i = 0; i < num_variables; ++i) {
-      Js_a.emplace_back(variables::JacobianAdapter<SU2>(inputs[i] + Manifold::kRotationOffset));
+      Js_a.emplace_back(variables::JacobianAdapter<SU2>(inputs[i] + Input::kRotationOffset));
     }
 
     for (Index i = last_idx; offset < i; --i) {
-      const auto T_a = Eigen::Map<const Manifold>{inputs[i - 1]};
-      const auto T_b = Eigen::Map<const Manifold>{inputs[i]};
+      const auto T_a = Eigen::Map<const Input>{inputs[i - 1]};
+      const auto T_b = Eigen::Map<const Input>{inputs[i]};
       const auto w0_i = weights(i - offset, kValue);
 
       SU2Jacobian J_R_i_w_ab, J_d_ab_R_ab;
@@ -193,17 +194,17 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Inputs& inputs
     Js_r[kValue][offset].noalias() += R.groupInverse().matrix() * Js_a[offset];
     Js_x[kValue][offset].diagonal().array() += TScalar{1};
 
-    const auto T_a = Eigen::Map<const Manifold>{inputs[offset]};
+    const auto T_a = Eigen::Map<const Input>{inputs[offset]};
 
     R = T_a.rotation() * R;
     x = T_a.translation() + x;
   }
 
-  Eigen::Map<Manifold>{outputs[kValue]} = Manifold{R, x};
+  Eigen::Map<ValueOutput>{outputs[kValue]} = ValueOutput{R, x};
   if (kValue < derivative) {
-    Eigen::Map<Tangent>{outputs[kVelocity]} = v;
+    Eigen::Map<TangentOutput>{outputs[kVelocity]} = v;
     if (kVelocity < derivative) {
-      Eigen::Map<Tangent>{outputs[kAcceleration]} = a;
+      Eigen::Map<TangentOutput>{outputs[kAcceleration]} = a;
     }
   }
 
