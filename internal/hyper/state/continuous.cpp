@@ -96,24 +96,21 @@ auto ContinuousState<TVariable>::evaluate(const Time& time, const Index& derivat
   const auto layout = interpolator()->layout();
 
   // Split pointers.
-  std::vector<const Scalar*> variables;
-  variables.reserve(layout.outer_input_size);
-
   Stamps stamps;
+  std::vector<const Scalar*> inputs;
+  inputs.reserve(layout.outer_input_size);
   stamps.reserve(layout.outer_input_size);
 
   for (Index i = 0; i < layout.outer_input_size; ++i) {
     const auto p_element_i = elements[i];
+    inputs.emplace_back(p_element_i + StampedVariable::kVariableOffset);
     stamps.emplace_back(p_element_i[StampedVariable::kStampOffset]);
-    variables.emplace_back(p_element_i + StampedVariable::kVariableOffset);
   }
 
   const auto offset = layout.left_input_margin - 1;
   const auto weights = interpolator()->evaluate(time, derivative, stamps, offset);
 
-  auto result = Result<TVariable>{derivative, layout.outer_input_size, jacobians};
-  SpatialInterpolator<TVariable>::evaluate(variables, weights, result.outputs, jacobians ? &result.jacobians : nullptr, layout.left_input_padding, StampedVariable::kNumParameters);
-  return result;
+  return SpatialInterpolator<TVariable>::evaluate(inputs, weights, jacobians, layout.left_input_padding, StampedVariable::kNumParameters);
 }
 
 template <typename TVariable>
