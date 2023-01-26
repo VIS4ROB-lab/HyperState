@@ -12,16 +12,16 @@
 
 namespace hyper::state {
 
-template <typename TVariable>
-ContinuousState<TVariable>::ContinuousState() = default;
+template <typename TOutput, typename TVariable>
+ContinuousState<TOutput, TVariable>::ContinuousState() = default;
 
-template <typename TVariable>
-ContinuousState<TVariable>::ContinuousState(const TemporalInterpolator<Scalar>* interpolator) {
+template <typename TOutput, typename TVariable>
+ContinuousState<TOutput, TVariable>::ContinuousState(const TemporalInterpolator<Scalar>* interpolator) {
   setInterpolator(interpolator);
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::range() const -> Range {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::range() const -> Range {
   const auto layout = interpolator()->layout();
   DCHECK_LE(layout.outer_input_size, this->stamped_variables_.size());
   const auto v0_itr = std::next(this->stamped_variables_.cbegin(), layout.left_input_margin - 1);
@@ -30,8 +30,8 @@ auto ContinuousState<TVariable>::range() const -> Range {
   return {v0_itr->stamp(), vn_itr->stamp()};
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::variables() const -> std::vector<StampedVariable*> {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::variables() const -> std::vector<StampedVariable*> {
   std::vector<StampedVariable*> ptrs;
   ptrs.reserve(this->stamped_variables_.size());
   std::transform(this->stamped_variables_.begin(), this->stamped_variables_.end(), std::back_inserter(ptrs),
@@ -39,8 +39,8 @@ auto ContinuousState<TVariable>::variables() const -> std::vector<StampedVariabl
   return ptrs;
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::variables(const Time& time) const -> std::vector<StampedVariable*> {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::variables(const Time& time) const -> std::vector<StampedVariable*> {
   const auto& [begin, end, num_inputs] = iterators(time);
   std::vector<StampedVariable*> ptrs;
   ptrs.reserve(num_inputs);
@@ -48,8 +48,8 @@ auto ContinuousState<TVariable>::variables(const Time& time) const -> std::vecto
   return ptrs;
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::parameterBlocks() const -> std::vector<Scalar*> {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::parameterBlocks() const -> std::vector<Scalar*> {
   std::vector<Scalar*> ptrs;
   ptrs.reserve(this->stamped_variables_.size());
   std::transform(this->stamped_variables_.begin(), this->stamped_variables_.end(), std::back_inserter(ptrs),
@@ -57,8 +57,8 @@ auto ContinuousState<TVariable>::parameterBlocks() const -> std::vector<Scalar*>
   return ptrs;
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::parameterBlocks(const Time& time) const -> std::vector<Scalar*> {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::parameterBlocks(const Time& time) const -> std::vector<Scalar*> {
   const auto& [begin, end, num_inputs] = iterators(time);
   std::vector<Scalar*> ptrs;
   ptrs.reserve(num_inputs);
@@ -66,19 +66,19 @@ auto ContinuousState<TVariable>::parameterBlocks(const Time& time) const -> std:
   return ptrs;
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::interpolator() const -> const TemporalInterpolator<Scalar>* {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::interpolator() const -> const TemporalInterpolator<Scalar>* {
   return interpolator_;
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::setInterpolator(const TemporalInterpolator<Scalar>* interpolator) -> void {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::setInterpolator(const TemporalInterpolator<Scalar>* interpolator) -> void {
   DCHECK(interpolator != nullptr);
   interpolator_ = interpolator;
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TVariable> {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TOutput> {
   const auto& [begin, end, num_inputs] = iterators(time);
   std::vector<const Scalar*> pointers;
   pointers.reserve(num_inputs);
@@ -87,8 +87,8 @@ auto ContinuousState<TVariable>::evaluate(const Time& time, const Index& derivat
   return evaluate(time, derivative, jacobians, pointers.data());
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TVariable> {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TOutput> {
   // Definitions.
   using Stamps = std::vector<Scalar>;
 
@@ -105,12 +105,13 @@ auto ContinuousState<TVariable>::evaluate(const Time& time, const Index& derivat
 
   const auto weights = interpolator()->evaluate(time, derivative, stamps, layout.left_input_margin - 1);
 
-  return SpatialInterpolator<TVariable>::evaluate(derivative, elements, layout.outer_input_size, layout.left_input_padding, layout.left_input_padding + layout.inner_input_size - 1,
-                                                  StampedVariable::kNumParameters, StampedVariable::kVariableOffset, weights, jacobians);
+  return SpatialInterpolator<TOutput, TVariable>::evaluate(derivative, elements, layout.outer_input_size, layout.left_input_padding,
+                                                           layout.left_input_padding + layout.inner_input_size - 1, StampedVariable::kNumParameters,
+                                                           StampedVariable::kVariableOffset, weights, jacobians);
 }
 
-template <typename TVariable>
-auto ContinuousState<TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
+template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
   DCHECK(range().contains(time)) << "Range does not contain time.";
   const auto layout = interpolator()->layout();
 
@@ -123,5 +124,6 @@ auto ContinuousState<TVariable>::iterators(const Time& time) const -> std::tuple
 
 template class ContinuousState<variables::Cartesian<double, 3>>;
 template class ContinuousState<variables::SE3<double>>;
+template class ContinuousState<variables::SE3<double>, variables::Tangent<variables::SE3<double>>>;
 
 }  // namespace hyper::state

@@ -16,7 +16,7 @@
 
 namespace hyper::state {
 
-template <typename TVariable>
+template <typename TOutput, typename TVariable>
 class TemporalState : public State<typename TVariable::Scalar> {
  public:
   // Definitions.
@@ -73,7 +73,7 @@ class TemporalState : public State<typename TVariable::Scalar> {
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TVariable> = 0;
+  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TOutput> = 0;
 
   /// Evaluates this.
   /// \param time Query time.
@@ -81,7 +81,7 @@ class TemporalState : public State<typename TVariable::Scalar> {
   /// \param jacobians Jacobians evaluation flag.
   /// \param elements Element pointers.
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TVariable> = 0;
+  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TOutput> = 0;
 
  protected:
   StampedVariables stamped_variables_;  ///< Stamped variables.

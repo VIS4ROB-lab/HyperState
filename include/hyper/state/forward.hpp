@@ -26,13 +26,13 @@ class State;
 template <typename TLabel, typename TVariable>
 class LabeledState;
 
-template <typename TVariable>
+template <typename TOutput, typename TVariable = TOutput>
 class TemporalState;
 
-template <typename TVariable>
+template <typename TOutput>
 class DiscreteState;
 
-template <typename TVariable>
+template <typename TOutput, typename TVariable = TOutput>
 class ContinuousState;
 
 template <typename TOutput>

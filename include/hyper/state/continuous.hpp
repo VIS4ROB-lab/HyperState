@@ -14,11 +14,11 @@
 
 namespace hyper::state {
 
-template <typename TVariable>
-class ContinuousState : public TemporalState<TVariable> {
+template <typename TOutput, typename TVariable>
+class ContinuousState : public TemporalState<TOutput, TVariable> {
  public:
   // Definitions.
-  using Base = TemporalState<TVariable>;
+  using Base = TemporalState<TOutput, TVariable>;
 
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
@@ -69,7 +69,7 @@ class ContinuousState : public TemporalState<TVariable> {
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TVariable> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TOutput> final;
 
   /// Evaluates this.
   /// \param time Query time.
@@ -77,7 +77,7 @@ class ContinuousState : public TemporalState<TVariable> {
   /// \param jacobians Jacobians evaluation flag.
   /// \param elements Element pointers.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TVariable> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TOutput> final;
 
  private:
   // Definitions.
