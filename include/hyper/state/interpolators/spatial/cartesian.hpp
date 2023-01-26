@@ -22,7 +22,7 @@ class SpatialInterpolator<TVariable> final {
   using Output = TVariable;
 
   /// Evaluates this.
-  static auto evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
+  static auto evaluate(const Index& derivative, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
                        const Index& num_input_parameters, const Index& input_offset, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output> {
     // Constants.
     constexpr auto kValue = 0;
@@ -30,7 +30,7 @@ class SpatialInterpolator<TVariable> final {
     //constexpr auto kAcceleration = 2;
 
     // Allocate result.
-    auto result = Result<Output>(degree, jacobians, num_inputs, num_input_parameters);
+    auto result = Result<Output>(derivative, jacobians, num_inputs, num_input_parameters);
 
     // Input lambda definition.
     auto I = [&inputs, &input_offset](const Index& i) {
@@ -46,7 +46,7 @@ class SpatialInterpolator<TVariable> final {
     }
 
     // Compute value and derivatives.
-    for (Index k = kValue; k < degree + 1; ++k) {
+    for (Index k = kValue; k <= derivative; ++k) {
       if (k == kValue) {
         result.value = values * weights.col(kValue);
       } else {

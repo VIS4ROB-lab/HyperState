@@ -11,7 +11,7 @@ namespace hyper::state {
 using namespace variables;
 
 template <typename TScalar>
-auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
+auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
                                                  const Index& num_input_parameters, const Index& input_offset, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians)
     -> Result<Output> {
   // Definitions.
@@ -31,7 +31,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scal
   constexpr auto kAcceleration = 2;
 
   // Allocate result.
-  auto result = Result<Output>(degree, jacobians, num_inputs, num_input_parameters);
+  auto result = Result<Output>(derivative, jacobians, num_inputs, num_input_parameters);
 
   // Input lambda definition.
   auto I = [&inputs, &input_offset](const Index& i) {
@@ -60,7 +60,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scal
       const auto R_i = w_ab.toManifold();
       const auto x_i = Translation{w0_i * x_ab};
 
-      if (kValue < degree) {
+      if (kValue < derivative) {
         const auto i_R = R.groupInverse().matrix();
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto w1_i = weights(i - start_index, kVelocity);
@@ -69,7 +69,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scal
         v.angular() += w1_i_i_R_d_ab;
         v.linear() += w1_i * x_ab;
 
-        if (kVelocity < degree) {
+        if (kVelocity < derivative) {
           const auto w2_i = weights(i - start_index, kAcceleration);
           a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());
           a.linear() += w2_i * x_ab;
@@ -124,7 +124,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scal
       Jt(kValue, i - 1).diagonal().array() = -w0_i;
 
       // Velocity update.
-      if (kValue < degree) {
+      if (kValue < derivative) {
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto i_R_d_ab_x = i_R_d_ab.hat();
         const auto w1_i = weights(i - start_index, kVelocity);
@@ -148,7 +148,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scal
         }
 
         // Acceleration update.
-        if (kVelocity < degree) {
+        if (kVelocity < derivative) {
           const auto w2_i = weights(i - start_index, kAcceleration);
           const auto w1_i_i_R_d_ab_x = w1_i_i_R_d_ab.hat();
 
@@ -196,9 +196,9 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scal
   }
 
   result.value = {R, x};
-  if (kValue < degree) {
+  if (kValue < derivative) {
     result.derivative(kVelocity - 1) = v;
-    if (kVelocity < degree) {
+    if (kVelocity < derivative) {
       result.derivative(kAcceleration - 1) = a;
     }
   }
@@ -207,12 +207,12 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scal
 }
 
 template <typename TScalar>
-auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index,
+auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(const Index& derivative, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index,
                                                                         const Index& end_index, const Index& num_input_parameters, const Index& input_offset,
                                                                         const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output> {
   // Allocate result.
-  auto o_result = Result<Output>(degree, jacobians, num_inputs, num_input_parameters);
-  auto i_result = SpatialInterpolator<Tangent<SE3<TScalar>>>::evaluate(degree, inputs, num_inputs, start_index, end_index, num_input_parameters, input_offset, weights, jacobians);
+  auto o_result = Result<Output>(derivative, jacobians, num_inputs, num_input_parameters);
+  auto i_result = SpatialInterpolator<Tangent<SE3<TScalar>>>::evaluate(derivative, inputs, num_inputs, start_index, end_index, num_input_parameters, input_offset, weights, jacobians);
 
   if (!jacobians) {
     o_result.value = i_result.value.toManifold();
