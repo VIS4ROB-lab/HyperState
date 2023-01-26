@@ -64,7 +64,7 @@ class CartesianStateTests : public testing::Test {
     Tangent dx;
     for (Index i = 0; i < degree; ++i) {
       if (i == 0) {
-        dx = (d_result.value() - result.value()) / kNumericIncrement;
+        dx = (d_result.value - result.value) / kNumericIncrement;
       } else {
         dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement;
       }
@@ -104,7 +104,7 @@ class CartesianStateTests : public testing::Test {
           const auto d_result = state_.evaluate(time, i, false);
 
           if (i == 0) {
-            Jn_i.col(j * StampedManifold::kNumParameters + k) = (d_result.value() - result.value()).transpose() / kNumericIncrement;
+            Jn_i.col(j * StampedManifold::kNumParameters + k) = (d_result.value - result.value).transpose() / kNumericIncrement;
           } else {
             Jn_i.col(j * StampedManifold::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)).transpose() / kNumericIncrement;
           }
@@ -192,18 +192,15 @@ class ManifoldStateTests : public testing::Test {
     const auto result = state_.evaluate(time, degree, false);
     const auto d_result = state_.evaluate(time + kNumericIncrement, degree, false);
 
-    const auto& value = result.value();
-    const auto& d_value = d_result.value();
-
     Tangent dx;
     for (Index i = 0; i < degree; ++i) {
       if (i == 0) {
         SU2 d_su2;
         SU2Algebra d_algebra;
-        d_su2 = SU2{(d_value.rotation().coeffs() - value.rotation().coeffs()) / kNumericIncrement};
-        d_algebra = value.rotation().groupInverse().groupPlus(d_su2).coeffs();
+        d_su2 = SU2{(d_result.value.rotation().coeffs() - result.value.rotation().coeffs()) / kNumericIncrement};
+        d_algebra = result.value.rotation().groupInverse().groupPlus(d_su2).coeffs();
         dx.angular() = d_algebra.toTangent();
-        dx.linear() = (d_value.translation() - value.translation()) / kNumericIncrement;
+        dx.linear() = (d_result.value.translation() - result.value.translation()) / kNumericIncrement;
       } else {
         dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement;
       }
@@ -244,8 +241,8 @@ class ManifoldStateTests : public testing::Test {
           const auto d_result = state_.evaluate(time, degree, false);
 
           if (i == 0) {
-            const auto& value = result.value();
-            const auto& d_value = d_result.value();
+            const auto& value = result.value;
+            const auto& d_value = d_result.value;
             Jn_i.col(j * StampedManifold::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
             Jn_i.col(j * StampedManifold::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
           } else {

@@ -47,45 +47,38 @@ class Result {
   Result(const Index& degree, bool jacobians, const Index& num_inputs, const Index& num_input_parameters)
       : degree_{degree}, num_inputs_{num_inputs}, num_input_parameters_{num_input_parameters}, num_parameters_{num_inputs * num_input_parameters} {
     if (!jacobians) {
-      matrix_.setZero(Tangent::kNumParameters, degree_);
+      matrix.setZero(Tangent::kNumParameters, degree_);
     } else {
-      matrix_.setZero(Tangent::kNumParameters, degree_ + (degree_ + 1) * num_parameters_);
+      matrix.setZero(Tangent::kNumParameters, degree_ + (degree_ + 1) * num_parameters_);
     }
   }
 
-  inline auto value() -> Value& { return value_; }
-  inline auto value() const -> const Value& { return value_; }
+  inline auto derivative(const Index& k) { return Eigen::Map<Tangent>{matrix.data() + k * Tangent::kNumParameters}; }
+  inline auto derivative(const Index& k) const { return Eigen::Map<const Tangent>{matrix.data() + k * Tangent::kNumParameters}; }
 
-  inline auto derivative(const Index& k) { return Eigen::Map<Tangent>{matrix_.data() + k * Tangent::kNumParameters}; }
-  inline auto derivative(const Index& k) const { return Eigen::Map<const Tangent>{matrix_.data() + k * Tangent::kNumParameters}; }
-  inline auto velocity() { return derivative(0); }
-  inline auto velocity() const { return derivative(0); }
-  inline auto acceleration() { return derivative(1); }
-  inline auto acceleration() const { return derivative(1); }
-
-  inline auto jacobian(const Index& k) { return matrix_.middleCols(degree_ + k * num_parameters_, num_parameters_); }
-  inline auto jacobian(const Index& k) const { return matrix_.middleCols(degree_ + k * num_parameters_, num_parameters_); }
-  inline auto jacobian(const Index& k, const Index& i) { return matrix_.middleCols(degree_ + k * num_parameters_ + i * num_input_parameters_, num_input_parameters_); }
-  inline auto jacobian(const Index& k, const Index& i) const { return matrix_.middleCols(degree_ + k * num_parameters_ + i * num_input_parameters_, num_input_parameters_); }
+  inline auto jacobian(const Index& k) { return matrix.middleCols(degree_ + k * num_parameters_, num_parameters_); }
+  inline auto jacobian(const Index& k) const { return matrix.middleCols(degree_ + k * num_parameters_, num_parameters_); }
+  //inline auto jacobian(const Index& k, const Index& i) { return matrix.middleCols(degree_ + k * num_parameters_ + i * num_input_parameters_, num_input_parameters_); }
+  //inline auto jacobian(const Index& k, const Index& i) const { return matrix.middleCols(degree_ + k * num_parameters_ + i * num_input_parameters_, num_input_parameters_); }
 
   template <int NRows, int NCols>
   inline auto jacobian(const Index& k, const Index& i, const Index& start_row, const Index& start_col) {
-    return matrix_.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
+    return matrix.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
   }
 
   template <int NRows, int NCols>
   inline auto jacobian(const Index& k, const Index& i, const Index& start_row, const Index& start_col) const {
-    return matrix_.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
+    return matrix.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
   }
+
+  Value value;
+  MatrixX<Scalar> matrix;
 
  private:
   Index degree_;
   Index num_inputs_;
   Index num_input_parameters_;
   Index num_parameters_;
-
-  Value value_;
-  MatrixX<Scalar> matrix_;
 };
 
 }  // namespace hyper::state

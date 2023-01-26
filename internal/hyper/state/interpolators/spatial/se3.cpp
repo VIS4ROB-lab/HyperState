@@ -2,26 +2,28 @@
 /// the 'LICENSE' file, which is part of this repository.
 
 #include "hyper/state/interpolators/spatial/se3.hpp"
+#include "hyper/state/interpolators/spatial/cartesian.hpp"
 #include "hyper/variables/groups/adapters.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper::state {
 
+using namespace variables;
+
 template <typename TScalar>
-auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index,
-                                                            const Index& end_index, const Index& num_input_parameters, const Index& input_offset,
-                                                            const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output> {
+auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
+                                                 const Index& num_input_parameters, const Index& input_offset, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians)
+    -> Result<Output> {
   // Definitions.
-  using Tangent = variables::Tangent<Input>;
   using Rotation = typename Input::Rotation;
   using Translation = typename Input::Translation;
-  using Velocity = variables::Tangent<Input>;
-  using Acceleration = variables::Tangent<Input>;
+  using Velocity = Tangent<Input>;
+  using Acceleration = Tangent<Input>;
 
   using SU2 = variables::SU2<TScalar>;
-  using SU2Tangent = variables::Tangent<SU2>;
-  using SU2Jacobian = variables::JacobianNM<SU2Tangent>;
-  using SU2Adapter = variables::JacobianNM<SU2Tangent, SU2>;
+  using SU2Tangent = Tangent<SU2>;
+  using SU2Jacobian = JacobianNM<SU2Tangent>;
+  using SU2Adapter = JacobianNM<SU2Tangent, SU2>;
 
   // Constants.
   constexpr auto kValue = 0;
@@ -84,17 +86,19 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Index& degree,
   } else {
     // Jacobian lambda definitions.
     auto Jr = [&result, &input_offset](const Index& k, const Index& i) {
+      using Tangent = Tangent<Input>;
       return result.template jacobian<Tangent::Angular::kNumParameters, Rotation::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + input_offset);
     };
 
     auto Jt = [&result, &input_offset](const Index& k, const Index& i) {
+      using Tangent = Tangent<Input>;
       return result.template jacobian<Tangent::Linear::kNumParameters, Translation::kNumParameters>(k, i, Tangent::kLinearOffset, Input::kTranslationOffset + input_offset);
     };
 
     std::vector<SU2Adapter> Ja;
     Ja.reserve(weights.rows());
     for (Index i = 0; i < weights.rows(); ++i) {
-      Ja.emplace_back(variables::JacobianAdapter<SU2>(inputs[i] + Input::kRotationOffset));
+      Ja.emplace_back(JacobianAdapter<SU2>(inputs[i] + Input::kRotationOffset));
     }
 
     for (Index i = end_index; start_index < i; --i) {
@@ -191,17 +195,37 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Index& degree,
     x = T_a.translation() + x;
   }
 
-  result.value() = {R, x};
+  result.value = {R, x};
   if (kValue < degree) {
-    result.velocity() = v;
+    result.derivative(kVelocity - 1) = v;
     if (kVelocity < degree) {
-      result.acceleration() = a;
+      result.derivative(kAcceleration - 1) = a;
     }
   }
 
   return result;
 }
 
-template class SpatialInterpolator<variables::SE3<double>>;
+template <typename TScalar>
+auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index,
+                                                                        const Index& end_index, const Index& num_input_parameters, const Index& input_offset,
+                                                                        const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output> {
+  // Allocate result.
+  auto o_result = Result<Output>(degree, jacobians, num_inputs, num_input_parameters);
+  auto i_result = SpatialInterpolator<Tangent<SE3<TScalar>>>::evaluate(degree, inputs, num_inputs, start_index, end_index, num_input_parameters, input_offset, weights, jacobians);
+
+  if (!jacobians) {
+    o_result.value = i_result.value.toManifold();
+    return o_result;
+  } else {
+    JacobianNM<Tangent<SE3<TScalar>>> J_m;
+    o_result.value = i_result.value.toManifold(J_m.data());
+    o_result.matrix = J_m * i_result.matrix;
+    return o_result;
+  }
+}
+
+template class SpatialInterpolator<SE3<double>>;
+template class SpatialInterpolator<SE3<double>, Tangent<SE3<double>>>;
 
 }  // namespace hyper::state

@@ -48,7 +48,7 @@ class SpatialInterpolator<TVariable> final {
     // Compute value and derivatives.
     for (Index k = kValue; k < degree + 1; ++k) {
       if (k == kValue) {
-        result.value() = values * weights.col(kValue);
+        result.value = values * weights.col(kValue);
       } else {
         result.derivative(k - 1) = values * weights.col(k);
       }
