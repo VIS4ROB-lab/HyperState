@@ -79,9 +79,9 @@ class TemporalState : public State<typename TVariable::Scalar> {
   /// \param time Query time.
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
-  /// \param elements Element pointers.
+  /// \param inputs Input pointers (to stamped variables).
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TOutput> = 0;
+  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> = 0;
 
  protected:
   StampedVariables stamped_variables_;  ///< Stamped variables.

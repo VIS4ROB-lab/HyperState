@@ -80,32 +80,29 @@ auto ContinuousState<TOutput, TVariable>::setInterpolator(const TemporalInterpol
 template <typename TOutput, typename TVariable>
 auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TOutput> {
   const auto& [begin, end, num_inputs] = iterators(time);
-  std::vector<const Scalar*> pointers;
-  pointers.reserve(num_inputs);
-  std::transform(begin, end, std::back_inserter(pointers), [](const auto& element) { return element.data(); });
-  DCHECK_EQ(pointers.size(), num_inputs);
-  return evaluate(time, derivative, jacobians, pointers.data());
+  std::vector<const Scalar*> ptrs;
+  ptrs.reserve(num_inputs);
+  std::transform(begin, end, std::back_inserter(ptrs), [](const auto& element) { return element.data(); });
+  DCHECK_EQ(ptrs.size(), num_inputs);
+  return evaluate(time, derivative, jacobians, ptrs.data());
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TOutput> {
-  // Definitions.
-  using Stamps = std::vector<Scalar>;
-
+auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> {
   // Fetch layout.
   const auto layout = interpolator()->layout();
 
   // Split pointers.
-  Stamps stamps;
-  stamps.reserve(layout.outer_input_size);
+  std::vector<Time> times;
+  times.reserve(layout.outer_input_size);
 
   for (Index i = 0; i < layout.outer_input_size; ++i) {
-    stamps.emplace_back(elements[i][StampedVariable::kStampOffset]);
+    times.emplace_back(inputs[i][StampedVariable::kStampOffset]);
   }
 
-  const auto weights = interpolator()->evaluate(time, derivative, stamps, layout.left_input_margin - 1);
+  const auto weights = interpolator()->evaluate(time, derivative, times, layout.left_input_margin - 1);
 
-  return SpatialInterpolator<TOutput, TVariable>::evaluate(derivative, elements, layout.outer_input_size, layout.left_input_padding,
+  return SpatialInterpolator<TOutput, TVariable>::evaluate(derivative, inputs, layout.outer_input_size, layout.left_input_padding,
                                                            layout.left_input_padding + layout.inner_input_size - 1, StampedVariable::kNumParameters,
                                                            StampedVariable::kVariableOffset, weights, jacobians);
 }

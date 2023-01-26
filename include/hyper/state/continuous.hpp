@@ -75,9 +75,9 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   /// \param time Query time.
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
-  /// \param elements Element pointers.
+  /// \param inputs Input pointers (to stamped variables).
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TOutput> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> final;
 
  private:
   // Definitions.
