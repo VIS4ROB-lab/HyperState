@@ -28,6 +28,8 @@ class TemporalState : public State<typename TVariable::Scalar> {
   using Time = Scalar;
   using Range = state::Range<Time, BoundaryPolicy::INCLUSIVE>;
 
+  using Output = TOutput;
+  using Variable = TVariable;
   using StampedVariable = variables::Stamped<TVariable>;
 
   // Stamped variable compare.

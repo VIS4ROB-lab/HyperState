@@ -26,6 +26,8 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   using Time = typename Base::Time;
   using Range = typename Base::Range;
 
+  using Output = typename Base::Output;
+  using Variable = typename Base::Variable;
   using StampedVariable = typename Base::StampedVariable;
   using StampedVariables = typename Base::StampedVariables;
 
