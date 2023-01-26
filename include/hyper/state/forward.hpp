@@ -67,6 +67,16 @@ class Result {
   inline auto jacobian(const Index& k, const Index& i) { return matrix_.middleCols(degree_ + k * num_parameters_ + i * num_input_parameters_, num_input_parameters_); }
   inline auto jacobian(const Index& k, const Index& i) const { return matrix_.middleCols(degree_ + k * num_parameters_ + i * num_input_parameters_, num_input_parameters_); }
 
+  template <int NRows, int NCols>
+  inline auto jacobian(const Index& k, const Index& i, const Index& start_row, const Index& start_col) {
+    return matrix_.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
+  }
+
+  template <int NRows, int NCols>
+  inline auto jacobian(const Index& k, const Index& i, const Index& start_row, const Index& start_col) const {
+    return matrix_.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
+  }
+
  private:
   Index degree_;
   Index num_inputs_;
