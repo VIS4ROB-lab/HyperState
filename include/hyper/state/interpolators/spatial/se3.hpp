@@ -20,14 +20,8 @@ class SpatialInterpolator<variables::SE3<TScalar>> final {
   using Output = variables::SE3<TScalar>;
 
   /// Evaluates this.
-  /// \param inputs Inputs.
-  /// \param weights Weights.
-  /// \param jacobians Jacobian flag.
-  /// \param input_offset Input offset.
-  /// \param num_input_parameters Number of input parameters.
-  /// \return Result.
-  static auto evaluate(const std::vector<const Scalar*>& inputs, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians, const Index& input_offset = 0,
-                       const Index& num_input_parameters = Input::kNumParameters) -> Result<Output>;
+  static auto evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
+                       const Index& num_input_parameters, const Index& input_offset, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output>;
 };
 
 }  // namespace hyper::state

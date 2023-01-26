@@ -22,57 +22,59 @@ class SpatialInterpolator<TVariable> final {
   using Output = TVariable;
 
   /// Evaluates this.
-  /// \param inputs Inputs.
-  /// \param weights Weights.
-  /// \param jacobians Jacobian flag.
-  /// \param input_offset Input offset.
-  /// \param num_input_parameters Number of input parameters.
-  /// \return Result.
-  static auto evaluate(const std::vector<const Scalar*>& inputs, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians, const Index& input_offset = 0,
-                       const Index& num_input_parameters = Input::kNumParameters) -> Result<Output> {
+  static auto evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
+                       const Index& num_input_parameters, const Index& input_offset, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output> {
     // Constants.
-    const auto num_variables = weights.rows();
-    const auto num_derivatives = weights.cols();
-
-    const auto degree = num_derivatives - 1;
-    const auto last_index = input_offset + num_variables - 1;
+    constexpr auto kValue = 0;
+    //constexpr auto kVelocity = 1;
+    //constexpr auto kAcceleration = 2;
 
     // Allocate result.
-    auto result = Result<Output>(degree, jacobians, inputs.size(), num_input_parameters);
+    auto result = Result<Output>(degree, jacobians, num_inputs, num_input_parameters);
+
+    // Input lambda definition.
+    auto I = [&inputs, &input_offset](const Index& i) {
+      return Eigen::Map<const Input>{inputs[i] + input_offset};
+    };
 
     // Compute increments.
-    auto increments = MatrixNX<Output>{Output::kNumParameters, num_variables};
-    increments.col(0).noalias() = Eigen::Map<const Input>{inputs[input_offset]};
+    auto values = MatrixNX<Output>{Output::kNumParameters, weights.rows()};
 
-    for (auto i = input_offset; i < last_index; ++i) {
-      increments.col(i - input_offset + 1).noalias() = Eigen::Map<const Input>{inputs[i + 1]} - Eigen::Map<const Input>{inputs[i]};
+    values.col(0).noalias() = I(start_index);
+    for (auto i = start_index; i < end_index; ++i) {
+      values.col(i - start_index + 1).noalias() = I(i + 1) - I(i);
     }
 
-    for (Index k = 0; k < num_derivatives; ++k) {
-      if (k == 0) {
-        result.value() = increments * weights.col(0);
+    // Compute value and derivatives.
+    for (Index k = kValue; k < degree + 1; ++k) {
+      if (k == kValue) {
+        result.value() = values * weights.col(kValue);
       } else {
-        result.derivative(k - 1) = increments * weights.col(k);
+        result.derivative(k - 1) = values * weights.col(k);
       }
 
       if (jacobians) {
-        // Definitions.
-        auto J = [&result](const Index& k, const Index& i, const Index& input_offset = 0) {
+        // Jacobian lambda definition.
+        auto J = [&result, &input_offset](const Index& k, const Index& i) {
           return result.template jacobian<Output::kNumParameters, Input::kNumParameters>(k, i, 0, input_offset);
         };
 
-        if (inputs.size() > 1) {
-          if (k == 0) {
-            J(0, input_offset).diagonal().setConstant(Scalar{1} - weights(1, k));
+        // Compute Jacobians.
+        if (1 < num_inputs) {
+          if (k == kValue) {
+            J(kValue, start_index).diagonal().array() = Scalar{1} - weights(1, k);
           } else {
-            J(k, input_offset).diagonal().setConstant(Scalar{-1} * weights(1, k));
+            J(k, start_index).diagonal().array() = Scalar{-1} * weights(1, k);
           }
-          for (auto i = input_offset + 1; i < last_index; ++i) {
-            J(k, i).diagonal().setConstant(weights(i, k) - weights(i + 1, k));
+
+          for (auto i = start_index + 1; i < end_index; ++i) {
+            J(k, i).diagonal().array() = weights(i, k) - weights(i + 1, k);
           }
-          J(k, last_index).diagonal().setConstant(weights(last_index, k));
-        } else if (k == 0) {
-          J(0, input_offset).diagonal().setConstant(Scalar{1});
+
+          J(k, end_index).diagonal().array() = weights(end_index, k);
+
+        } else if (k == kValue) {
+          J(kValue, start_index).diagonal().array() = Scalar{1};
         }
       }
     }

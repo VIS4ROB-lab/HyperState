@@ -8,8 +8,9 @@
 namespace hyper::state {
 
 template <typename TScalar>
-auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<const Scalar*>& inputs, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians,
-                                                            const Index& input_offset, const Index& num_input_parameters) -> Result<Output> {
+auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const Index& degree, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index,
+                                                            const Index& end_index, const Index& num_input_parameters, const Index& input_offset,
+                                                            const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output> {
   // Definitions.
   using Tangent = variables::Tangent<Input>;
   using Rotation = typename Input::Rotation;
@@ -27,14 +28,13 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<co
   constexpr auto kVelocity = 1;
   constexpr auto kAcceleration = 2;
 
-  const auto num_variables = weights.rows();
-  const auto num_derivatives = weights.cols();
-
-  const auto degree = num_derivatives - 1;
-  const auto last_index = input_offset + num_variables - 1;
-
   // Allocate result.
-  auto result = Result<Output>(degree, jacobians, inputs.size(), num_input_parameters);
+  auto result = Result<Output>(degree, jacobians, num_inputs, num_input_parameters);
+
+  // Input lambda definition.
+  auto I = [&inputs, &input_offset](const Index& i) {
+    return Eigen::Map<const Input>{inputs[i] + input_offset};
+  };
 
   // Allocate accumulators.
   Rotation R = Rotation::Identity();
@@ -44,12 +44,12 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<co
 
   if (!jacobians) {
     // Retrieves first input.
-    const auto T_0 = Eigen::Map<const Input>{inputs[input_offset]};
+    const auto T_0 = I(start_index);
 
-    for (Index i = last_index; input_offset < i; --i) {
-      const auto T_a = Eigen::Map<const Input>{inputs[i - 1]};
-      const auto T_b = Eigen::Map<const Input>{inputs[i]};
-      const auto w0_i = weights(i - input_offset, kValue);
+    for (Index i = end_index; start_index < i; --i) {
+      const auto T_a = I(i - 1);
+      const auto T_b = I(i);
+      const auto w0_i = weights(i - start_index, kValue);
 
       const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
       const auto d_ab = R_ab.toTangent();
@@ -61,14 +61,14 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<co
       if (kValue < degree) {
         const auto i_R = R.groupInverse().matrix();
         const auto i_R_d_ab = (i_R * d_ab).eval();
-        const auto w1_i = weights(i - input_offset, kVelocity);
+        const auto w1_i = weights(i - start_index, kVelocity);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
 
         v.angular() += w1_i_i_R_d_ab;
         v.linear() += w1_i * x_ab;
 
         if (kVelocity < degree) {
-          const auto w2_i = weights(i - input_offset, kAcceleration);
+          const auto w2_i = weights(i - start_index, kAcceleration);
           a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());
           a.linear() += w2_i * x_ab;
         }
@@ -82,25 +82,25 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<co
     x = T_0.translation() + x;
 
   } else {
-    // Definitions.
-    auto Jr = [&result](const Index& k, const Index& i, const Index& input_offset = 0) {
+    // Jacobian lambda definitions.
+    auto Jr = [&result, &input_offset](const Index& k, const Index& i) {
       return result.template jacobian<Tangent::Angular::kNumParameters, Rotation::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + input_offset);
     };
 
-    auto Jt = [&result](const Index& k, const Index& i, const Index& input_offset = 0) {
+    auto Jt = [&result, &input_offset](const Index& k, const Index& i) {
       return result.template jacobian<Tangent::Linear::kNumParameters, Translation::kNumParameters>(k, i, Tangent::kLinearOffset, Input::kTranslationOffset + input_offset);
     };
 
-    std::vector<SU2Adapter> J_adapters;
-    J_adapters.reserve(num_variables);
-    for (Index i = 0; i < num_variables; ++i) {
-      J_adapters.emplace_back(variables::JacobianAdapter<SU2>(inputs[i] + Input::kRotationOffset));
+    std::vector<SU2Adapter> Ja;
+    Ja.reserve(weights.rows());
+    for (Index i = 0; i < weights.rows(); ++i) {
+      Ja.emplace_back(variables::JacobianAdapter<SU2>(inputs[i] + Input::kRotationOffset));
     }
 
-    for (Index i = last_index; input_offset < i; --i) {
-      const auto T_a = Eigen::Map<const Input>{inputs[i - 1]};
-      const auto T_b = Eigen::Map<const Input>{inputs[i]};
-      const auto w0_i = weights(i - input_offset, kValue);
+    for (Index i = end_index; start_index < i; --i) {
+      const auto T_a = I(i - 1);
+      const auto T_b = I(i);
+      const auto w0_i = weights(i - start_index, kValue);
 
       SU2Jacobian J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
@@ -116,14 +116,14 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<co
       const auto J_x_0 = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
 
       // Update left value Jacobian.
-      Jr(kValue, i - 1).noalias() = -J_x_0 * i_R_ab * J_adapters[i - 1];
-      Jt(kValue, i - 1).diagonal().setConstant(-w0_i);
+      Jr(kValue, i - 1).noalias() = -J_x_0 * i_R_ab * Ja[i - 1];
+      Jt(kValue, i - 1).diagonal().array() = -w0_i;
 
       // Velocity update.
       if (kValue < degree) {
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto i_R_d_ab_x = i_R_d_ab.hat();
-        const auto w1_i = weights(i - input_offset, kVelocity);
+        const auto w1_i = weights(i - start_index, kVelocity);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
 
         v.angular() += w1_i_i_R_d_ab;
@@ -135,17 +135,17 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<co
 
         // Update left velocity Jacobians.
 
-        Jr(kVelocity, i - 1).noalias() = -J_v_0 * i_R_ab * J_adapters[i - 1];
-        Jt(kVelocity, i - 1).diagonal().setConstant(-w1_i);
+        Jr(kVelocity, i - 1).noalias() = -J_v_0 * i_R_ab * Ja[i - 1];
+        Jt(kVelocity, i - 1).diagonal().array() = -w1_i;
 
         // Propagate velocity updates.
-        for (Index k = last_index; i < k; --k) {
+        for (Index k = end_index; i < k; --k) {
           Jr(kVelocity, k).noalias() += J_v_1 * Jr(kValue, k);
         }
 
         // Acceleration update.
         if (kVelocity < degree) {
-          const auto w2_i = weights(i - input_offset, kAcceleration);
+          const auto w2_i = weights(i - start_index, kAcceleration);
           const auto w1_i_i_R_d_ab_x = w1_i_i_R_d_ab.hat();
 
           a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());
@@ -158,24 +158,24 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<co
           const auto J_a_3 = (J_a_2 - v_x * J_v_1).eval();
 
           // Update acceleration Jacobians.
-          Jr(kAcceleration, i - 1).noalias() = -J_a_0 * i_R_ab * J_adapters[i - 1] + J_a_1 * Jr(kVelocity, i - 1);
-          Jt(kAcceleration, i - 1).diagonal().setConstant(-w2_i);
-          Jr(kAcceleration, i).noalias() += (J_a_0 + J_a_1 * J_v_0) * J_adapters[i] + (J_a_2 + J_a_1 * J_v_1) * Jr(kValue, i) + w1_i_i_R_d_ab_x * Jr(kVelocity, i);
+          Jr(kAcceleration, i - 1).noalias() = -J_a_0 * i_R_ab * Ja[i - 1] + J_a_1 * Jr(kVelocity, i - 1);
+          Jt(kAcceleration, i - 1).diagonal().array() = -w2_i;
+          Jr(kAcceleration, i).noalias() += (J_a_0 + J_a_1 * J_v_0) * Ja[i] + (J_a_2 + J_a_1 * J_v_1) * Jr(kValue, i) + w1_i_i_R_d_ab_x * Jr(kVelocity, i);
           Jt(kAcceleration, i).diagonal().array() += w2_i;
 
           // Propagate acceleration updates.
-          for (Index k = last_index; i < k; --k) {
+          for (Index k = end_index; i < k; --k) {
             Jr(kAcceleration, k).noalias() += J_a_3 * Jr(kValue, k) + w1_i_i_R_d_ab_x * Jr(kVelocity, k);
           }
         }
 
         // Update right velocity Jacobian.
-        Jr(kVelocity, i).noalias() += J_v_0 * J_adapters[i] + J_v_1 * Jr(kValue, i);
+        Jr(kVelocity, i).noalias() += J_v_0 * Ja[i] + J_v_1 * Jr(kValue, i);
         Jt(kVelocity, i).diagonal().array() += w1_i;
       }
 
       // Update right value Jacobian.
-      Jr(kValue, i).noalias() += J_x_0 * J_adapters[i];
+      Jr(kValue, i).noalias() += J_x_0 * Ja[i];
       Jt(kValue, i).diagonal().array() += w0_i;
 
       // Value update.
@@ -183,11 +183,10 @@ auto SpatialInterpolator<variables::SE3<TScalar>>::evaluate(const std::vector<co
       x = x_i + x;
     }
 
-    Jr(kValue, input_offset).noalias() += R.groupInverse().matrix() * J_adapters[input_offset];
-    Jt(kValue, input_offset).diagonal().array() += TScalar{1};
+    Jr(kValue, start_index).noalias() += R.groupInverse().matrix() * Ja[start_index];
+    Jt(kValue, start_index).diagonal().array() += TScalar{1};
 
-    const auto T_a = Eigen::Map<const Input>{inputs[input_offset]};
-
+    const auto T_a = I(start_index);
     R = T_a.rotation() * R;
     x = T_a.translation() + x;
   }
