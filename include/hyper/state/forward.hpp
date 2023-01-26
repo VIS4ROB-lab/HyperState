@@ -55,8 +55,9 @@ class Result {
 
   inline auto value() -> Value& { return value_; }
   inline auto value() const -> const Value& { return value_; }
-  inline auto derivative(const Index& k) { return matrix_.col(k); }
-  inline auto derivative(const Index& k) const { return matrix_.col(k); }
+
+  inline auto derivative(const Index& k) { return Eigen::Map<Tangent>{matrix_.data() + k * Tangent::kNumParameters}; }
+  inline auto derivative(const Index& k) const { return Eigen::Map<const Tangent>{matrix_.data() + k * Tangent::kNumParameters}; }
   inline auto velocity() { return derivative(0); }
   inline auto velocity() const { return derivative(0); }
   inline auto acceleration() { return derivative(1); }

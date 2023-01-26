@@ -15,21 +15,19 @@ class SpatialInterpolator<variables::SE3<TScalar>> final {
   // Definitions.
   using Index = Eigen::Index;
 
+  using Scalar = TScalar;
   using Input = variables::SE3<TScalar>;
   using Output = variables::SE3<TScalar>;
-
-  using Scalar = TScalar;
-  using Inputs = std::vector<const TScalar*>;
-  using Weights = Eigen::Ref<const MatrixX<TScalar>>;
 
   /// Evaluates this.
   /// \param inputs Inputs.
   /// \param weights Weights.
   /// \param jacobians Jacobian flag.
-  /// \param offset Offset.
-  /// \param stride Stride (i.e. number of input parameters).
+  /// \param input_offset Input offset.
+  /// \param num_input_parameters Number of input parameters.
   /// \return Result.
-  static auto evaluate(const Inputs& inputs, const Weights& weights, bool jacobians, const Index& offset = 0, const Index& stride = Input::kNumParameters) -> Result<Output>;
+  static auto evaluate(const std::vector<const Scalar*>& inputs, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians, const Index& input_offset = 0,
+                       const Index& num_input_parameters = Input::kNumParameters) -> Result<Output>;
 };
 
 }  // namespace hyper::state
