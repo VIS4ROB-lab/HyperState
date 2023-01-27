@@ -195,8 +195,7 @@ class SE3StateTests : public testing::Test {
     Tangent dx;
     for (Index i = 0; i < degree; ++i) {
       if (i == 0) {
-        dx.angular() = result.value.rotation().gInv().gPlus(d_result.value.rotation()).gLog() / kInc;
-        dx.linear() = (d_result.value.translation() - result.value.translation()) / kInc;
+        dx = d_result.value.tMinus(result.value) / kInc;
       } else {
         dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
       }
@@ -237,10 +236,7 @@ class SE3StateTests : public testing::Test {
           const auto d_result = state_.evaluate(time, degree, false);
 
           if (i == 0) {
-            const auto& value = result.value;
-            const auto& d_value = d_result.value;
-            Jn_i.col(j * StampedVariable::kNumParameters + k).template head<3>() = (value.rotation().gInv().gPlus(d_value.rotation())).gLog() / kInc;
-            Jn_i.col(j * StampedVariable::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kInc;
+            Jn_i.col(j * StampedVariable::kNumParameters + k) = d_result.value.tMinus(result.value) / kInc;
           } else {
             Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
           }
