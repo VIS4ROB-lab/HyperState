@@ -8,7 +8,7 @@
 
 namespace hyper::state::tests {
 
-constexpr auto kNumTrials = 10;
+constexpr auto kItr = 10;
 
 using TestTypes = testing::Types<float, double>;
 
@@ -18,7 +18,7 @@ struct RangeTests : public testing::Test {};
 TYPED_TEST_SUITE_P(RangeTests);
 
 TYPED_TEST_P(RangeTests, Empty) {
-  for (auto i = 0; i < kNumTrials; ++i) {
+  for (auto i = 0; i < kItr; ++i) {
     const auto boundary = Eigen::internal::random<TypeParam>();
 
     const auto inclusive_range = Range<TypeParam, BoundaryPolicy::INCLUSIVE>{boundary, boundary};
@@ -36,7 +36,7 @@ TYPED_TEST_P(RangeTests, Empty) {
 }
 
 TYPED_TEST_P(RangeTests, LowerBound) {
-  for (auto i = 0; i < kNumTrials; ++i) {
+  for (auto i = 0; i < kItr; ++i) {
     const auto lower_boundary = -std::abs(Eigen::internal::random<TypeParam>());
     const auto upper_boundary = std::abs(Eigen::internal::random<TypeParam>());
 
@@ -55,7 +55,7 @@ TYPED_TEST_P(RangeTests, LowerBound) {
 }
 
 TYPED_TEST_P(RangeTests, UpperBound) {
-  for (auto i = 0; i < kNumTrials; ++i) {
+  for (auto i = 0; i < kItr; ++i) {
     const auto lower_boundary = -std::abs(Eigen::internal::random<TypeParam>());
     const auto upper_boundary = std::abs(Eigen::internal::random<TypeParam>());
 
@@ -74,7 +74,7 @@ TYPED_TEST_P(RangeTests, UpperBound) {
 }
 
 TYPED_TEST_P(RangeTests, IsSmaller) {
-  for (auto i = 0; i < kNumTrials; ++i) {
+  for (auto i = 0; i < kItr; ++i) {
     const auto lower_boundary = -std::abs(Eigen::internal::random<TypeParam>());
     const auto upper_boundary = std::abs(Eigen::internal::random<TypeParam>());
     const auto smaller_element = std::nextafter(lower_boundary, -std::numeric_limits<TypeParam>::max());
@@ -96,7 +96,7 @@ TYPED_TEST_P(RangeTests, IsSmaller) {
 }
 
 TYPED_TEST_P(RangeTests, IsGreater) {
-  for (auto i = 0; i < kNumTrials; ++i) {
+  for (auto i = 0; i < kItr; ++i) {
     const auto lower_boundary = -std::abs(Eigen::internal::random<TypeParam>());
     const auto upper_boundary = std::abs(Eigen::internal::random<TypeParam>());
     const auto larger_element = std::nextafter(upper_boundary, std::numeric_limits<TypeParam>::max());
@@ -118,7 +118,7 @@ TYPED_TEST_P(RangeTests, IsGreater) {
 }
 
 TYPED_TEST_P(RangeTests, Contains) {
-  for (auto i = 0; i < kNumTrials; ++i) {
+  for (auto i = 0; i < kItr; ++i) {
     const auto lower_boundary = -std::abs(Eigen::internal::random<TypeParam>());
     const auto upper_boundary = std::abs(Eigen::internal::random<TypeParam>());
     const auto middle = 0.5 * (upper_boundary + lower_boundary);
@@ -146,7 +146,7 @@ TYPED_TEST_P(RangeTests, Contains) {
 }
 
 TYPED_TEST_P(RangeTests, Sample) {
-  for (auto i = 0; i < kNumTrials; ++i) {
+  for (auto i = 0; i < kItr; ++i) {
     const auto lower_boundary = -std::abs(Eigen::internal::random<TypeParam>());
     const auto upper_boundary = std::abs(Eigen::internal::random<TypeParam>());
 
@@ -160,7 +160,7 @@ TYPED_TEST_P(RangeTests, Sample) {
 }
 
 TYPED_TEST_P(RangeTests, Closest) {
-  for (auto i = 0; i < kNumTrials; ++i) {
+  for (auto i = 0; i < kItr; ++i) {
     const auto lower_boundary = -std::abs(Eigen::internal::random<TypeParam>());
     const auto upper_boundary = std::abs(Eigen::internal::random<TypeParam>());
     const auto smaller_element = std::nextafter(lower_boundary, -std::numeric_limits<TypeParam>::max());

@@ -53,15 +53,15 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
       const auto T_b = I(i);
       const auto w0_i = weights(i - start_index, kValue);
 
-      const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
-      const auto d_ab = R_ab.toTangent();
+      const auto R_ab = T_a.rotation().gInv().gPlus(T_b.rotation());
+      const auto d_ab = R_ab.gLog();
       const auto x_ab = Translation{T_b.translation() - T_a.translation()};
       const auto w_ab = SU2Tangent{w0_i * d_ab};
-      const auto R_i = w_ab.toManifold();
+      const auto R_i = w_ab.gExp();
       const auto x_i = Translation{w0_i * x_ab};
 
       if (kValue < derivative) {
-        const auto i_R = R.groupInverse().matrix();
+        const auto i_R = R.gInv().gAdj();
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto w1_i = weights(i - start_index, kVelocity);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
@@ -107,15 +107,15 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
       const auto w0_i = weights(i - start_index, kValue);
 
       SU2Jacobian J_R_i_w_ab, J_d_ab_R_ab;
-      const auto R_ab = T_a.rotation().groupInverse().groupPlus(T_b.rotation());
-      const auto d_ab = R_ab.toTangent(J_d_ab_R_ab.data());
+      const auto R_ab = T_a.rotation().gInv().gPlus(T_b.rotation());
+      const auto d_ab = R_ab.gLog(J_d_ab_R_ab.data());
       const auto x_ab = Translation{T_b.translation() - T_a.translation()};
       const auto w_ab = SU2Tangent{w0_i * d_ab};
-      const auto R_i = w_ab.toManifold(J_R_i_w_ab.data());
+      const auto R_i = w_ab.gExp(J_R_i_w_ab.data());
       const auto x_i = Translation{w0_i * x_ab};
 
-      const auto i_R = R.groupInverse().matrix();
-      const auto i_R_ab = R_ab.groupInverse().matrix();
+      const auto i_R = R.gInv().gAdj();
+      const auto i_R_ab = R_ab.gInv().gAdj();
 
       const auto J_x_0 = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
 
@@ -187,7 +187,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
       x = x_i + x;
     }
 
-    Jr(kValue, start_index).noalias() += R.groupInverse().matrix() * Ja[start_index];
+    Jr(kValue, start_index).noalias() += R.gInv().gAdj() * Ja[start_index];
     Jt(kValue, start_index).diagonal().array() += TScalar{1};
 
     const auto T_a = I(start_index);
@@ -195,7 +195,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
     x = T_a.translation() + x;
   }
 
-  result.value = {R, x};
+  result.value = Output{R, x};
   if (kValue < derivative) {
     result.derivative(kVelocity - 1) = v;
     if (kVelocity < derivative) {
@@ -212,14 +212,15 @@ auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(const In
                                                                         const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output> {
   // Allocate result.
   auto o_result = Result<Output>(derivative, jacobians, num_inputs, num_input_parameters);
-  auto i_result = SpatialInterpolator<Tangent<SE3<TScalar>>>::evaluate(derivative, inputs, num_inputs, start_index, end_index, num_input_parameters, input_offset, weights, jacobians);
+  auto i_result =
+      SpatialInterpolator<Tangent<SE3<TScalar>>>::evaluate(derivative, inputs, num_inputs, start_index, end_index, num_input_parameters, input_offset, weights, jacobians);
 
   if (!jacobians) {
-    o_result.value = i_result.value.toManifold();
+    o_result.value = i_result.value.gExp();
     return o_result;
   } else {
     JacobianNM<Tangent<SE3<TScalar>>> J_m;
-    o_result.value = i_result.value.toManifold(J_m.data());
+    o_result.value = i_result.value.gExp(J_m.data());
     o_result.matrix = J_m * i_result.matrix;
     return o_result;
   }

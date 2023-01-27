@@ -20,9 +20,9 @@ class CartesianStateTests : public testing::Test {
  public:
   // Constants.
   static constexpr auto kDegree = 3;
-  static constexpr auto kNumIterations = 20;
-  static constexpr auto kNumericIncrement = 1e-8;
-  static constexpr auto kNumericTolerance = 1e-6;
+  static constexpr auto kItr = 20;
+  static constexpr auto kInc = 1e-8;
+  static constexpr auto kTol = 1e-6;
 
   // Definitions.
   using State = typename std::tuple_element<0, TArgs>::type;
@@ -60,16 +60,16 @@ class CartesianStateTests : public testing::Test {
   auto checkDerivatives(const Index degree) -> bool {
     const auto time = state_.range().sample();
     const auto result = state_.evaluate(time, degree, false);
-    const auto d_result = state_.evaluate(time + kNumericIncrement, degree, false);
+    const auto d_result = state_.evaluate(time + kInc, degree, false);
 
     Tangent dx;
     for (Index i = 0; i < degree; ++i) {
       if (i == 0) {
-        dx = (d_result.value - result.value) / kNumericIncrement;
+        dx = (d_result.value - result.value) / kInc;
       } else {
-        dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement;
+        dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
       }
-      if (!dx.isApprox(result.derivative(i), kNumericTolerance))
+      if (!dx.isApprox(result.derivative(i), kTol))
         return false;
     }
 
@@ -99,15 +99,15 @@ class CartesianStateTests : public testing::Test {
 
         for (Index k = 0; k < input_j.size() - 1; ++k) {
           const StampedVariable tmp = input_j;
-          const Tangent tau = kNumericIncrement * Tangent::Unit(k);
+          const Tangent tau = kInc * Tangent::Unit(k);
           input_j.variable() += tau;
 
           const auto d_result = state_.evaluate(time, i, false);
 
           if (i == 0) {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.value - result.value).transpose() / kNumericIncrement;
+            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.value - result.value).transpose() / kInc;
           } else {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)).transpose() / kNumericIncrement;
+            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)).transpose() / kInc;
           }
 
           input_j = tmp;
@@ -115,7 +115,7 @@ class CartesianStateTests : public testing::Test {
       }
 
       // Compare Jacobians.
-      if (!Jn_i.isApprox(result.jacobian(i), kNumericTolerance))
+      if (!Jn_i.isApprox(result.jacobian(i), kTol))
         return false;
     }
 
@@ -131,14 +131,14 @@ TYPED_TEST_SUITE_P(CartesianStateTests);
 
 TYPED_TEST_P(CartesianStateTests, Derivatives) {
   this->setRandomState();
-  for (auto i = 0; i < TestFixture::kNumIterations; ++i) {
+  for (auto i = 0; i < TestFixture::kItr; ++i) {
     EXPECT_TRUE(this->checkDerivatives(TestFixture::kDegree));
   }
 }
 
 TYPED_TEST_P(CartesianStateTests, Jacobians) {
   this->setRandomState();
-  for (auto i = 0; i < TestFixture::kNumIterations; ++i) {
+  for (auto i = 0; i < TestFixture::kItr; ++i) {
     EXPECT_TRUE(this->checkJacobians(TestFixture::kDegree));
   }
 }
@@ -150,9 +150,9 @@ class SE3StateTests : public testing::Test {
  public:
   // Constants.
   static constexpr auto kDegree = 3;
-  static constexpr auto kNumIterations = 20;
-  static constexpr auto kNumericIncrement = 1e-8;
-  static constexpr auto kNumericTolerance = 1e-6;
+  static constexpr auto kItr = 20;
+  static constexpr auto kInc = 1e-8;
+  static constexpr auto kTol = 1e-6;
 
   // Definitions.
   using State = typename std::tuple_element<0, TArgs>::type;
@@ -190,18 +190,18 @@ class SE3StateTests : public testing::Test {
   auto checkDerivatives(const Index degree) -> bool {
     const auto time = state_.range().sample();
     const auto result = state_.evaluate(time, degree, false);
-    const auto d_result = state_.evaluate(time + kNumericIncrement, degree, false);
+    const auto d_result = state_.evaluate(time + kInc, degree, false);
 
     Tangent dx;
     for (Index i = 0; i < degree; ++i) {
       if (i == 0) {
-        dx.angular() = result.value.rotation().groupInverse().groupPlus(d_result.value.rotation()).toTangent() / kNumericIncrement;
-        dx.linear() = (d_result.value.translation() - result.value.translation()) / kNumericIncrement;
+        dx.angular() = result.value.rotation().gInv().gPlus(d_result.value.rotation()).gLog() / kInc;
+        dx.linear() = (d_result.value.translation() - result.value.translation()) / kInc;
       } else {
-        dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement;
+        dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
       }
 
-      if (!dx.isApprox(result.derivative(i), kNumericTolerance))
+      if (!dx.isApprox(result.derivative(i), kTol))
         return false;
     }
 
@@ -230,8 +230,8 @@ class SE3StateTests : public testing::Test {
 
         for (Index k = 0; k < Tangent::kNumParameters; ++k) {
           const StampedVariable tmp = input_j;
-          const Tangent tau = kNumericIncrement * Tangent::Unit(k);
-          input_j.variable().rotation() *= tau.angular().toManifold();
+          const Tangent tau = kInc * Tangent::Unit(k);
+          input_j.variable().rotation() *= tau.angular().gExp();
           input_j.variable().translation() += tau.linear();
 
           const auto d_result = state_.evaluate(time, degree, false);
@@ -239,10 +239,10 @@ class SE3StateTests : public testing::Test {
           if (i == 0) {
             const auto& value = result.value;
             const auto& d_value = d_result.value;
-            Jn_i.col(j * StampedVariable::kNumParameters + k).template head<3>() = (value.rotation().groupInverse().groupPlus(d_value.rotation())).toTangent() / kNumericIncrement;
-            Jn_i.col(j * StampedVariable::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kNumericIncrement;
+            Jn_i.col(j * StampedVariable::kNumParameters + k).template head<3>() = (value.rotation().gInv().gPlus(d_value.rotation())).gLog() / kInc;
+            Jn_i.col(j * StampedVariable::kNumParameters + k).template tail<3>() = (d_value.translation() - value.translation()) / kInc;
           } else {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kNumericIncrement;
+            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
           }
 
           input_j = tmp;
@@ -253,7 +253,7 @@ class SE3StateTests : public testing::Test {
       }
 
       // Compare Jacobians.
-      if (!Jn_i.isApprox(result.jacobian(i), kNumericTolerance))
+      if (!Jn_i.isApprox(result.jacobian(i), kTol))
         return false;
     }
 
@@ -269,14 +269,14 @@ TYPED_TEST_SUITE_P(SE3StateTests);
 
 TYPED_TEST_P(SE3StateTests, Derivatives) {
   this->setRandomState();
-  for (auto i = 0; i < TestFixture::kNumIterations; ++i) {
+  for (auto i = 0; i < TestFixture::kItr; ++i) {
     EXPECT_TRUE(this->checkDerivatives(2));
   }
 }
 
 TYPED_TEST_P(SE3StateTests, Jacobians) {
   this->setRandomState();
-  for (auto i = 0; i < TestFixture::kNumIterations; ++i) {
+  for (auto i = 0; i < TestFixture::kItr; ++i) {
     EXPECT_TRUE(this->checkJacobians(2));
   }
 }
