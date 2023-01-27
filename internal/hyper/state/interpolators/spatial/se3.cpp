@@ -87,6 +87,11 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
     // Jacobian lambda definitions.
     auto Jr = [&result, &input_offset](const Index& k, const Index& i) {
       using Tangent = Tangent<Input>;
+      return result.template jacobian<Tangent::Angular::kNumParameters, SU2Tangent::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + input_offset);
+    };
+
+    auto Jq = [&result, &input_offset](const Index& k, const Index& i) {
+      using Tangent = Tangent<Input>;
       return result.template jacobian<Tangent::Angular::kNumParameters, Rotation::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + input_offset);
     };
 
@@ -94,12 +99,6 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
       using Tangent = Tangent<Input>;
       return result.template jacobian<Tangent::Linear::kNumParameters, Translation::kNumParameters>(k, i, Tangent::kLinearOffset, Input::kTranslationOffset + input_offset);
     };
-
-    std::vector<SU2Adapter> Ja;
-    Ja.reserve(weights.rows());
-    for (Index i = 0; i < weights.rows(); ++i) {
-      Ja.emplace_back(JacobianAdapter<SU2>(inputs[i] + Input::kRotationOffset));
-    }
 
     for (Index i = end_index; start_index < i; --i) {
       const auto T_a = I(i - 1);
@@ -120,7 +119,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
       const auto J_x_0 = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
 
       // Update left value Jacobian.
-      Jr(kValue, i - 1).noalias() = -J_x_0 * i_R_ab * Ja[i - 1];
+      Jr(kValue, i - 1).noalias() = -J_x_0 * i_R_ab;
       Jt(kValue, i - 1).diagonal().array() = -w0_i;
 
       // Velocity update.
@@ -139,7 +138,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
 
         // Update left velocity Jacobians.
 
-        Jr(kVelocity, i - 1).noalias() = -J_v_0 * i_R_ab * Ja[i - 1];
+        Jr(kVelocity, i - 1).noalias() = -J_v_0 * i_R_ab;
         Jt(kVelocity, i - 1).diagonal().array() = -w1_i;
 
         // Propagate velocity updates.
@@ -162,9 +161,9 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
           const auto J_a_3 = (J_a_2 - v_x * J_v_1).eval();
 
           // Update acceleration Jacobians.
-          Jr(kAcceleration, i - 1).noalias() = -J_a_0 * i_R_ab * Ja[i - 1] + J_a_1 * Jr(kVelocity, i - 1);
+          Jr(kAcceleration, i - 1).noalias() = -J_a_0 * i_R_ab + J_a_1 * Jr(kVelocity, i - 1);
           Jt(kAcceleration, i - 1).diagonal().array() = -w2_i;
-          Jr(kAcceleration, i).noalias() += (J_a_0 + J_a_1 * J_v_0) * Ja[i] + (J_a_2 + J_a_1 * J_v_1) * Jr(kValue, i) + w1_i_i_R_d_ab_x * Jr(kVelocity, i);
+          Jr(kAcceleration, i).noalias() += (J_a_0 + J_a_1 * J_v_0) + (J_a_2 + J_a_1 * J_v_1) * Jr(kValue, i) + w1_i_i_R_d_ab_x * Jr(kVelocity, i);
           Jt(kAcceleration, i).diagonal().array() += w2_i;
 
           // Propagate acceleration updates.
@@ -174,12 +173,12 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
         }
 
         // Update right velocity Jacobian.
-        Jr(kVelocity, i).noalias() += J_v_0 * Ja[i] + J_v_1 * Jr(kValue, i);
+        Jr(kVelocity, i).noalias() += J_v_0 + J_v_1 * Jr(kValue, i);
         Jt(kVelocity, i).diagonal().array() += w1_i;
       }
 
       // Update right value Jacobian.
-      Jr(kValue, i).noalias() += J_x_0 * Ja[i];
+      Jr(kValue, i).noalias() += J_x_0;
       Jt(kValue, i).diagonal().array() += w0_i;
 
       // Value update.
@@ -187,8 +186,16 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
       x = x_i + x;
     }
 
-    Jr(kValue, start_index).noalias() += R.gInv().gAdj() * Ja[start_index];
+    Jr(kValue, start_index).noalias() += R.gInv().gAdj();
     Jt(kValue, start_index).diagonal().array() += TScalar{1};
+
+    // Apply Jacobian adapters.
+    for (Index i = start_index; i <= end_index; ++i) {
+      const auto Ja = JacobianAdapter<SU2>(inputs[i] + Input::kRotationOffset);
+      for (Index k = 0; k <= derivative; ++k) {
+        Jq(k, i) = Jr(k, i) * Ja;
+      }
+    }
 
     const auto T_a = I(start_index);
     R = T_a.rotation() * R;
