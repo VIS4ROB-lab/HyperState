@@ -39,43 +39,31 @@ class SpatialInterpolator<TVariable> final {
 
     // Compute increments.
     auto values = MatrixNX<Output>{Output::kNumParameters, weights.rows()};
-
     values.col(0).noalias() = I(start_index);
     for (auto i = start_index; i < end_index; ++i) {
       values.col(i - start_index + 1).noalias() = I(i + 1) - I(i);
     }
 
     // Compute value and derivatives.
-    for (Index k = kValue; k <= derivative; ++k) {
-      if (k == kValue) {
-        result.value = values * weights.col(kValue);
-      } else {
-        result.derivative(k - 1) = values * weights.col(k);
-      }
+    if (derivative == kValue) {
+      result.value = values * weights.col(kValue);
+    } else {
+      result.value = values * weights.col(kValue);
+      result.derivatives() = values * weights.rightCols(derivative);
+    }
 
-      if (jacobians) {
-        // Jacobian lambda definition.
-        auto J = [&result, &input_offset](const Index& k, const Index& i) {
-          return result.template jacobian<Output::kNumParameters, Input::kNumParameters>(k, i, 0, input_offset);
-        };
+    // Compute Jacobians.
+    if (jacobians) {
+      // Jacobian lambda definition.
+      auto J = [&result, &input_offset](const Index& k, const Index& i) {
+        return result.template jacobian<Output::kNumParameters, Input::kNumParameters>(k, i, 0, input_offset);
+      };
 
-        // Compute Jacobians.
-        if (1 < num_inputs) {
-          if (k == kValue) {
-            J(kValue, start_index).diagonal().array() = Scalar{1} - weights(1, k);
-          } else {
-            J(k, start_index).diagonal().array() = Scalar{-1} * weights(1, k);
-          }
-
-          for (auto i = start_index + 1; i < end_index; ++i) {
-            J(k, i).diagonal().array() = weights(i, k) - weights(i + 1, k);
-          }
-
-          J(k, end_index).diagonal().array() = weights(end_index, k);
-
-        } else if (k == kValue) {
-          J(kValue, start_index).diagonal().array() = Scalar{1};
+      for (Index k = kValue; k <= derivative; ++k) {
+        for (auto i = start_index; i < end_index; ++i) {
+          J(k, i).diagonal().array() = weights(i, k) - weights(i + 1, k);
         }
+        J(k, end_index).diagonal().array() = weights(end_index, k);
       }
     }
 

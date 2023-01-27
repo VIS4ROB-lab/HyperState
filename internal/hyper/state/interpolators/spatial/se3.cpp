@@ -16,14 +16,11 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
     -> Result<Output> {
   // Definitions.
   using Rotation = typename Input::Rotation;
+  using RotationTangent = variables::Tangent<Rotation>;
+  using RotationJacobian = variables::JacobianNM<RotationTangent>;
   using Translation = typename Input::Translation;
-  using Velocity = Tangent<Input>;
-  using Acceleration = Tangent<Input>;
-
-  using SU2 = variables::SU2<TScalar>;
-  using SU2Tangent = Tangent<SU2>;
-  using SU2Jacobian = JacobianNM<SU2Tangent>;
-  using SU2Adapter = JacobianNM<SU2Tangent, SU2>;
+  using Velocity = variables::Tangent<Input>;
+  using Acceleration = variables::Tangent<Input>;
 
   // Constants.
   constexpr auto kValue = 0;
@@ -56,7 +53,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
       const auto R_ab = T_a.rotation().gInv().gPlus(T_b.rotation());
       const auto d_ab = R_ab.gLog();
       const auto x_ab = Translation{T_b.translation() - T_a.translation()};
-      const auto w_ab = SU2Tangent{w0_i * d_ab};
+      const auto w_ab = RotationTangent{w0_i * d_ab};
       const auto R_i = w_ab.gExp();
       const auto x_i = Translation{w0_i * x_ab};
 
@@ -87,7 +84,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
     // Jacobian lambda definitions.
     auto Jr = [&result, &input_offset](const Index& k, const Index& i) {
       using Tangent = Tangent<Input>;
-      return result.template jacobian<Tangent::Angular::kNumParameters, SU2Tangent::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + input_offset);
+      return result.template jacobian<Tangent::Angular::kNumParameters, RotationTangent::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + input_offset);
     };
 
     auto Jq = [&result, &input_offset](const Index& k, const Index& i) {
@@ -105,11 +102,11 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
       const auto T_b = I(i);
       const auto w0_i = weights(i - start_index, kValue);
 
-      SU2Jacobian J_R_i_w_ab, J_d_ab_R_ab;
+      RotationJacobian J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = T_a.rotation().gInv().gPlus(T_b.rotation());
       const auto d_ab = R_ab.gLog(J_d_ab_R_ab.data());
       const auto x_ab = Translation{T_b.translation() - T_a.translation()};
-      const auto w_ab = SU2Tangent{w0_i * d_ab};
+      const auto w_ab = RotationTangent{w0_i * d_ab};
       const auto R_i = w_ab.gExp(J_R_i_w_ab.data());
       const auto x_i = Translation{w0_i * x_ab};
 
@@ -191,7 +188,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
 
     // Apply Jacobian adapters.
     for (Index i = start_index; i <= end_index; ++i) {
-      const auto Ja = JacobianAdapter<SU2>(inputs[i] + Input::kRotationOffset);
+      const auto Ja = JacobianAdapter<Rotation>(inputs[i] + Input::kRotationOffset);
       for (Index k = 0; k <= derivative; ++k) {
         Jq(k, i) = Jr(k, i) * Ja;
       }
@@ -217,16 +214,15 @@ template <typename TScalar>
 auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(const Index& derivative, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index,
                                                                         const Index& end_index, const Index& num_input_parameters, const Index& input_offset,
                                                                         const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output> {
-  // Allocate result.
-  auto o_result = Result<Output>(derivative, jacobians, num_inputs, num_input_parameters);
-  auto i_result =
-      SpatialInterpolator<Tangent<SE3<TScalar>>>::evaluate(derivative, inputs, num_inputs, start_index, end_index, num_input_parameters, input_offset, weights, jacobians);
+  auto i_result = SpatialInterpolator<Input>::evaluate(derivative, inputs, num_inputs, start_index, end_index, num_input_parameters, input_offset, weights, jacobians);
 
   if (!jacobians) {
+    auto o_result = Result<Output>(derivative, jacobians, num_inputs, num_input_parameters);
     o_result.value = i_result.value.gExp();
     return o_result;
   } else {
-    JacobianNM<Tangent<SE3<TScalar>>> J_m;
+    JacobianNM<Input> J_m;
+    auto o_result = Result<Output>(derivative, jacobians, num_inputs, num_input_parameters);
     o_result.value = i_result.value.gExp(J_m.data());
     o_result.matrix = J_m * i_result.matrix;
     return o_result;

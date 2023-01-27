@@ -71,6 +71,9 @@ class Result {
     return matrix.template block<NRows, NCols>(start_row, derivative_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
   }
 
+  inline auto derivatives() { return matrix.leftCols(derivative_); }
+  inline auto derivatives() const { return matrix.leftCols(derivative_); }
+
   Value value;
   MatrixX<Scalar> matrix;
 
