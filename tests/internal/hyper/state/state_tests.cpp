@@ -13,10 +13,14 @@
 
 namespace hyper::state::tests {
 
-using CartesianStateTestTypes = ::testing::Types<std::tuple<ContinuousState<variables::Position<double>>, BasisInterpolator<double, Eigen::Dynamic>>>;
+using namespace variables;
+
+using Interpolator = BasisInterpolator<double, 4>;
+using StateTestTypes = ::testing::Types<std::tuple<ContinuousState<Position<double>>, Interpolator>, std::tuple<ContinuousState<SE3<double>>, Interpolator>,
+                                        std::tuple<ContinuousState<SE3<double>, Tangent<SE3<double>>>, Interpolator>>;
 
 template <typename TArgs>
-class CartesianStateTests : public testing::Test {
+class StateTests : public testing::Test {
  public:
   // Constants.
   static constexpr auto kDegree = 3;
@@ -31,22 +35,22 @@ class CartesianStateTests : public testing::Test {
   using Index = typename State::Index;
   using Scalar = typename State::Scalar;
   using Variable = typename State::Variable;
-  using Output = typename State::Output;
   using StampedVariable = typename State::StampedVariable;
 
-  using Tangent = variables::Tangent<Output>;
+  using Tangent = variables::Tangent<Variable>;
   using Jacobian = variables::JacobianX<Scalar>;
 
   /// Set up.
   auto SetUp() -> void final {
     state_ = State{&interpolator_};
     interpolator_.setOrder(kDegree + 1);
+    setRandomState();
   }
 
   /// Sets a random state.
   auto setRandomState() -> void {
-    const auto min_num_variables = state_.interpolator()->layout().outer_input_size;
-    for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
+    const auto num_inputs = state_.interpolator()->layout().outer_input_size;
+    for (auto i = Index{0}; i < num_inputs + Eigen::internal::random<Index>(10, 20); ++i) {
       StampedVariable stamped_variable;
       stamped_variable.stamp() = 0.25 * i;
       stamped_variable.variable() = Variable::Random();
@@ -57,203 +61,59 @@ class CartesianStateTests : public testing::Test {
   /// Checks the derivatives.
   /// \param degree Maximum derivative degree.
   /// \return True if derivatives are correct.
-  auto checkDerivatives(const Index degree) -> bool {
+  auto checkDerivatives(const Index degree) -> void {
     const auto time = state_.range().sample();
     const auto result = state_.evaluate(time, degree, false);
     const auto d_result = state_.evaluate(time + kInc, degree, false);
 
-    Tangent dx;
     for (Index i = 0; i < degree; ++i) {
-      if (i == 0) {
-        dx = (d_result.value - result.value) / kInc;
-      } else {
-        dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
-      }
-      if (!dx.isApprox(result.derivative(i), kTol))
-        return false;
-    }
-
-    return true;
-  }
-
-  /// Checks the Jacobians.
-  /// \param degree Maximum derivative degree.
-  /// \return True if numeric and analytic Jacobians are close.
-  auto checkJacobians(const Index degree) -> bool {
-    for (Index i = 0; i <= degree; ++i) {
-      // Evaluate analytic Jacobian.
-      const auto time = state_.range().sample();
-      const auto result = state_.evaluate(time, i, true);
-
-      // Retrieve inputs.
-      const auto inputs = state_.variables(time);
-
-      // Allocate Jacobian.
-      Jacobian Jn_i;
-      const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Variable::kNumParameters, num_inputs * StampedVariable::kNumParameters);
-
-      // Evaluate Jacobian.
-      for (Index j = 0; j < num_inputs; ++j) {
-        auto input_j = Eigen::Map<StampedVariable>{inputs[j]->data()};
-
-        for (Index k = 0; k < input_j.size() - 1; ++k) {
-          const StampedVariable tmp = input_j;
-          const Tangent tau = kInc * Tangent::Unit(k);
-          input_j.variable() += tau;
-
-          const auto d_result = state_.evaluate(time, i, false);
-
-          if (i == 0) {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.value - result.value).transpose() / kInc;
-          } else {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)).transpose() / kInc;
-          }
-
-          input_j = tmp;
-        }
-      }
-
-      // Compare Jacobians.
-      if (!Jn_i.isApprox(result.jacobian(i), kTol))
-        return false;
-    }
-
-    return true;
-  }
-
- private:
-  State state_;
-  Interpolator interpolator_;
-};
-
-TYPED_TEST_SUITE_P(CartesianStateTests);
-
-TYPED_TEST_P(CartesianStateTests, Derivatives) {
-  this->setRandomState();
-  for (auto i = 0; i < TestFixture::kItr; ++i) {
-    EXPECT_TRUE(this->checkDerivatives(TestFixture::kDegree));
-  }
-}
-
-TYPED_TEST_P(CartesianStateTests, Jacobians) {
-  this->setRandomState();
-  for (auto i = 0; i < TestFixture::kItr; ++i) {
-    EXPECT_TRUE(this->checkJacobians(TestFixture::kDegree));
-  }
-}
-
-using SE3StateTestTypes = ::testing::Types<std::tuple<ContinuousState<variables::SE3<double>>, BasisInterpolator<double, Eigen::Dynamic>>>;
-
-template <typename TArgs>
-class SE3StateTests : public testing::Test {
- public:
-  // Constants.
-  static constexpr auto kDegree = 3;
-  static constexpr auto kItr = 20;
-  static constexpr auto kInc = 1e-8;
-  static constexpr auto kTol = 1e-6;
-
-  // Definitions.
-  using State = typename std::tuple_element<0, TArgs>::type;
-  using Interpolator = typename std::tuple_element<1, TArgs>::type;
-
-  using Index = typename State::Index;
-  using Scalar = typename State::Scalar;
-  using Variable = typename State::Variable;
-  using Output = typename State::Output;
-  using StampedVariable = typename State::StampedVariable;
-
-  using Tangent = variables::Tangent<Output>;
-  using Jacobian = variables::JacobianX<Scalar>;
-
-  /// Sets a random state.
-  auto setRandomState() -> void {
-    const auto min_num_variables = state_.interpolator()->layout().outer_input_size;
-    for (auto i = Index{0}; i < min_num_variables + Eigen::internal::random<Index>(10, 20); ++i) {
-      StampedVariable stamped_variable;
-      stamped_variable.stamp() = 0.25 * i;
-      stamped_variable.variable() = Variable::Random();
-      state_.elements().insert(stamped_variable);
-    }
-  }
-
-  /// Set up.
-  auto SetUp() -> void final {
-    state_ = State{&interpolator_};
-    interpolator_.setOrder(kDegree + 1);
-  }
-
-  /// Checks the derivatives.
-  /// \param degree Maximum derivative degree.
-  /// \return True if derivatives are correct.
-  auto checkDerivatives(const Index degree) -> bool {
-    const auto time = state_.range().sample();
-    const auto result = state_.evaluate(time, degree, false);
-    const auto d_result = state_.evaluate(time + kInc, degree, false);
-
-    Tangent dx;
-    for (Index i = 0; i < degree; ++i) {
+      Tangent dx;
       if (i == 0) {
         dx = d_result.value.tMinus(result.value) / kInc;
       } else {
         dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
       }
-
-      if (!dx.isApprox(result.derivative(i), kTol))
-        return false;
+      EXPECT_TRUE(dx.isApprox(result.derivative(i), kTol));
     }
-
-    return true;
   }
 
   /// Checks the Jacobians.
   /// \param degree Maximum derivative degree.
   /// \return True if numeric and analytic Jacobians are close.
-  auto checkJacobians(const Index degree) -> bool {
+  auto checkJacobians(const Index degree) -> void {
     for (Index i = 0; i <= degree; ++i) {
+      // Evaluate analytic Jacobian.
       const auto time = state_.range().sample();
-      const auto result = state_.evaluate(time, degree, true);
+      auto inputs = state_.parameterBlocks(time);
+      const auto result = state_.evaluate(time, i, true);
 
-      // Retrieve inputs.
-      const auto inputs = state_.variables(time);
-
-      // Allocate Jacobian.
       Jacobian Jn_i;
-      const auto num_inputs = static_cast<Index>(inputs.size());
-      Jn_i.setZero(Tangent::kNumParameters, num_inputs * StampedVariable::kNumParameters);
+      Jn_i.setZero(Tangent::kNumParameters, inputs.size() * StampedVariable::kNumParameters);
 
-      // Evaluate Jacobian.
-      for (Index j = 0; j < num_inputs; ++j) {
-        auto input_j = Eigen::Map<StampedVariable>{inputs[j]->data()};
-
+      for (auto j = std::size_t{0}; j < inputs.size(); ++j) {
         for (Index k = 0; k < Tangent::kNumParameters; ++k) {
-          const StampedVariable tmp = input_j;
-          const Tangent tau = kInc * Tangent::Unit(k);
-          input_j.variable().rotation() *= tau.angular().gExp();
-          input_j.variable().translation() += tau.linear();
+          const Tangent inc = kInc * Tangent::Unit(k);
+          StampedVariable stamped_variable = Eigen::Map<StampedVariable>{inputs[j]};
+          stamped_variable.variable() = stamped_variable.variable().tPlus(inc);
 
-          const auto d_result = state_.evaluate(time, degree, false);
+          auto tmp = inputs[j];
+          inputs[j] = stamped_variable.data();
+          const auto d_result = state_.evaluate(time, i, false, inputs.data());
+          inputs[j] = tmp;
 
           if (i == 0) {
             Jn_i.col(j * StampedVariable::kNumParameters + k) = d_result.value.tMinus(result.value) / kInc;
           } else {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
+            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)).transpose() / kInc;
           }
-
-          input_j = tmp;
         }
 
-        Jn_i.template middleCols<StampedVariable::kNumParameters - 1>(j * StampedVariable::kNumParameters) =
-            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedVariable::kNumParameters) * variables::JacobianAdapter<Variable>(inputs[j]->data());
+        Jn_i.template middleCols<Variable::kNumParameters>(j * StampedVariable::kNumParameters) =
+            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedVariable::kNumParameters) * JacobianAdapter<Variable>(inputs[j]);
       }
 
-      // Compare Jacobians.
-      if (!Jn_i.isApprox(result.jacobian(i), kTol))
-        return false;
+      EXPECT_TRUE(Jn_i.isApprox(result.jacobian(i), kTol));
     }
-
-    return true;
   }
 
  private:
@@ -261,26 +121,21 @@ class SE3StateTests : public testing::Test {
   Interpolator interpolator_;
 };
 
-TYPED_TEST_SUITE_P(SE3StateTests);
+TYPED_TEST_SUITE_P(StateTests);
 
-TYPED_TEST_P(SE3StateTests, Derivatives) {
-  this->setRandomState();
+TYPED_TEST_P(StateTests, Derivatives) {
   for (auto i = 0; i < TestFixture::kItr; ++i) {
-    EXPECT_TRUE(this->checkDerivatives(2));
+    this->checkDerivatives(2);
   }
 }
 
-TYPED_TEST_P(SE3StateTests, Jacobians) {
-  this->setRandomState();
+TYPED_TEST_P(StateTests, Jacobians) {
   for (auto i = 0; i < TestFixture::kItr; ++i) {
-    EXPECT_TRUE(this->checkJacobians(2));
+    this->checkJacobians(2);
   }
 }
 
-REGISTER_TYPED_TEST_SUITE_P(CartesianStateTests, Derivatives, Jacobians);
-INSTANTIATE_TYPED_TEST_SUITE_P(HyperTests, CartesianStateTests, CartesianStateTestTypes);
-
-REGISTER_TYPED_TEST_SUITE_P(SE3StateTests, Derivatives, Jacobians);
-INSTANTIATE_TYPED_TEST_SUITE_P(HyperTests, SE3StateTests, SE3StateTestTypes);
+REGISTER_TYPED_TEST_SUITE_P(StateTests, Derivatives, Jacobians);
+INSTANTIATE_TYPED_TEST_SUITE_P(HyperTests, StateTests, StateTestTypes);
 
 }  // namespace hyper::state::tests
