@@ -119,7 +119,8 @@ auto nonUniformRecursion(const std::vector<TScalar>& v, const TIndex& k) -> Matr
 template <typename TScalar, int TOrder>
 BasisInterpolator<TScalar, TOrder>::BasisInterpolator() {
   if constexpr (0 < TOrder) {
-    setOrder(TOrder);
+    this->mixing_ = Mixing(TOrder);
+    this->polynomials_ = Base::Polynomials(TOrder);
   }
 }
 
