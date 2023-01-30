@@ -5,3 +5,4 @@
 
 #include "hyper/state/interpolators/spatial/cartesian.hpp"
 #include "hyper/state/interpolators/spatial/se3.hpp"
+#include "hyper/state/interpolators/spatial/su2.hpp"

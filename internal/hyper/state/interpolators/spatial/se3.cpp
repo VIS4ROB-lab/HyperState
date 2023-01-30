@@ -135,7 +135,6 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(const Index& derivative, const 
         const auto J_v_1 = (w1_i * i_R_d_ab_x).eval();
 
         // Update left velocity Jacobians.
-
         Jr(kVelocity, i - 1).noalias() = -J_v_0 * i_R_ab;
         Jt(kVelocity, i - 1).diagonal().array() = -w1_i;
 
@@ -329,7 +328,6 @@ auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(const In
         const auto J_v_1 = (w1_i * i_R_d_ab_x).eval();
 
         // Update left velocity Jacobians.
-
         Jr(kVelocity, i - 1).noalias() = -J_v_0 * i_R_ab;
         Jt(kVelocity, i - 1).diagonal().array() = -w1_i;
 

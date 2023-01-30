@@ -120,6 +120,7 @@ auto ContinuousState<TOutput, TVariable>::iterators(const Time& time) const -> s
 }
 
 template class ContinuousState<variables::Cartesian<double, 3>>;
+template class ContinuousState<variables::SU2<double>>;
 template class ContinuousState<variables::SE3<double>>;
 template class ContinuousState<variables::SE3<double>, variables::Tangent<variables::SE3<double>>>;
 
