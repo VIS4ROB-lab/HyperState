@@ -14,14 +14,12 @@ class SpatialInterpolator<variables::SU2<TScalar>> final {
  public:
   // Definitions.
   using Index = Eigen::Index;
-
-  using Scalar = TScalar;
   using Input = variables::SU2<TScalar>;
   using Output = variables::SU2<TScalar>;
 
   /// Evaluates this.
-  static auto evaluate(const Index& derivative, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
-                       const Index& num_input_parameters, const Index& input_offset, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output>;
+  static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, const Index& s_idx, const Index& e_idx,
+                       const Index& offs) -> void;
 };
 
 template <typename TScalar>
@@ -29,14 +27,12 @@ class SpatialInterpolator<variables::SU2<TScalar>, variables::Tangent<variables:
  public:
   // Definitions.
   using Index = Eigen::Index;
-
-  using Scalar = TScalar;
   using Input = variables::Tangent<variables::SU2<TScalar>>;
   using Output = variables::SU2<TScalar>;
 
   /// Evaluates this.
-  static auto evaluate(const Index& derivative, const Scalar* const* inputs, const Index& num_inputs, const Index& start_index, const Index& end_index,
-                       const Index& num_input_parameters, const Index& input_offset, const Eigen::Ref<const MatrixX<Scalar>>& weights, bool jacobians) -> Result<Output>;
+  static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, const Index& s_idx, const Index& e_idx,
+                       const Index& offs) -> void;
 };
 
 }  // namespace hyper::state

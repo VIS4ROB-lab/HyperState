@@ -100,11 +100,12 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
     times.emplace_back(inputs[i][StampedVariable::kStampOffset]);
   }
 
+  const auto s_idx = layout.left_input_padding;
+  const auto e_idx = layout.left_input_padding + layout.inner_input_size - 1;
+  auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, StampedVariable::kNumParameters};
   const auto weights = interpolator()->evaluate(time, derivative, times, layout.left_input_margin - 1);
-
-  return SpatialInterpolator<TOutput, TVariable>::evaluate(derivative, inputs, layout.outer_input_size, layout.left_input_padding,
-                                                           layout.left_input_padding + layout.inner_input_size - 1, StampedVariable::kNumParameters,
-                                                           StampedVariable::kVariableOffset, weights, jacobians);
+  SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, inputs, s_idx, e_idx, StampedVariable::kVariableOffset);
+  return result;
 }
 
 template <typename TOutput, typename TVariable>
