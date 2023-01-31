@@ -7,7 +7,7 @@
 
 namespace hyper::state {
 
-template <typename TVariable>
+template <typename TOutput, typename TInput = TOutput>
 class SpatialInterpolator;
 
 }  // namespace hyper::state

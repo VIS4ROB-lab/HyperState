@@ -12,80 +12,51 @@
 namespace hyper::state {
 
 template <typename TVariable>
-class SpatialInterpolator final {
+class SpatialInterpolator<TVariable> final {
  public:
   // Definitions.
   using Index = Eigen::Index;
-
   using Scalar = typename TVariable::Scalar;
+  using Input = TVariable;
+  using Output = TVariable;
 
-  using Manifold = TVariable;
-  using Tangent = variables::Tangent<Manifold>;
-  using Jacobian = variables::JacobianNM<Tangent, Manifold>;
-
-  using Inputs = std::vector<const Scalar*>;
-  using Weights = Eigen::Ref<const MatrixX<Scalar>>;
-  using Outputs = std::vector<Scalar*>;
-  using Jacobians = std::vector<Scalar*>;
-
-  // Constants.
-  static constexpr auto kDimManifold = Manifold::kNumParameters;
-  static constexpr auto kDimTangent = Tangent::kNumParameters;
-
-  /// Evaluate this.
-  /// \param inputs Inputs.
-  /// \param weights Weights.
-  /// \param outputs Outputs.
-  /// \param jacobians Jacobians.
-  /// \param offset Offset.
-  /// \param stride Jacobian stride.
-  /// \return True on success.
-  static auto evaluate(const Inputs& inputs, const Weights& weights, const Outputs& outputs, const Jacobians* jacobians, const Index& offset, const Index& stride = kDimManifold)
-      -> bool {
-    // Definitions.
-    using Increments = Eigen::Matrix<Scalar, kDimTangent, Eigen::Dynamic>;
-
-    // Constants.
-    const auto num_variables = weights.rows();
-    const auto num_derivatives = weights.cols();
-    const auto last_idx = offset + num_variables - 1;
+  /// Evaluates this.
+  static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<Scalar>>& weights, const Scalar* const* inputs, const Index& s_idx, const Index& e_idx,
+                       const Index& offs) -> void {
+    // Input lambda definition.
+    auto I = [&inputs, &offs](const Index& i) {
+      return Eigen::Map<const Input>{inputs[i] + offs};
+    };
 
     // Compute increments.
-    auto increments = Increments{kDimTangent, num_variables};
-    increments.col(0).noalias() = Eigen::Map<const Manifold>{inputs[offset]};
-
-    for (auto i = offset; i < last_idx; ++i) {
-      increments.col(i - offset + 1).noalias() = Eigen::Map<const Manifold>{inputs[i + 1]} - Eigen::Map<const Manifold>{inputs[i]};
+    auto values = MatrixNX<Output>{Output::kNumParameters, weights.rows()};
+    values.col(0).noalias() = I(s_idx);
+    for (auto i = s_idx; i < e_idx; ++i) {
+      values.col(i - s_idx + 1).noalias() = I(i + 1) - I(i);
     }
 
-    for (Index k = 0; k < num_derivatives; ++k) {
-      // Evaluate values.
-      if (k == 0) {
-        Eigen::Map<Manifold>{outputs[0]} = increments * weights.col(0);
-      } else {
-        Eigen::Map<Tangent>{outputs[k]} = increments * weights.col(k);
-      }
+    // Compute value and derivatives.
+    if (result.degree() == Derivative::VALUE) {
+      result.value() = values * weights.col(Derivative::VALUE);
+    } else {
+      result.value() = values * weights.col(Derivative::VALUE);
+      result.tangents() = values * weights.rightCols(result.degree());
+    }
 
-      // Evaluate Jacobians.
-      if (jacobians) {
-        const auto increment = (kDimTangent * stride);
-        if (inputs.size() > 1) {
-          if (k == 0) {
-            Eigen::Map<Jacobian>{(*jacobians)[0] + offset * increment}.diagonal().setConstant(Scalar{1} - weights(1, k));
-          } else {
-            Eigen::Map<Jacobian>{(*jacobians)[k] + offset * increment}.diagonal().setConstant(Scalar{-1} * weights(1, k));
-          }
-          for (auto i = offset + 1; i < last_idx; ++i) {
-            Eigen::Map<Jacobian>{(*jacobians)[k] + i * increment}.diagonal().setConstant(weights(i, k) - weights(i + 1, k));
-          }
-          Eigen::Map<Jacobian>{(*jacobians)[k] + last_idx * increment}.diagonal().setConstant(weights(last_idx, k));
-        } else if (k == 0) {
-          Eigen::Map<Jacobian>{(*jacobians)[0] + offset * increment}.diagonal().setConstant(Scalar{1});
+    // Compute Jacobians.
+    if (result.hasJacobians()) {
+      // Jacobian lambda definition.
+      auto J = [&result, &offs](const Index& k, const Index& i) {
+        return result.template jacobian<Output::kNumParameters, Input::kNumParameters>(k, i, 0, offs);
+      };
+
+      for (Index k = 0; k <= result.degree(); ++k) {
+        for (auto i = s_idx; i < e_idx; ++i) {
+          J(k, i).diagonal().array() = weights(i, k) - weights(i + 1, k);
         }
+        J(k, e_idx).diagonal().array() = weights(e_idx, k);
       }
     }
-
-    return true;
   }
 };
 

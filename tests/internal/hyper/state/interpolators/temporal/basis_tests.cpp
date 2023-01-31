@@ -17,7 +17,7 @@ using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 using Index = Eigen::Index;
 using IndexMatrix = std::map<Index, Matrix>;
 
-constexpr auto kNumericTolerance = 1e-7;
+constexpr auto kTol = 1e-7;
 
 TEST(BasisInterpolatorTests, Theory) {
   IndexMatrix theory;
@@ -50,7 +50,7 @@ TEST(BasisInterpolatorTests, Theory) {
   theory[4] = std::move(M4);
 
   for (const auto& [k, M] : theory) {
-    EXPECT_TRUE(Interpolator::Mixing(k).isApprox(M, kNumericTolerance));
+    EXPECT_TRUE(Interpolator::Mixing(k).isApprox(M, kTol));
   }
 }
 
@@ -68,7 +68,7 @@ TEST(BasisInterpolatorTests, Duality) {
 
     const auto M0 = Interpolator::Mixing(i + 1);
     const auto M1 = interpolator.mixing(times);
-    EXPECT_TRUE(M0.isApprox(M1, kNumericTolerance));
+    EXPECT_TRUE(M0.isApprox(M1, kTol));
   }
 }
 

@@ -5,17 +5,17 @@
 
 #include "hyper/state/interpolators/forward.hpp"
 
-#include "hyper/variables/groups/se3.hpp"
+#include "hyper/variables/groups/su2.hpp"
 
 namespace hyper::state {
 
 template <typename TScalar>
-class SpatialInterpolator<variables::SE3<TScalar>> final {
+class SpatialInterpolator<variables::SU2<TScalar>> final {
  public:
   // Definitions.
   using Index = Eigen::Index;
-  using Input = variables::SE3<TScalar>;
-  using Output = variables::SE3<TScalar>;
+  using Input = variables::SU2<TScalar>;
+  using Output = variables::SU2<TScalar>;
 
   /// Evaluates this.
   static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, const Index& s_idx, const Index& e_idx,
@@ -23,12 +23,12 @@ class SpatialInterpolator<variables::SE3<TScalar>> final {
 };
 
 template <typename TScalar>
-class SpatialInterpolator<variables::SE3<TScalar>, variables::Tangent<variables::SE3<TScalar>>> final {
+class SpatialInterpolator<variables::SU2<TScalar>, variables::Tangent<variables::SU2<TScalar>>> final {
  public:
   // Definitions.
   using Index = Eigen::Index;
-  using Input = variables::Tangent<variables::SE3<TScalar>>;
-  using Output = variables::SE3<TScalar>;
+  using Input = variables::Tangent<variables::SU2<TScalar>>;
+  using Output = variables::SU2<TScalar>;
 
   /// Evaluates this.
   static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, const Index& s_idx, const Index& e_idx,

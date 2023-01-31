@@ -14,11 +14,11 @@
 
 namespace hyper::state {
 
-template <typename TVariable>
-class ContinuousState : public TemporalState<TVariable> {
+template <typename TOutput, typename TVariable>
+class ContinuousState : public TemporalState<TOutput, TVariable> {
  public:
   // Definitions.
-  using Base = TemporalState<TVariable>;
+  using Base = TemporalState<TOutput, TVariable>;
 
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
@@ -26,6 +26,8 @@ class ContinuousState : public TemporalState<TVariable> {
   using Time = typename Base::Time;
   using Range = typename Base::Range;
 
+  using Output = typename Base::Output;
+  using Variable = typename Base::Variable;
   using StampedVariable = typename Base::StampedVariable;
   using StampedVariables = typename Base::StampedVariables;
 
@@ -69,15 +71,15 @@ class ContinuousState : public TemporalState<TVariable> {
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TVariable> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TOutput> final;
 
   /// Evaluates this.
   /// \param time Query time.
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
-  /// \param elements Element pointers.
+  /// \param inputs Input pointers (to stamped variables).
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* elements) const -> Result<TVariable> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> final;
 
  private:
   // Definitions.
