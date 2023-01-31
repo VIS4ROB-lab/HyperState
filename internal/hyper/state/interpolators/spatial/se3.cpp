@@ -16,11 +16,11 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
   // Definitions.
   using Rotation = typename Output::Rotation;
   using Translation = typename Output::Translation;
-  using Velocity = variables::Tangent<Output>;
-  using Acceleration = variables::Tangent<Output>;
+  using Tangent = variables::Tangent<Output>;
 
-  using RotationTangent = variables::Tangent<Rotation>;
-  using RotationJacobian = variables::JacobianNM<RotationTangent>;
+  using Angular = variables::Tangent<Rotation>;
+  using Linear = variables::Tangent<Translation>;
+  using AngularJacobian = variables::JacobianNM<Angular>;
 
   // Input lambda definition.
   auto I = [&inputs, &offs](const Index& i) {
@@ -30,8 +30,8 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
   // Allocate accumulators.
   Rotation R = Rotation::Identity();
   Translation x = Translation::Zero();
-  Velocity v = Velocity::Zero();
-  Acceleration a = Acceleration::Zero();
+  Tangent v = Tangent::Zero();
+  Tangent a = Tangent::Zero();
 
   if (!result.hasJacobians()) {
     // Retrieves first input.
@@ -45,7 +45,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
       const auto R_ab = I_a.rotation().gInv().gPlus(I_b.rotation());
       const auto d_ab = R_ab.gLog();
       const auto x_ab = Translation{I_b.translation() - I_a.translation()};
-      const auto w_ab = RotationTangent{w0_i * d_ab};
+      const auto w_ab = Angular{w0_i * d_ab};
       const auto R_i = w_ab.gExp();
       const auto x_i = Translation{w0_i * x_ab};
 
@@ -75,18 +75,15 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
   } else {
     // Jacobian lambda definitions.
     auto Jr = [&result, &offs](const Index& k, const Index& i) {
-      using Tangent = Tangent<Input>;
-      return result.template jacobian<Tangent::Angular::kNumParameters, RotationTangent::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + offs);
+      return result.template jacobian<Angular::kNumParameters, Angular::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + offs);
     };
 
     auto Jq = [&result, &offs](const Index& k, const Index& i) {
-      using Tangent = Tangent<Input>;
-      return result.template jacobian<Tangent::Angular::kNumParameters, Rotation::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + offs);
+      return result.template jacobian<Angular::kNumParameters, Rotation::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + offs);
     };
 
     auto Jt = [&result, &offs](const Index& k, const Index& i) {
-      using Tangent = Tangent<Input>;
-      return result.template jacobian<Tangent::Linear::kNumParameters, Translation::kNumParameters>(k, i, Tangent::kLinearOffset, Input::kTranslationOffset + offs);
+      return result.template jacobian<Linear::kNumParameters, Linear::kNumParameters>(k, i, Tangent::kLinearOffset, Input::kTranslationOffset + offs);
     };
 
     for (Index i = e_idx; s_idx < i; --i) {
@@ -94,11 +91,11 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
       const auto I_b = I(i);
       const auto w0_i = weights(i - s_idx, Derivative::VALUE);
 
-      RotationJacobian J_R_i_w_ab, J_d_ab_R_ab;
+      AngularJacobian J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = I_a.rotation().gInv().gPlus(I_b.rotation());
       const auto d_ab = R_ab.gLog(J_d_ab_R_ab.data());
       const auto x_ab = Translation{I_b.translation() - I_a.translation()};
-      const auto w_ab = RotationTangent{w0_i * d_ab};
+      const auto w_ab = Angular{w0_i * d_ab};
       const auto R_i = w_ab.gExp(J_R_i_w_ab.data());
       const auto x_i = Translation{w0_i * x_ab};
 
@@ -205,11 +202,11 @@ auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(Result<O
   // Definitions.
   using Rotation = typename Output::Rotation;
   using Translation = typename Output::Translation;
-  using Velocity = variables::Tangent<Output>;
-  using Acceleration = variables::Tangent<Output>;
+  using Tangent = variables::Tangent<Output>;
 
-  using RotationTangent = variables::Tangent<Rotation>;
-  using RotationJacobian = variables::JacobianNM<RotationTangent>;
+  using Angular = variables::Tangent<Rotation>;
+  using Linear = variables::Tangent<Translation>;
+  using AngularJacobian = variables::JacobianNM<Angular>;
 
   // Input lambda definition.
   auto I = [&inputs, &offs](const Index& i) {
@@ -219,8 +216,8 @@ auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(Result<O
   // Allocate accumulators.
   Rotation R = Rotation::Identity();
   Translation x = Translation::Zero();
-  Velocity v = Velocity::Zero();
-  Acceleration a = Acceleration::Zero();
+  Tangent v = Tangent::Zero();
+  Tangent a = Tangent::Zero();
 
   if (!result.hasJacobians()) {
     // Retrieves first input.
@@ -234,7 +231,7 @@ auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(Result<O
       const auto R_ab = I_a.angular().gExp().gInv().gPlus(I_b.angular().gExp());
       const auto d_ab = R_ab.gLog();
       const auto x_ab = Translation{I_b.linear() - I_a.linear()};
-      const auto w_ab = RotationTangent{w0_i * d_ab};
+      const auto w_ab = Angular{w0_i * d_ab};
       const auto R_i = w_ab.gExp();
       const auto x_i = Translation{w0_i * x_ab};
 
@@ -264,11 +261,11 @@ auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(Result<O
   } else {
     // Jacobian lambda definitions.
     auto Jr = [&result, &offs](const Index& k, const Index& i) {
-      return result.template jacobian<Input::Angular::kNumParameters, RotationTangent::kNumParameters>(k, i, Input::kAngularOffset, Input::kAngularOffset + offs);
+      return result.template jacobian<Angular::kNumParameters, Angular::kNumParameters>(k, i, Tangent::kAngularOffset, Tangent::kAngularOffset + offs);
     };
 
     auto Jt = [&result, &offs](const Index& k, const Index& i) {
-      return result.template jacobian<Input::Linear::kNumParameters, Translation::kNumParameters>(k, i, Input::kLinearOffset, Input::kLinearOffset + offs);
+      return result.template jacobian<Linear::kNumParameters, Linear::kNumParameters>(k, i, Tangent::kLinearOffset, Tangent::kLinearOffset + offs);
     };
 
     for (Index i = e_idx; s_idx < i; --i) {
@@ -276,11 +273,11 @@ auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(Result<O
       const auto I_b = I(i);
       const auto w0_i = weights(i - s_idx, Derivative::VALUE);
 
-      RotationJacobian J_R_i_w_ab, J_d_ab_R_ab;
+      AngularJacobian J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = I_a.angular().gExp().gInv().gPlus(I_b.angular().gExp());
       const auto d_ab = R_ab.gLog(J_d_ab_R_ab.data());
       const auto x_ab = Translation{I_b.linear() - I_a.linear()};
-      const auto w_ab = RotationTangent{w0_i * d_ab};
+      const auto w_ab = Angular{w0_i * d_ab};
       const auto R_i = w_ab.gExp(J_R_i_w_ab.data());
       const auto x_i = Translation{w0_i * x_ab};
 
@@ -361,7 +358,7 @@ auto SpatialInterpolator<SE3<TScalar>, Tangent<SE3<TScalar>>>::evaluate(Result<O
 
     // Apply Jacobian adapters.
     for (Index i = s_idx; i <= e_idx; ++i) {
-      RotationJacobian J_i = RotationJacobian::Identity();
+      AngularJacobian J_i = AngularJacobian::Identity();
       I(i).angular().gExp(J_i.data());
       for (Index k = 0; k <= result.degree(); ++k) {
         Jr(k, i) = Jr(k, i) * J_i;
