@@ -23,11 +23,6 @@ class SpatialInterpolator<TVariable> final {
   /// Evaluates this.
   static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<Scalar>>& weights, const Scalar* const* inputs, const Index& s_idx, const Index& e_idx,
                        const Index& offs) -> void {
-    // Constants.
-    constexpr auto kValue = 0;
-    //constexpr auto kVelocity = 1;
-    //constexpr auto kAcceleration = 2;
-
     // Input lambda definition.
     auto I = [&inputs, &offs](const Index& i) {
       return Eigen::Map<const Input>{inputs[i] + offs};
@@ -41,11 +36,11 @@ class SpatialInterpolator<TVariable> final {
     }
 
     // Compute value and derivatives.
-    if (result.degree() == kValue) {
-      result.value = values * weights.col(kValue);
+    if (result.degree() == Derivative::VALUE) {
+      result.value() = values * weights.col(Derivative::VALUE);
     } else {
-      result.value = values * weights.col(kValue);
-      result.derivatives() = values * weights.rightCols(result.degree());
+      result.value() = values * weights.col(Derivative::VALUE);
+      result.tangents() = values * weights.rightCols(result.degree());
     }
 
     // Compute Jacobians.
@@ -55,7 +50,7 @@ class SpatialInterpolator<TVariable> final {
         return result.template jacobian<Output::kNumParameters, Input::kNumParameters>(k, i, 0, offs);
       };
 
-      for (Index k = kValue; k <= result.degree(); ++k) {
+      for (Index k = 0; k <= result.degree(); ++k) {
         for (auto i = s_idx; i < e_idx; ++i) {
           J(k, i).diagonal().array() = weights(i, k) - weights(i + 1, k);
         }

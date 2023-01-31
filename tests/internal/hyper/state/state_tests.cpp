@@ -69,11 +69,11 @@ class StateTests : public testing::Test {
     for (Index i = 0; i < degree; ++i) {
       Tangent dx;
       if (i == 0) {
-        dx = d_result.value.tMinus(result.value) / kInc;
+        dx = d_result.value().tMinus(result.value()) / kInc;
       } else {
-        dx = (d_result.derivative(i - 1) - result.derivative(i - 1)) / kInc;
+        dx = (d_result.tangent(i - 1) - result.tangent(i - 1)) / kInc;
       }
-      EXPECT_TRUE(dx.isApprox(result.derivative(i), kTol));
+      EXPECT_TRUE(dx.isApprox(result.tangent(i), kTol));
     }
   }
 
@@ -102,9 +102,9 @@ class StateTests : public testing::Test {
           inputs[j] = tmp;
 
           if (i == 0) {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = d_result.value.tMinus(result.value) / kInc;
+            Jn_i.col(j * StampedVariable::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
           } else {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.derivative(i - 1) - result.derivative(i - 1)).transpose() / kInc;
+            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
           }
         }
 
