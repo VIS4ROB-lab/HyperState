@@ -37,6 +37,7 @@ class StateTests : public testing::Test {
   using Input = typename State::Input;
   using InputTangent = typename State::InputTangent;
   using StampedInput = typename State::StampedInput;
+  using StampedInputTangent = typename State::StampedInputTangent;
 
   using OutputTangent = typename State::OutputTangent;
   using StampedOutputTangent = typename State::StampedOutputTangent;
@@ -93,12 +94,10 @@ class StateTests : public testing::Test {
 
       for (auto j = std::size_t{0}; j < inputs.size(); ++j) {
         for (Index k = 0; k < OutputTangent::kNumParameters; ++k) {
-          const InputTangent tau = kInc * InputTangent::Unit(k);
-          StampedInput stamped_input = Eigen::Map<StampedInput>{inputs[j]};
-          stamped_input.variable() = stamped_input.variable().tPlus(tau);
+          auto d_input_j = Eigen::Map<StampedInput>{inputs[j]}.tPlus(kInc * StampedInputTangent::Unit(k));
 
           auto tmp = inputs[j];
-          inputs[j] = stamped_input.data();
+          inputs[j] = d_input_j.data();
           const auto d_result = state_.evaluate(time, i, false, inputs.data());
           inputs[j] = tmp;
 

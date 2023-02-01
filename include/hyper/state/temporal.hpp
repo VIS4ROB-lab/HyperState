@@ -31,7 +31,7 @@ class TemporalState : public State<typename TInput::Scalar> {
   using Input = TInput;
   using InputTangent = variables::Tangent<TInput>;
   using StampedInput = variables::Stamped<TInput>;
-  using StampedInputTangent = variables::Tangent<StampedInput>;
+  using StampedInputTangent = variables::Stamped<InputTangent>;
 
   using Output = TOutput;
   using OutputTangent = variables::Tangent<Output>;
