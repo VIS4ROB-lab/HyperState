@@ -41,9 +41,9 @@ class TemporalState : public State<typename TInput::Scalar> {
   // Stamped input compare.
   struct StampedInputCompare {
     using is_transparent = std::true_type;
-    auto operator()(const StampedInput& lhs, const StampedInput& rhs) const -> bool { return lhs.stamp() < rhs.stamp(); }
-    auto operator()(const StampedInput& lhs, const Time& rhs) const -> bool { return lhs.stamp() < rhs; }
-    auto operator()(const Time& lhs, const StampedInput& rhs) const -> bool { return lhs < rhs.stamp(); }
+    auto operator()(const StampedInput& lhs, const StampedInput& rhs) const -> bool { return lhs.time() < rhs.time(); }
+    auto operator()(const StampedInput& lhs, const Time& rhs) const -> bool { return lhs.time() < rhs; }
+    auto operator()(const Time& lhs, const StampedInput& rhs) const -> bool { return lhs < rhs.time(); }
   };
 
   using StampedInputs = std::set<StampedInput, StampedInputCompare>;

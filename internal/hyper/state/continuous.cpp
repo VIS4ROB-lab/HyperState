@@ -28,8 +28,8 @@ auto ContinuousState<TOutput, TInput>::range() const -> Range {
   DCHECK_LE(layout.outer_input_size, this->stamped_inputs_.size());
   const auto v0_itr = std::next(this->stamped_inputs_.cbegin(), layout.left_input_margin - 1);
   const auto vn_itr = std::next(this->stamped_inputs_.crbegin(), layout.right_input_margin - 1);
-  DCHECK_LT(v0_itr->stamp(), vn_itr->stamp());
-  return {v0_itr->stamp(), vn_itr->stamp()};
+  DCHECK_LT(v0_itr->time(), vn_itr->time());
+  return {v0_itr->time(), vn_itr->time()};
 }
 
 template <typename TOutput, typename TInput>

@@ -53,7 +53,7 @@ class StateTests : public testing::Test {
     const auto num_inputs = state_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < num_inputs + Eigen::internal::random<Index>(10, 20); ++i) {
       StampedInput stamped_input;
-      stamped_input.stamp() = 0.25 * i;
+      stamped_input.time() = 0.25 * i;
       stamped_input.variable() = Input::Random();
       state_.elements().insert(stamped_input);
     }
