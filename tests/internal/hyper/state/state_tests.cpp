@@ -33,12 +33,15 @@ class StateTests : public testing::Test {
 
   using Index = typename State::Index;
   using Scalar = typename State::Scalar;
-  using Variable = typename State::Variable;
-  using StampedVariable = typename State::StampedVariable;
-  using Output = typename State::Output;
 
-  using Tangent = variables::Tangent<Variable>;
-  using Jacobian = variables::JacobianX<Scalar>;
+  using Input = typename State::Input;
+  using StampedInput = typename State::StampedInput;
+
+  using Output = typename State::Output;
+  using OutputTangent = typename State::OutputTangent;
+  using StampedOutputTangent = typename State::StampedOutputTangent;
+
+  using Tangent = variables::Tangent<Input>;
 
   /// Set up.
   auto SetUp() -> void final {
@@ -51,10 +54,10 @@ class StateTests : public testing::Test {
   auto setRandomState() -> void {
     const auto num_inputs = state_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < num_inputs + Eigen::internal::random<Index>(10, 20); ++i) {
-      StampedVariable stamped_variable;
-      stamped_variable.stamp() = 0.25 * i;
-      stamped_variable.variable() = Variable::Random();
-      state_.elements().insert(stamped_variable);
+      StampedInput stamped_input;
+      stamped_input.stamp() = 0.25 * i;
+      stamped_input.variable() = Input::Random();
+      state_.elements().insert(stamped_input);
     }
   }
 
@@ -87,24 +90,24 @@ class StateTests : public testing::Test {
       auto inputs = state_.parameterBlocks(time);
       const auto result = state_.evaluate(time, i, true);
 
-      Jacobian Jn_i;
-      Jn_i.setZero(Tangent::kNumParameters, inputs.size() * Stamped<variables::Tangent<Output>>::kNumParameters);
+      JacobianX<Scalar> Jn_i;
+      Jn_i.setZero(Tangent::kNumParameters, inputs.size() * StampedOutputTangent::kNumParameters);
 
       for (auto j = std::size_t{0}; j < inputs.size(); ++j) {
         for (Index k = 0; k < Tangent::kNumParameters; ++k) {
           const Tangent inc = kInc * Tangent::Unit(k);
-          StampedVariable stamped_variable = Eigen::Map<StampedVariable>{inputs[j]};
-          stamped_variable.variable() = stamped_variable.variable().tPlus(inc);
+          StampedInput stamped_input = Eigen::Map<StampedInput>{inputs[j]};
+          stamped_input.variable() = stamped_input.variable().tPlus(inc);
 
           auto tmp = inputs[j];
-          inputs[j] = stamped_variable.data();
+          inputs[j] = stamped_input.data();
           const auto d_result = state_.evaluate(time, i, false, inputs.data());
           inputs[j] = tmp;
 
           if (i == 0) {
-            Jn_i.col(j * Stamped<variables::Tangent<Output>>::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
+            Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
           } else {
-            Jn_i.col(j * Stamped<variables::Tangent<Output>>::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
+            Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
           }
         }
       }
