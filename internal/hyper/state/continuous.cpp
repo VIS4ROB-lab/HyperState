@@ -12,6 +12,8 @@
 
 namespace hyper::state {
 
+using namespace variables;
+
 template <typename TOutput, typename TVariable>
 ContinuousState<TOutput, TVariable>::ContinuousState() = default;
 
@@ -102,7 +104,7 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
 
   const auto s_idx = layout.left_input_padding;
   const auto e_idx = layout.left_input_padding + layout.inner_input_size - 1;
-  auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, StampedVariable::kNumParameters};
+  auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, Stamped<Tangent<Output>>::kNumParameters};
   const auto weights = interpolator()->evaluate(time, derivative, times, layout.left_input_margin - 1);
   SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, inputs, s_idx, e_idx, StampedVariable::kVariableOffset);
   return result;
@@ -120,9 +122,9 @@ auto ContinuousState<TOutput, TVariable>::iterators(const Time& time) const -> s
   return {begin, end, layout.outer_input_size};
 }
 
-template class ContinuousState<variables::Cartesian<double, 3>>;
-template class ContinuousState<variables::SU2<double>>;
-template class ContinuousState<variables::SE3<double>>;
-template class ContinuousState<variables::SE3<double>, variables::Tangent<variables::SE3<double>>>;
+template class ContinuousState<Cartesian<double, 3>>;
+template class ContinuousState<SU2<double>>;
+template class ContinuousState<SE3<double>>;
+template class ContinuousState<SE3<double>, Tangent<SE3<double>>>;
 
 }  // namespace hyper::state

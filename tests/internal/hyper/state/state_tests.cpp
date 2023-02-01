@@ -9,7 +9,6 @@
 
 #include "hyper/state/continuous.hpp"
 #include "hyper/state/interpolators/interpolators.hpp"
-#include "hyper/variables/groups/adapters.hpp"
 
 namespace hyper::state::tests {
 
@@ -36,6 +35,7 @@ class StateTests : public testing::Test {
   using Scalar = typename State::Scalar;
   using Variable = typename State::Variable;
   using StampedVariable = typename State::StampedVariable;
+  using Output = typename State::Output;
 
   using Tangent = variables::Tangent<Variable>;
   using Jacobian = variables::JacobianX<Scalar>;
@@ -88,7 +88,7 @@ class StateTests : public testing::Test {
       const auto result = state_.evaluate(time, i, true);
 
       Jacobian Jn_i;
-      Jn_i.setZero(Tangent::kNumParameters, inputs.size() * StampedVariable::kNumParameters);
+      Jn_i.setZero(Tangent::kNumParameters, inputs.size() * Stamped<variables::Tangent<Output>>::kNumParameters);
 
       for (auto j = std::size_t{0}; j < inputs.size(); ++j) {
         for (Index k = 0; k < Tangent::kNumParameters; ++k) {
@@ -102,14 +102,11 @@ class StateTests : public testing::Test {
           inputs[j] = tmp;
 
           if (i == 0) {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
+            Jn_i.col(j * Stamped<variables::Tangent<Output>>::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
           } else {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
+            Jn_i.col(j * Stamped<variables::Tangent<Output>>::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
           }
         }
-
-        Jn_i.template middleCols<Variable::kNumParameters>(j * StampedVariable::kNumParameters) =
-            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedVariable::kNumParameters) * JacobianAdapter<Variable>(inputs[j]);
       }
 
       EXPECT_TRUE(Jn_i.isApprox(result.jacobian(i), kTol));

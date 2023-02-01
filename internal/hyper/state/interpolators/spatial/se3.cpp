@@ -75,15 +75,11 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
   } else {
     // Jacobian lambda definitions.
     auto Jr = [&result, &offs](const Index& k, const Index& i) {
-      return result.template jacobian<Angular::kNumParameters, Angular::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + offs);
-    };
-
-    auto Jq = [&result, &offs](const Index& k, const Index& i) {
-      return result.template jacobian<Angular::kNumParameters, Rotation::kNumParameters>(k, i, Tangent::kAngularOffset, Input::kRotationOffset + offs);
+      return result.template jacobian<Angular::kNumParameters, Angular::kNumParameters>(k, i, Tangent::kAngularOffset, Tangent::kAngularOffset + offs);
     };
 
     auto Jt = [&result, &offs](const Index& k, const Index& i) {
-      return result.template jacobian<Linear::kNumParameters, Linear::kNumParameters>(k, i, Tangent::kLinearOffset, Input::kTranslationOffset + offs);
+      return result.template jacobian<Linear::kNumParameters, Linear::kNumParameters>(k, i, Tangent::kLinearOffset, Tangent::kLinearOffset + offs);
     };
 
     for (Index i = e_idx; s_idx < i; --i) {
@@ -173,14 +169,6 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
 
     Jr(Derivative::VALUE, s_idx).noalias() += R.gInv().gAdj();
     Jt(Derivative::VALUE, s_idx).diagonal().array() += TScalar{1};
-
-    // Apply Jacobian adapters.
-    for (Index i = s_idx; i <= e_idx; ++i) {
-      const auto Ja = JacobianAdapter<Rotation>(inputs[i] + Input::kRotationOffset);
-      for (Index k = 0; k <= result.degree(); ++k) {
-        Jq(k, i) = Jr(k, i) * Ja;
-      }
-    }
 
     const auto I_a = I(s_idx);
     R = I_a.rotation() * R;
