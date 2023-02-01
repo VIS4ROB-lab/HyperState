@@ -29,7 +29,9 @@ class TemporalState : public State<typename TInput::Scalar> {
   using Range = state::Range<Time, BoundaryPolicy::INCLUSIVE>;
 
   using Input = TInput;
+  using InputTangent = variables::Tangent<TInput>;
   using StampedInput = variables::Stamped<TInput>;
+  using StampedInputTangent = variables::Tangent<StampedInput>;
 
   using Output = TOutput;
   using OutputTangent = variables::Tangent<Output>;

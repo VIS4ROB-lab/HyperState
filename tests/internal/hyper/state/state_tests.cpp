@@ -35,13 +35,11 @@ class StateTests : public testing::Test {
   using Scalar = typename State::Scalar;
 
   using Input = typename State::Input;
+  using InputTangent = typename State::InputTangent;
   using StampedInput = typename State::StampedInput;
 
-  using Output = typename State::Output;
   using OutputTangent = typename State::OutputTangent;
   using StampedOutputTangent = typename State::StampedOutputTangent;
-
-  using Tangent = variables::Tangent<Input>;
 
   /// Set up.
   auto SetUp() -> void final {
@@ -70,13 +68,13 @@ class StateTests : public testing::Test {
     const auto d_result = state_.evaluate(time + kInc, degree, false);
 
     for (Index i = 0; i < degree; ++i) {
-      Tangent dx;
+      OutputTangent tau;
       if (i == 0) {
-        dx = d_result.value().tMinus(result.value()) / kInc;
+        tau = d_result.value().tMinus(result.value()) / kInc;
       } else {
-        dx = (d_result.tangent(i - 1) - result.tangent(i - 1)) / kInc;
+        tau = (d_result.tangent(i - 1) - result.tangent(i - 1)) / kInc;
       }
-      EXPECT_TRUE(dx.isApprox(result.tangent(i), kTol));
+      EXPECT_TRUE(tau.isApprox(result.tangent(i), kTol));
     }
   }
 
@@ -91,13 +89,13 @@ class StateTests : public testing::Test {
       const auto result = state_.evaluate(time, i, true);
 
       JacobianX<Scalar> Jn_i;
-      Jn_i.setZero(Tangent::kNumParameters, inputs.size() * StampedOutputTangent::kNumParameters);
+      Jn_i.setZero(OutputTangent::kNumParameters, inputs.size() * StampedOutputTangent::kNumParameters);
 
       for (auto j = std::size_t{0}; j < inputs.size(); ++j) {
-        for (Index k = 0; k < Tangent::kNumParameters; ++k) {
-          const Tangent inc = kInc * Tangent::Unit(k);
+        for (Index k = 0; k < OutputTangent::kNumParameters; ++k) {
+          const InputTangent tau = kInc * InputTangent::Unit(k);
           StampedInput stamped_input = Eigen::Map<StampedInput>{inputs[j]};
-          stamped_input.variable() = stamped_input.variable().tPlus(inc);
+          stamped_input.variable() = stamped_input.variable().tPlus(tau);
 
           auto tmp = inputs[j];
           inputs[j] = stamped_input.data();

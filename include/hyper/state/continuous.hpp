@@ -27,13 +27,16 @@ class ContinuousState : public TemporalState<TOutput, TInput> {
   using Range = typename Base::Range;
 
   using Input = typename Base::Input;
+  using InputTangent = typename Base::InputTangent;
   using StampedInput = typename Base::StampedInput;
-  using StampedInputs = typename Base::StampedInputs;
+  using StampedInputTangent = typename Base::StampedInputTangent;
 
   using Output = typename Base::Output;
   using OutputTangent = typename Base::OutputTangent;
   using StampedOutput = typename Base::StampedOutput;
   using StampedOutputTangent = typename Base::StampedOutputTangent;
+
+  using StampedInputs = typename Base::StampedInputs;
 
   /// Default constructor.
   ContinuousState();
