@@ -16,7 +16,7 @@ using namespace variables;
 
 using Interpolator = BasisInterpolator<double, 4>;
 using StateTestTypes = ::testing::Types<std::tuple<ContinuousState<Position<double>>, Interpolator>, std::tuple<ContinuousState<SE3<double>>, Interpolator>,
-                                        std::tuple<ContinuousState<SE3<double>, Tangent<SE3<double>>>, Interpolator>, std::tuple<ContinuousState<SU2<double>>, Interpolator>>;
+                                        std::tuple<ContinuousState<SU2<double>>, Interpolator>>;
 
 template <typename TArgs>
 class StateTests : public testing::Test {

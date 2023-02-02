@@ -155,6 +155,5 @@ auto SpatialInterpolator<SU2<TScalar>>::evaluate(Result<Output>& result, const E
 }
 
 template class SpatialInterpolator<SU2<double>>;
-//template class SpatialInterpolator<SU2<double>, Tangent<SU2<double>>>;
 
 }  // namespace hyper::state

@@ -123,6 +123,5 @@ auto ContinuousState<TOutput, TInput>::iterators(const Time& time) const -> std:
 template class ContinuousState<Cartesian<double, 3>>;
 template class ContinuousState<SU2<double>>;
 template class ContinuousState<SE3<double>>;
-template class ContinuousState<SE3<double>, Tangent<SE3<double>>>;
 
 }  // namespace hyper::state
