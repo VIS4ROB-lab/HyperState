@@ -9,7 +9,6 @@
 
 #include "hyper/state/continuous.hpp"
 #include "hyper/state/interpolators/interpolators.hpp"
-#include "hyper/variables/groups/adapters.hpp"
 
 namespace hyper::state::tests {
 
@@ -17,7 +16,7 @@ using namespace variables;
 
 using Interpolator = BasisInterpolator<double, 4>;
 using StateTestTypes = ::testing::Types<std::tuple<ContinuousState<Position<double>>, Interpolator>, std::tuple<ContinuousState<SE3<double>>, Interpolator>,
-                                        std::tuple<ContinuousState<SE3<double>, Tangent<SE3<double>>>, Interpolator>, std::tuple<ContinuousState<SU2<double>>, Interpolator>>;
+                                        std::tuple<ContinuousState<SU2<double>>, Interpolator>>;
 
 template <typename TArgs>
 class StateTests : public testing::Test {
@@ -34,11 +33,14 @@ class StateTests : public testing::Test {
 
   using Index = typename State::Index;
   using Scalar = typename State::Scalar;
-  using Variable = typename State::Variable;
-  using StampedVariable = typename State::StampedVariable;
 
-  using Tangent = variables::Tangent<Variable>;
-  using Jacobian = variables::JacobianX<Scalar>;
+  using Input = typename State::Input;
+  using InputTangent = typename State::InputTangent;
+  using StampedInput = typename State::StampedInput;
+  using StampedInputTangent = typename State::StampedInputTangent;
+
+  using OutputTangent = typename State::OutputTangent;
+  using StampedOutputTangent = typename State::StampedOutputTangent;
 
   /// Set up.
   auto SetUp() -> void final {
@@ -51,10 +53,10 @@ class StateTests : public testing::Test {
   auto setRandomState() -> void {
     const auto num_inputs = state_.interpolator()->layout().outer_input_size;
     for (auto i = Index{0}; i < num_inputs + Eigen::internal::random<Index>(10, 20); ++i) {
-      StampedVariable stamped_variable;
-      stamped_variable.stamp() = 0.25 * i;
-      stamped_variable.variable() = Variable::Random();
-      state_.elements().insert(stamped_variable);
+      StampedInput stamped_input;
+      stamped_input.time() = 0.25 * i;
+      stamped_input.variable() = Input::Random();
+      state_.elements().insert(stamped_input);
     }
   }
 
@@ -67,13 +69,13 @@ class StateTests : public testing::Test {
     const auto d_result = state_.evaluate(time + kInc, degree, false);
 
     for (Index i = 0; i < degree; ++i) {
-      Tangent dx;
+      OutputTangent tau;
       if (i == 0) {
-        dx = d_result.value().tMinus(result.value()) / kInc;
+        tau = d_result.value().tMinus(result.value()) / kInc;
       } else {
-        dx = (d_result.tangent(i - 1) - result.tangent(i - 1)) / kInc;
+        tau = (d_result.tangent(i - 1) - result.tangent(i - 1)) / kInc;
       }
-      EXPECT_TRUE(dx.isApprox(result.tangent(i), kTol));
+      EXPECT_TRUE(tau.isApprox(result.tangent(i), kTol));
     }
   }
 
@@ -87,29 +89,24 @@ class StateTests : public testing::Test {
       auto inputs = state_.parameterBlocks(time);
       const auto result = state_.evaluate(time, i, true);
 
-      Jacobian Jn_i;
-      Jn_i.setZero(Tangent::kNumParameters, inputs.size() * StampedVariable::kNumParameters);
+      JacobianX<Scalar> Jn_i;
+      Jn_i.setZero(OutputTangent::kNumParameters, inputs.size() * StampedOutputTangent::kNumParameters);
 
       for (auto j = std::size_t{0}; j < inputs.size(); ++j) {
-        for (Index k = 0; k < Tangent::kNumParameters; ++k) {
-          const Tangent inc = kInc * Tangent::Unit(k);
-          StampedVariable stamped_variable = Eigen::Map<StampedVariable>{inputs[j]};
-          stamped_variable.variable() = stamped_variable.variable().tPlus(inc);
+        for (Index k = 0; k < OutputTangent::kNumParameters; ++k) {
+          auto d_input_j = Eigen::Map<StampedInput>{inputs[j]}.tPlus(kInc * StampedInputTangent::Unit(k));
 
           auto tmp = inputs[j];
-          inputs[j] = stamped_variable.data();
+          inputs[j] = d_input_j.data();
           const auto d_result = state_.evaluate(time, i, false, inputs.data());
           inputs[j] = tmp;
 
           if (i == 0) {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
+            Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
           } else {
-            Jn_i.col(j * StampedVariable::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
+            Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
           }
         }
-
-        Jn_i.template middleCols<Variable::kNumParameters>(j * StampedVariable::kNumParameters) =
-            Jn_i.template middleCols<Tangent::kNumParameters>(j * StampedVariable::kNumParameters) * JacobianAdapter<Variable>(inputs[j]);
       }
 
       EXPECT_TRUE(Jn_i.isApprox(result.jacobian(i), kTol));

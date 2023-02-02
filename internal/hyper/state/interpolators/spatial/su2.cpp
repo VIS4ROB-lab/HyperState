@@ -13,9 +13,6 @@ template <typename TScalar>
 auto SpatialInterpolator<SU2<TScalar>>::evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, const Index& s_idx,
                                                  const Index& e_idx, const Index& offs) -> void {
   // Definitions.
-  using Velocity = variables::Tangent<Output>;
-  using Acceleration = variables::Tangent<Output>;
-
   using Tangent = variables::Tangent<Output>;
   using Jacobian = variables::JacobianNM<Tangent>;
 
@@ -26,8 +23,8 @@ auto SpatialInterpolator<SU2<TScalar>>::evaluate(Result<Output>& result, const E
 
   // Allocate accumulators.
   Output R = Output::Identity();
-  Velocity v = Velocity::Zero();
-  Acceleration a = Acceleration::Zero();
+  Tangent v = Tangent::Zero();
+  Tangent a = Tangent::Zero();
 
   if (!result.hasJacobians()) {
     // Retrieves first input.
@@ -65,11 +62,7 @@ auto SpatialInterpolator<SU2<TScalar>>::evaluate(Result<Output>& result, const E
   } else {
     // Jacobian lambda definitions.
     auto Jr = [&result, &offs](const Index& k, const Index& i) {
-      return result.template jacobian<Tangent::kNumParameters, Tangent::kNumParameters>(k, i, Tangent::kAngularOffset, offs);
-    };
-
-    auto Jq = [&result, &offs](const Index& k, const Index& i) {
-      return result.template jacobian<Tangent::kNumParameters, Output::kNumParameters>(k, i, Tangent::kAngularOffset, offs);
+      return result.template jacobian<Tangent::kNumParameters, Tangent::kNumParameters>(k, i, Tangent::kAngularOffset, Tangent::kAngularOffset + offs);
     };
 
     for (Index i = e_idx; s_idx < i; --i) {
@@ -148,16 +141,8 @@ auto SpatialInterpolator<SU2<TScalar>>::evaluate(Result<Output>& result, const E
 
     Jr(Derivative::VALUE, s_idx).noalias() += R.gInv().gAdj();
 
-    // Apply Jacobian adapters.
-    for (Index i = s_idx; i <= e_idx; ++i) {
-      const auto Ja = JacobianAdapter<Output>(inputs[i]);
-      for (Index k = 0; k <= result.degree(); ++k) {
-        Jq(k, i) = Jr(k, i) * Ja;
-      }
-    }
-
     const auto I_a = I(s_idx);
-    R = I_a.gPlus(R);
+    R = I_a * R;
   }
 
   result.value() = R;
@@ -170,6 +155,5 @@ auto SpatialInterpolator<SU2<TScalar>>::evaluate(Result<Output>& result, const E
 }
 
 template class SpatialInterpolator<SU2<double>>;
-//template class SpatialInterpolator<SU2<double>, Tangent<SU2<double>>>;
 
 }  // namespace hyper::state
