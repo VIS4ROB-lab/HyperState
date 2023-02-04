@@ -35,6 +35,8 @@ enum Derivative : Eigen::Index {
   JERK = 3,
 };
 
+enum class JacobianType { NONE, TANGENT_TO_TANGENT, TANGENT_TO_GROUP };
+
 template <typename TOutput>
 class Result {
  public:
@@ -44,9 +46,9 @@ class Result {
   using Value = TOutput;
   using Tangent = variables::Tangent<TOutput>;
 
-  Result(const Index& degree, bool jacobians, const Index& num_inputs, const Index& num_input_parameters)
-      : degree_{degree}, has_jacobians_{jacobians}, num_inputs_{num_inputs}, num_input_parameters_{num_input_parameters}, num_parameters_{num_inputs * num_input_parameters} {
-    if (!has_jacobians_) {
+  Result(const Index& degree, JacobianType jacobian_type, const Index& num_inputs, const Index& num_input_parameters)
+      : degree_{degree}, jacobian_type_{jacobian_type}, num_inputs_{num_inputs}, num_input_parameters_{num_input_parameters}, num_parameters_{num_inputs * num_input_parameters} {
+    if (jacobian_type_ == JacobianType::NONE) {
       matrix_.setZero(Tangent::kNumParameters, degree_);
     } else {
       matrix_.setZero(Tangent::kNumParameters, degree_ + (degree_ + 1) * num_parameters_);
@@ -54,8 +56,7 @@ class Result {
   }
 
   [[nodiscard]] inline auto degree() const -> const Index& { return degree_; }
-
-  [[nodiscard]] inline auto hasJacobians() const -> bool { return has_jacobians_; }
+  [[nodiscard]] inline auto jacobianType() const -> JacobianType { return jacobian_type_; }
 
   inline auto value() -> Value& { return value_; }
   inline auto value() const -> const Value& { return value_; }
@@ -87,7 +88,7 @@ class Result {
 
  private:
   Index degree_;
-  bool has_jacobians_;
+  JacobianType jacobian_type_;
 
   Index num_inputs_;
   Index num_input_parameters_;

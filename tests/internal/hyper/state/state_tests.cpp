@@ -65,8 +65,8 @@ class StateTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree) -> void {
     const auto time = state_.range().sample();
-    const auto result = state_.evaluate(time, degree, false, nullptr);
-    const auto d_result = state_.evaluate(time + kInc, degree, false, nullptr);
+    const auto result = state_.evaluate(time, degree);
+    const auto d_result = state_.evaluate(time + kInc, degree);
 
     for (Index i = 0; i < degree; ++i) {
       OutputTangent tau;
@@ -87,7 +87,7 @@ class StateTests : public testing::Test {
       // Evaluate analytic Jacobian.
       const auto time = state_.range().sample();
       auto stamped_variables = state_.parameterBlocks(time);
-      const auto result = state_.evaluate(time, i, true, nullptr);
+      const auto result = state_.evaluate(time, i, JacobianType::TANGENT_TO_TANGENT);
 
       JacobianX<Scalar> Jn_i;
       if (state_.isUniform()) {
@@ -102,7 +102,7 @@ class StateTests : public testing::Test {
 
           auto tmp = stamped_variables[j];
           stamped_variables[j] = d_input_j.data();
-          const auto d_result = state_.evaluate(time, i, false, stamped_variables.data());
+          const auto d_result = state_.evaluate(time, i, JacobianType::NONE, stamped_variables.data());
           stamped_variables[j] = tmp;
 
           if (state_.isUniform()) {

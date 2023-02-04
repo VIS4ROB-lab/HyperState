@@ -80,14 +80,15 @@ auto ContinuousState<TOutput, TVariable>::setInterpolator(const TemporalInterpol
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* stamped_variables) const -> Result<TOutput> {
+auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index& derivative, JacobianType jacobian_type,  // NOLINT
+                                                   const Scalar* const* stamped_variables) const -> Result<TOutput> {
   if (!stamped_variables) {
     const auto& [begin, end, num_variables] = iterators(time);
     std::vector<const Scalar*> ptrs;
     ptrs.reserve(num_variables);
     std::transform(begin, end, std::back_inserter(ptrs), [](const auto& element) { return element.data(); });
     DCHECK_EQ(ptrs.size(), num_variables);
-    return evaluate(time, derivative, jacobians, ptrs.data());
+    return evaluate(time, derivative, jacobian_type, ptrs.data());
   } else {
     // Constants.
     constexpr auto kStampOffset = StampedVariable::kStampOffset;
@@ -106,12 +107,12 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
 
     if (this->isUniform()) {
       const auto weights = interpolator()->evaluate(ut, i_dt, derivative, nullptr, kStampOffset);
-      auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, OutputTangent::kNumParameters};
+      auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, OutputTangent::kNumParameters};
       SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
       return result;
     } else {
       const auto weights = interpolator()->evaluate(ut, i_dt, derivative, stamped_variables, kStampOffset);
-      auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, StampedOutputTangent::kNumParameters};
+      auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, StampedOutputTangent::kNumParameters};
       SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
       return result;
     }
