@@ -48,6 +48,14 @@ class TemporalState : public State<typename TInput::Scalar> {
 
   using StampedInputs = std::set<StampedInput, StampedInputCompare>;
 
+  /// Uniformity flag accessor.
+  /// \return Uniformity flag.
+  [[nodiscard]] auto isUniform() const -> bool { return is_uniform_; }
+
+  /// Uniformity flag setter.
+  /// \param flag Uniformity flag.
+  auto setUniform(bool flag) -> void { is_uniform_ = flag; }
+
   /// Evaluates the range.
   /// \return Range.
   [[nodiscard]] virtual auto range() const -> Range = 0;
@@ -92,6 +100,7 @@ class TemporalState : public State<typename TInput::Scalar> {
   virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> = 0;
 
  protected:
+  bool is_uniform_{true};         ///< Uniformity flag.
   StampedInputs stamped_inputs_;  ///< Stamped inputs.
 };
 

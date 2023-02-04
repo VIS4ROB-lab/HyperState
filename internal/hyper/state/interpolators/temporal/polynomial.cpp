@@ -26,31 +26,12 @@ auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(const Index& order) ->
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::isUniform() const -> bool {
-  return is_uniform_;
-}
-
-template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::setUniform() -> void {
-  is_uniform_ = true;
-}
-
-template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::setNonUniform() -> void {
-  is_uniform_ = false;
-}
-
-template <typename TScalar, int TOrder>
 auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
   return mixing_.rows();
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& time, const Index& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights {
-  const auto dt = time - timestamps[offset];
-  const auto i_dt = Scalar{1} / (timestamps[offset + 1] - timestamps[offset]);
-  const auto ut = dt * i_dt;
-
+auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& ut, const Scalar& i_dt, const Index& derivative, const std::vector<Scalar>* timestamps) const -> Weights {
   DCHECK_LE(0, ut);
   DCHECK_LE(ut, 1);
 
@@ -73,10 +54,10 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& time, const
     i_dt_i *= i_dt;
   }
 
-  if (isUniform()) {
+  if (!timestamps) {
     return mixing_.lazyProduct(polynomial);
   } else {
-    return mixing(timestamps).lazyProduct(polynomial);
+    return mixing(*timestamps).lazyProduct(polynomial);
   }
 }
 

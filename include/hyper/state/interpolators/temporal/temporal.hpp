@@ -22,16 +22,17 @@ class TemporalInterpolator {
   virtual ~TemporalInterpolator() = default;
 
   /// Retrieves the layout.
+  /// \param uniform Uniformity flag.
   /// \return Layout.
-  [[nodiscard]] virtual auto layout() const -> Layout = 0;
+  [[nodiscard]] virtual auto layout(bool uniform) const -> Layout = 0;
 
   /// Evaluates this.
-  /// \param time Query time.
+  /// \param ut Normalized time.
+  /// \param i_dt Normalization delta.
   /// \param derivative Query derivative.
   /// \param timestamps Adjacent timestamps.
-  /// \param offset Offset to (left) central timestamp.
   /// \return Weights.
-  virtual auto evaluate(const Scalar& time, const Index& derivative, const std::vector<Scalar>& timestamps, const Index& offset) const -> Weights = 0;
+  virtual auto evaluate(const Scalar& ut, const Scalar& i_dt, const Index& derivative, const std::vector<Scalar>* timestamps) const -> Weights = 0;
 };
 
 }  // namespace hyper::state

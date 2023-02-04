@@ -59,8 +59,7 @@ TEST(BasisInterpolatorTests, Duality) {
   for (Index i = 0; i < kMaxDegree; ++i) {
     Interpolator interpolator;
     interpolator.setOrder(i + 1);
-    interpolator.setNonUniform();
-    const auto layout = interpolator.layout();
+    const auto layout = interpolator.layout(false);
 
     using Times = std::vector<Scalar>;
     Times times(layout.outer_input_size);

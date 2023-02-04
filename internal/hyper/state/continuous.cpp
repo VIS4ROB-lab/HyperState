@@ -24,7 +24,7 @@ ContinuousState<TOutput, TInput>::ContinuousState(const TemporalInterpolator<Sca
 
 template <typename TOutput, typename TInput>
 auto ContinuousState<TOutput, TInput>::range() const -> Range {
-  const auto layout = interpolator()->layout();
+  const auto layout = interpolator()->layout(this->isUniform());
   DCHECK_LE(layout.outer_input_size, this->stamped_inputs_.size());
   const auto v0_itr = std::next(this->stamped_inputs_.cbegin(), layout.left_input_margin - 1);
   const auto vn_itr = std::next(this->stamped_inputs_.crbegin(), layout.right_input_margin - 1);
@@ -90,28 +90,40 @@ auto ContinuousState<TOutput, TInput>::evaluate(const Time& time, const Index& d
 template <typename TOutput, typename TInput>
 auto ContinuousState<TOutput, TInput>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> {
   // Fetch layout.
-  const auto layout = interpolator()->layout();
-
-  // Split pointers.
-  std::vector<Time> times;
-  times.reserve(layout.outer_input_size);
-
-  for (Index i = 0; i < layout.outer_input_size; ++i) {
-    times.emplace_back(inputs[i][StampedInput::kStampOffset]);
-  }
-
+  const auto layout = interpolator()->layout(this->isUniform());
   const auto s_idx = layout.left_input_padding;
   const auto e_idx = layout.left_input_padding + layout.inner_input_size - 1;
-  auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, StampedOutputTangent::kNumParameters};
-  const auto weights = interpolator()->evaluate(time, derivative, times, layout.left_input_margin - 1);
-  SpatialInterpolator<TOutput, TInput>::evaluate(result, weights, inputs, s_idx, e_idx, StampedInput::kVariableOffset);
-  return result;
+
+  // Compute normalized time.
+  const auto offset = layout.left_input_margin - 1;
+  const auto dt = time - inputs[offset][StampedInput::kStampOffset];
+  const auto i_dt = Scalar{1} / (inputs[offset + 1][StampedInput::kStampOffset] - inputs[offset][StampedInput::kStampOffset]);
+  const auto ut = dt * i_dt;
+
+  if (!this->isUniform()) {
+    // Extract times.
+    std::vector<Time> times;
+    times.reserve(layout.outer_input_size);
+    for (Index i = 0; i < layout.outer_input_size; ++i) {
+      times.emplace_back(inputs[i][StampedInput::kStampOffset]);
+    }
+
+    const auto weights = interpolator()->evaluate(ut, i_dt, derivative, &times);
+    auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, StampedOutputTangent::kNumParameters};
+    SpatialInterpolator<TOutput, TInput>::evaluate(result, weights, inputs, s_idx, e_idx, StampedInput::kVariableOffset);
+    return result;
+  } else {
+    const auto weights = interpolator()->evaluate(ut, i_dt, derivative, nullptr);
+    auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, OutputTangent::kNumParameters};
+    SpatialInterpolator<TOutput, TInput>::evaluate(result, weights, inputs, s_idx, e_idx, StampedInput::kVariableOffset);
+    return result;
+  }
 }
 
 template <typename TOutput, typename TInput>
 auto ContinuousState<TOutput, TInput>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
   DCHECK(range().contains(time)) << "Range does not contain time.";
-  const auto layout = interpolator()->layout();
+  const auto layout = interpolator()->layout(this->isUniform());
 
   DCHECK_LE(layout.outer_input_size, this->stamped_inputs_.size());
   const auto itr = this->stamped_inputs_.upper_bound(time);

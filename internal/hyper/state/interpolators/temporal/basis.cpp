@@ -135,10 +135,10 @@ auto BasisInterpolator<TScalar, TOrder>::setOrder(const Index& order) -> void {
 }
 
 template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::layout() const -> Layout {
+auto BasisInterpolator<TScalar, TOrder>::layout(bool uniform) const -> Layout {
   const auto order = this->order();
 
-  if (this->isUniform()) {
+  if (uniform) {
     if (order % 2 == 0) {
       const auto margin = order / 2;
       return {.outer_input_size = order,

@@ -51,7 +51,7 @@ class StateTests : public testing::Test {
 
   /// Sets a random state.
   auto setRandomState() -> void {
-    const auto num_inputs = state_.interpolator()->layout().outer_input_size;
+    const auto num_inputs = state_.interpolator()->layout(state_.isUniform()).outer_input_size;
     for (auto i = Index{0}; i < num_inputs + Eigen::internal::random<Index>(10, 20); ++i) {
       StampedInput stamped_input;
       stamped_input.time() = 0.25 * i;
@@ -90,7 +90,11 @@ class StateTests : public testing::Test {
       const auto result = state_.evaluate(time, i, true);
 
       JacobianX<Scalar> Jn_i;
-      Jn_i.setZero(OutputTangent::kNumParameters, inputs.size() * StampedOutputTangent::kNumParameters);
+      if (state_.isUniform()) {
+        Jn_i.setZero(OutputTangent::kNumParameters, inputs.size() * OutputTangent::kNumParameters);
+      } else {
+        Jn_i.setZero(OutputTangent::kNumParameters, inputs.size() * StampedOutputTangent::kNumParameters);
+      }
 
       for (auto j = std::size_t{0}; j < inputs.size(); ++j) {
         for (Index k = 0; k < OutputTangent::kNumParameters; ++k) {
@@ -101,10 +105,18 @@ class StateTests : public testing::Test {
           const auto d_result = state_.evaluate(time, i, false, inputs.data());
           inputs[j] = tmp;
 
-          if (i == 0) {
-            Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
+          if (state_.isUniform()) {
+            if (i == 0) {
+              Jn_i.col(j * OutputTangent::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
+            } else {
+              Jn_i.col(j * OutputTangent::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
+            }
           } else {
-            Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
+            if (i == 0) {
+              Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
+            } else {
+              Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
+            }
           }
         }
       }

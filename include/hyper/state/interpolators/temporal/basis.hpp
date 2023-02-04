@@ -33,8 +33,9 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   auto setOrder(const Index& order) -> void final;
 
   /// Retrieves the layout.
+  /// \param uniform Uniformity flag.
   /// \return Layout.
-  [[nodiscard]] auto layout() const -> Layout final;
+  [[nodiscard]] auto layout(bool uniform) const -> Layout final;
 
   /// Evaluates the (uniform) mixing matrix.
   /// \return Mixing matrix.
