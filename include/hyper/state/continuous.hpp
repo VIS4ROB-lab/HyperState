@@ -14,11 +14,11 @@
 
 namespace hyper::state {
 
-template <typename TOutput, typename TInput>
-class ContinuousState : public TemporalState<TOutput, TInput> {
+template <typename TOutput, typename TVariable>
+class ContinuousState : public TemporalState<TOutput, TVariable> {
  public:
   // Definitions.
-  using Base = TemporalState<TOutput, TInput>;
+  using Base = TemporalState<TOutput, TVariable>;
 
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
@@ -26,17 +26,17 @@ class ContinuousState : public TemporalState<TOutput, TInput> {
   using Time = typename Base::Time;
   using Range = typename Base::Range;
 
-  using Input = typename Base::Input;
-  using InputTangent = typename Base::InputTangent;
-  using StampedInput = typename Base::StampedInput;
-  using StampedInputTangent = typename Base::StampedInputTangent;
+  using Variable = typename Base::Variable;
+  using VariableTangent = typename Base::VariableTangent;
+  using StampedVariable = typename Base::StampedVariable;
+  using StampedVariableTangent = typename Base::StampedVariableTangent;
 
   using Output = typename Base::Output;
   using OutputTangent = typename Base::OutputTangent;
   using StampedOutput = typename Base::StampedOutput;
   using StampedOutputTangent = typename Base::StampedOutputTangent;
 
-  using StampedInputs = typename Base::StampedInputs;
+  using StampedVariables = typename Base::StampedVariables;
 
   /// Default constructor.
   ContinuousState();
@@ -49,13 +49,13 @@ class ContinuousState : public TemporalState<TOutput, TInput> {
   /// \return Range.
   [[nodiscard]] auto range() const -> Range final;
 
-  /// Input pointers accessor.
-  /// \return Pointers to (stamped) inputs.
-  [[nodiscard]] auto inputs() const -> std::vector<StampedInput*> final;
+  /// Variable pointers accessor.
+  /// \return Pointers to (stamped) variables.
+  [[nodiscard]] auto variables() const -> std::vector<StampedVariable*> final;
 
-  /// Time-based input pointers accessor.
-  /// \return Time-based pointers to (stamped) inputs.
-  [[nodiscard]] auto inputs(const Time& time) const -> std::vector<StampedInput*> final;
+  /// Time-based variable pointers accessor.
+  /// \return Time-based pointers to (stamped) variables.
+  [[nodiscard]] auto variables(const Time& time) const -> std::vector<StampedVariable*> final;
 
   /// Parameter blocks accessor.
   /// \return Pointers to parameter blocks.
@@ -77,20 +77,13 @@ class ContinuousState : public TemporalState<TOutput, TInput> {
   /// \param time Query time.
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
+  /// \param stamped_variables Stamped variable pointers.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TOutput> final;
-
-  /// Evaluates this.
-  /// \param time Query time.
-  /// \param derivative Query derivative.
-  /// \param jacobians Jacobians evaluation flag.
-  /// \param inputs Input pointers (to stamped inputs).
-  /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> final;
+  auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* stamped_variables) const -> Result<TOutput> final;
 
  private:
   // Definitions.
-  using Iterator = typename StampedInputs::const_iterator;
+  using Iterator = typename StampedVariables::const_iterator;
 
   /// Retrieves the iterators for a time.
   /// \param time Query time.

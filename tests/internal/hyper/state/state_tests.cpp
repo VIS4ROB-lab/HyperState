@@ -34,10 +34,10 @@ class StateTests : public testing::Test {
   using Index = typename State::Index;
   using Scalar = typename State::Scalar;
 
-  using Input = typename State::Input;
-  using InputTangent = typename State::InputTangent;
-  using StampedInput = typename State::StampedInput;
-  using StampedInputTangent = typename State::StampedInputTangent;
+  using Variable = typename State::Variable;
+  using VariableTangent = typename State::VariableTangent;
+  using StampedVariable = typename State::StampedVariable;
+  using StampedVariableTangent = typename State::StampedVariableTangent;
 
   using OutputTangent = typename State::OutputTangent;
   using StampedOutputTangent = typename State::StampedOutputTangent;
@@ -53,10 +53,10 @@ class StateTests : public testing::Test {
   auto setRandomState() -> void {
     const auto num_inputs = state_.interpolator()->layout(state_.isUniform()).outer_input_size;
     for (auto i = Index{0}; i < num_inputs + Eigen::internal::random<Index>(10, 20); ++i) {
-      StampedInput stamped_input;
-      stamped_input.time() = 0.25 * i;
-      stamped_input.variable() = Input::Random();
-      state_.elements().insert(stamped_input);
+      StampedVariable stamped_variable;
+      stamped_variable.time() = 0.25 * i;
+      stamped_variable.variable() = Variable::Random();
+      state_.elements().insert(stamped_variable);
     }
   }
 
@@ -65,8 +65,8 @@ class StateTests : public testing::Test {
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree) -> void {
     const auto time = state_.range().sample();
-    const auto result = state_.evaluate(time, degree, false);
-    const auto d_result = state_.evaluate(time + kInc, degree, false);
+    const auto result = state_.evaluate(time, degree, false, nullptr);
+    const auto d_result = state_.evaluate(time + kInc, degree, false, nullptr);
 
     for (Index i = 0; i < degree; ++i) {
       OutputTangent tau;
@@ -86,24 +86,24 @@ class StateTests : public testing::Test {
     for (Index i = 0; i <= degree; ++i) {
       // Evaluate analytic Jacobian.
       const auto time = state_.range().sample();
-      auto inputs = state_.parameterBlocks(time);
-      const auto result = state_.evaluate(time, i, true);
+      auto stamped_variables = state_.parameterBlocks(time);
+      const auto result = state_.evaluate(time, i, true, nullptr);
 
       JacobianX<Scalar> Jn_i;
       if (state_.isUniform()) {
-        Jn_i.setZero(OutputTangent::kNumParameters, inputs.size() * OutputTangent::kNumParameters);
+        Jn_i.setZero(OutputTangent::kNumParameters, stamped_variables.size() * OutputTangent::kNumParameters);
       } else {
-        Jn_i.setZero(OutputTangent::kNumParameters, inputs.size() * StampedOutputTangent::kNumParameters);
+        Jn_i.setZero(OutputTangent::kNumParameters, stamped_variables.size() * StampedOutputTangent::kNumParameters);
       }
 
-      for (auto j = std::size_t{0}; j < inputs.size(); ++j) {
+      for (auto j = std::size_t{0}; j < stamped_variables.size(); ++j) {
         for (Index k = 0; k < OutputTangent::kNumParameters; ++k) {
-          auto d_input_j = Eigen::Map<StampedInput>{inputs[j]}.tPlus(kInc * StampedInputTangent::Unit(k));
+          auto d_input_j = Eigen::Map<StampedVariable>{stamped_variables[j]}.tPlus(kInc * StampedVariableTangent::Unit(k));
 
-          auto tmp = inputs[j];
-          inputs[j] = d_input_j.data();
-          const auto d_result = state_.evaluate(time, i, false, inputs.data());
-          inputs[j] = tmp;
+          auto tmp = stamped_variables[j];
+          stamped_variables[j] = d_input_j.data();
+          const auto d_result = state_.evaluate(time, i, false, stamped_variables.data());
+          stamped_variables[j] = tmp;
 
           if (state_.isUniform()) {
             if (i == 0) {

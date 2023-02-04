@@ -16,11 +16,11 @@
 
 namespace hyper::state {
 
-template <typename TOutput, typename TInput>
-class TemporalState : public State<typename TInput::Scalar> {
+template <typename TOutput, typename TVariable>
+class TemporalState : public State<typename TVariable::Scalar> {
  public:
   // Definitions.
-  using Base = State<typename TInput::Scalar>;
+  using Base = State<typename TVariable::Scalar>;
 
   using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
@@ -28,25 +28,25 @@ class TemporalState : public State<typename TInput::Scalar> {
   using Time = Scalar;
   using Range = state::Range<Time, BoundaryPolicy::INCLUSIVE>;
 
-  using Input = TInput;
-  using InputTangent = variables::Tangent<TInput>;
-  using StampedInput = variables::Stamped<TInput>;
-  using StampedInputTangent = variables::Stamped<InputTangent>;
+  using Variable = TVariable;
+  using VariableTangent = variables::Tangent<TVariable>;
+  using StampedVariable = variables::Stamped<TVariable>;
+  using StampedVariableTangent = variables::Stamped<VariableTangent>;
 
   using Output = TOutput;
   using OutputTangent = variables::Tangent<Output>;
   using StampedOutput = variables::Stamped<Output>;
   using StampedOutputTangent = variables::Stamped<OutputTangent>;
 
-  // Stamped input compare.
-  struct StampedInputCompare {
+  // Stamped variable compare.
+  struct StampedVariableCompare {
     using is_transparent = std::true_type;
-    auto operator()(const StampedInput& lhs, const StampedInput& rhs) const -> bool { return lhs.time() < rhs.time(); }
-    auto operator()(const StampedInput& lhs, const Time& rhs) const -> bool { return lhs.time() < rhs; }
-    auto operator()(const Time& lhs, const StampedInput& rhs) const -> bool { return lhs < rhs.time(); }
+    auto operator()(const StampedVariable& lhs, const StampedVariable& rhs) const -> bool { return lhs.time() < rhs.time(); }
+    auto operator()(const StampedVariable& lhs, const Time& rhs) const -> bool { return lhs.time() < rhs; }
+    auto operator()(const Time& lhs, const StampedVariable& rhs) const -> bool { return lhs < rhs.time(); }
   };
 
-  using StampedInputs = std::set<StampedInput, StampedInputCompare>;
+  using StampedVariables = std::set<StampedVariable, StampedVariableCompare>;
 
   /// Uniformity flag accessor.
   /// \return Uniformity flag.
@@ -62,19 +62,19 @@ class TemporalState : public State<typename TInput::Scalar> {
 
   /// Elements accessor.
   /// \return Elements.
-  auto elements() const -> const StampedInputs& { return stamped_inputs_; }
+  auto elements() const -> const StampedVariables& { return stamped_variables_; }
 
   /// Elements modifier.
   /// \return Elements.
-  auto elements() -> StampedInputs& { return stamped_inputs_; }
+  auto elements() -> StampedVariables& { return stamped_variables_; }
 
-  /// Input pointers accessor.
-  /// \return Pointers to (stamped) inputs.
-  [[nodiscard]] virtual auto inputs() const -> std::vector<StampedInput*> = 0;
+  /// Variable pointers accessor.
+  /// \return Pointers to (stamped) variables.
+  [[nodiscard]] virtual auto variables() const -> std::vector<StampedVariable*> = 0;
 
-  /// Time-based input pointers accessor.
-  /// \return Time-based pointers to (stamped) inputs.
-  [[nodiscard]] virtual auto inputs(const Time& time) const -> std::vector<StampedInput*> = 0;
+  /// Time-based variable pointers accessor.
+  /// \return Time-based pointers to (stamped) variables.
+  [[nodiscard]] virtual auto variables(const Time& time) const -> std::vector<StampedVariable*> = 0;
 
   /// Parameter blocks accessor.
   /// \return Pointers to parameter blocks.
@@ -88,20 +88,13 @@ class TemporalState : public State<typename TInput::Scalar> {
   /// \param time Query time.
   /// \param derivative Query derivative.
   /// \param jacobians Jacobians evaluation flag.
+  /// \param stamped_variables Stamped variable pointers.
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians) const -> Result<TOutput> = 0;
-
-  /// Evaluates this.
-  /// \param time Query time.
-  /// \param derivative Query derivative.
-  /// \param jacobians Jacobians evaluation flag.
-  /// \param inputs Input pointers (to stamped inputs).
-  /// \return Result.
-  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> = 0;
+  virtual auto evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* stamped_variables) const -> Result<TOutput> = 0;
 
  protected:
-  bool is_uniform_{true};         ///< Uniformity flag.
-  StampedInputs stamped_inputs_;  ///< Stamped inputs.
+  bool is_uniform_{true};               ///< Uniformity flag.
+  StampedVariables stamped_variables_;  ///< Stamped variables.
 };
 
 }  // namespace hyper::state
