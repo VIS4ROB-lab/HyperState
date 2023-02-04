@@ -42,9 +42,10 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   [[nodiscard]] static auto Mixing(const Index& order) -> OrderMatrix;
 
   /// Evaluates the (non-uniform) mixing matrix.
-  /// \param Times Input times.
+  /// \param inputs Input pointers (to stamped inputs).
+  /// \param idx Time index into inputs.
   /// \return Interpolation matrix.
-  [[nodiscard]] auto mixing(const std::vector<Scalar>& times) const -> OrderMatrix final;
+  [[nodiscard]] auto mixing(const Scalar* const* inputs, const Index& idx) const -> OrderMatrix final;
 };
 
 }  // namespace hyper::state

@@ -31,7 +31,8 @@ auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& ut, const Scalar& i_dt, const Index& derivative, const std::vector<Scalar>* timestamps) const -> Weights {
+auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& ut, const Scalar& i_dt, const Index& derivative, const Scalar* const* inputs, const Index& idx) const
+    -> Weights {
   DCHECK_LE(0, ut);
   DCHECK_LE(ut, 1);
 
@@ -54,10 +55,10 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& ut, const S
     i_dt_i *= i_dt;
   }
 
-  if (!timestamps) {
-    return mixing_.lazyProduct(polynomial);
+  if (inputs) {
+    return mixing(inputs, idx).lazyProduct(polynomial);
   } else {
-    return mixing(*timestamps).lazyProduct(polynomial);
+    return mixing_.lazyProduct(polynomial);
   }
 }
 

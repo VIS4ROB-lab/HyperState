@@ -30,9 +30,10 @@ class TemporalInterpolator {
   /// \param ut Normalized time.
   /// \param i_dt Normalization delta.
   /// \param derivative Query derivative.
-  /// \param timestamps Adjacent timestamps.
+  /// \param inputs Input pointers (to stamped inputs).
+  /// \param idx Time index into inputs.
   /// \return Weights.
-  virtual auto evaluate(const Scalar& ut, const Scalar& i_dt, const Index& derivative, const std::vector<Scalar>* timestamps) const -> Weights = 0;
+  virtual auto evaluate(const Scalar& ut, const Scalar& i_dt, const Index& derivative, const Scalar* const* inputs, const Index& idx) const -> Weights = 0;
 };
 
 }  // namespace hyper::state

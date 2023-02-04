@@ -89,6 +89,10 @@ auto ContinuousState<TOutput, TInput>::evaluate(const Time& time, const Index& d
 
 template <typename TOutput, typename TInput>
 auto ContinuousState<TOutput, TInput>::evaluate(const Time& time, const Index& derivative, bool jacobians, const Scalar* const* inputs) const -> Result<TOutput> {
+  // Constants.
+  constexpr auto kStampOffset = StampedInput::kStampOffset;
+  constexpr auto kVariableOffset = StampedInput::kVariableOffset;
+
   // Fetch layout.
   const auto layout = interpolator()->layout(this->isUniform());
   const auto s_idx = layout.left_input_padding;
@@ -96,26 +100,19 @@ auto ContinuousState<TOutput, TInput>::evaluate(const Time& time, const Index& d
 
   // Compute normalized time.
   const auto offset = layout.left_input_margin - 1;
-  const auto dt = time - inputs[offset][StampedInput::kStampOffset];
-  const auto i_dt = Scalar{1} / (inputs[offset + 1][StampedInput::kStampOffset] - inputs[offset][StampedInput::kStampOffset]);
+  const auto dt = time - inputs[offset][kStampOffset];
+  const auto i_dt = Scalar{1} / (inputs[offset + 1][kStampOffset] - inputs[offset][kStampOffset]);
   const auto ut = dt * i_dt;
 
-  if (!this->isUniform()) {
-    // Extract times.
-    std::vector<Time> times;
-    times.reserve(layout.outer_input_size);
-    for (Index i = 0; i < layout.outer_input_size; ++i) {
-      times.emplace_back(inputs[i][StampedInput::kStampOffset]);
-    }
-
-    const auto weights = interpolator()->evaluate(ut, i_dt, derivative, &times);
-    auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, StampedOutputTangent::kNumParameters};
-    SpatialInterpolator<TOutput, TInput>::evaluate(result, weights, inputs, s_idx, e_idx, StampedInput::kVariableOffset);
+  if (this->isUniform()) {
+    const auto weights = interpolator()->evaluate(ut, i_dt, derivative, nullptr, kStampOffset);
+    auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, OutputTangent::kNumParameters};
+    SpatialInterpolator<TOutput, TInput>::evaluate(result, weights, inputs, s_idx, e_idx, kVariableOffset);
     return result;
   } else {
-    const auto weights = interpolator()->evaluate(ut, i_dt, derivative, nullptr);
-    auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, OutputTangent::kNumParameters};
-    SpatialInterpolator<TOutput, TInput>::evaluate(result, weights, inputs, s_idx, e_idx, StampedInput::kVariableOffset);
+    const auto weights = interpolator()->evaluate(ut, i_dt, derivative, inputs, kStampOffset);
+    auto result = Result<Output>{derivative, jacobians, layout.outer_input_size, StampedOutputTangent::kNumParameters};
+    SpatialInterpolator<TOutput, TInput>::evaluate(result, weights, inputs, s_idx, e_idx, kVariableOffset);
     return result;
   }
 }
