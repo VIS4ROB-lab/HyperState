@@ -52,9 +52,9 @@ class SpatialInterpolator<TVariable> final {
 
       for (Index k = 0; k <= result.degree(); ++k) {
         for (auto i = s_idx; i < e_idx; ++i) {
-          J(k, i).diagonal().array() = weights(i, k) - weights(i + 1, k);
+          J(k, i).diagonal().array() = weights(i - s_idx, k) - weights(i - s_idx + 1, k);
         }
-        J(k, e_idx).diagonal().array() = weights(e_idx, k);
+        J(k, e_idx).diagonal().array() = weights(e_idx - s_idx, k);
       }
     }
   }

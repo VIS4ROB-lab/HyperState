@@ -7,6 +7,7 @@
 
 #include "hyper/matrix.hpp"
 #include "hyper/state/continuous.hpp"
+#include "hyper/variables/groups/adapters.hpp"
 #include "hyper/variables/groups/se3.hpp"
 #include "hyper/variables/stamped.hpp"
 
@@ -106,15 +107,55 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
     const auto ut = dt * i_dt;
 
     if (this->isUniform()) {
+      // Evaluate uniform weights.
       const auto weights = interpolator()->evaluate(ut, i_dt, derivative, nullptr, kStampOffset);
-      auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, OutputTangent::kNumParameters};
-      SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
-      return result;
+
+      if (jacobian_type != JacobianType::TANGENT_TO_PARAMETERS) {
+        // Evaluation with tangent to tangent Jacobians.
+        auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, OutputTangent::kNumParameters};
+        SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
+        return result;
+
+      } else {
+        // Evaluation with tangent to group Jacobians.
+        auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, Variable::kNumParameters};
+        SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
+
+        // Lift tangent to group/variable Jacobians.
+        for (auto i = s_idx; i <= e_idx; ++i) {
+          const auto J_a = JacobianAdapter<Variable>(stamped_variables[i] + kVariableOffset);
+          for (auto k = 0; k <= derivative; ++k) {
+            result.jacobian(k, i) = result.template jacobian<OutputTangent::kNumParameters, VariableTangent::kNumParameters>(k, i, 0, kVariableOffset) * J_a;
+          }
+        }
+
+        return result;
+      }
     } else {
+      // Evaluate non-uniform weights.
       const auto weights = interpolator()->evaluate(ut, i_dt, derivative, stamped_variables, kStampOffset);
-      auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, StampedOutputTangent::kNumParameters};
-      SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
-      return result;
+
+      if (jacobian_type != JacobianType::TANGENT_TO_PARAMETERS) {
+        // Evaluation with tangent to tangent Jacobians.
+        auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, StampedOutputTangent::kNumParameters};
+        SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
+        return result;
+
+      } else {
+        // Evaluation with tangent to group/variable Jacobians.
+        auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, StampedVariable::kNumParameters};
+        SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
+
+        // Lift tangent to group Jacobians.
+        for (auto i = s_idx; i <= e_idx; ++i) {
+          const auto J_a = JacobianAdapter<StampedVariable>(stamped_variables[i]);
+          for (auto k = 0; k <= derivative; ++k) {
+            result.jacobian(k, i) = result.template jacobian<OutputTangent::kNumParameters, StampedVariableTangent::kNumParameters>(k, i, 0, 0) * J_a;
+          }
+        }
+
+        return result;
+      }
     }
   }
 }

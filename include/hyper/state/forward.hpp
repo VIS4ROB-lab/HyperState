@@ -35,7 +35,7 @@ enum Derivative : Eigen::Index {
   JERK = 3,
 };
 
-enum class JacobianType { NONE, TANGENT_TO_TANGENT, TANGENT_TO_GROUP };
+enum class JacobianType { NONE, TANGENT_TO_TANGENT, TANGENT_TO_PARAMETERS };
 
 template <typename TOutput>
 class Result {
