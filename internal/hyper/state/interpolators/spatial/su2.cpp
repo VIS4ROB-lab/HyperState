@@ -2,7 +2,7 @@
 /// the 'LICENSE' file, which is part of this repository.
 
 #include "hyper/state/interpolators/spatial/su2.hpp"
-#include "hyper/variables/groups/adapters.hpp"
+#include "hyper/variables/adapters.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper::state {

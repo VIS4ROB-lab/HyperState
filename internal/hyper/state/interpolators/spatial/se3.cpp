@@ -3,7 +3,7 @@
 
 #include "hyper/state/interpolators/spatial/se3.hpp"
 #include "hyper/state/interpolators/spatial/cartesian.hpp"
-#include "hyper/variables/groups/adapters.hpp"
+#include "hyper/variables/adapters.hpp"
 #include "hyper/variables/stamped.hpp"
 
 namespace hyper::state {

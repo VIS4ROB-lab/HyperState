@@ -7,7 +7,7 @@
 
 #include "hyper/matrix.hpp"
 #include "hyper/state/continuous.hpp"
-#include "hyper/variables/groups/adapters.hpp"
+#include "hyper/variables/adapters.hpp"
 #include "hyper/variables/groups/se3.hpp"
 #include "hyper/variables/stamped.hpp"
 
