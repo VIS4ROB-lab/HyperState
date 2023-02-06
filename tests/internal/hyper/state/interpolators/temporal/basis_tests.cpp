@@ -59,15 +59,18 @@ TEST(BasisInterpolatorTests, Duality) {
   for (Index i = 0; i < kMaxDegree; ++i) {
     Interpolator interpolator;
     interpolator.setOrder(i + 1);
-    interpolator.setNonUniform();
-    const auto layout = interpolator.layout();
+    const auto layout = interpolator.layout(false);
 
     using Times = std::vector<Scalar>;
     Times times(layout.outer_input_size);
     std::iota(times.begin(), times.end(), 1 - layout.left_input_margin);
 
+    using Pointers = std::vector<const Scalar*>;
+    Pointers pointers(layout.outer_input_size);
+    std::transform(times.cbegin(), times.cend(), pointers.begin(), [](const auto& time) -> const Scalar* { return &time; });
+
     const auto M0 = Interpolator::Mixing(i + 1);
-    const auto M1 = interpolator.mixing(times);
+    const auto M1 = interpolator.mixing(pointers.data(), 0);
     EXPECT_TRUE(M0.isApprox(M1, kTol));
   }
 }

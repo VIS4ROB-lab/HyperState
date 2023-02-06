@@ -33,17 +33,19 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   auto setOrder(const Index& order) -> void final;
 
   /// Retrieves the layout.
+  /// \param uniform Uniformity flag.
   /// \return Layout.
-  [[nodiscard]] auto layout() const -> Layout final;
+  [[nodiscard]] auto layout(bool uniform) const -> Layout final;
 
   /// Evaluates the (uniform) mixing matrix.
   /// \return Mixing matrix.
   [[nodiscard]] static auto Mixing(const Index& order) -> OrderMatrix;
 
   /// Evaluates the (non-uniform) mixing matrix.
-  /// \param Times Input times.
+  /// \param inputs Input pointers (to stamped inputs).
+  /// \param idx Time index into inputs.
   /// \return Interpolation matrix.
-  [[nodiscard]] auto mixing(const std::vector<Scalar>& times) const -> OrderMatrix final;
+  [[nodiscard]] auto mixing(const Scalar* const* inputs, const Index& idx) const -> OrderMatrix final;
 };
 
 }  // namespace hyper::state
