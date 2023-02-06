@@ -117,15 +117,16 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
         return result;
 
       } else {
-        // Evaluation with tangent to group Jacobians.
+        // Evaluation with tangent to parameter Jacobians.
         auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, Variable::kNumParameters};
         SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
 
-        // Lift tangent to group/variable Jacobians.
+        // Lift tangent to parameter Jacobians.
         for (auto i = s_idx; i <= e_idx; ++i) {
           const auto J_a = JacobianAdapter<Variable>(stamped_variables[i] + kVariableOffset);
           for (auto k = 0; k <= derivative; ++k) {
-            result.jacobian(k, i) = result.template jacobian<OutputTangent::kNumParameters, VariableTangent::kNumParameters>(k, i, 0, kVariableOffset) * J_a;
+            result.template jacobian<OutputTangent::kNumParameters, Variable::kNumParameters>(k, i, 0, kVariableOffset) =
+                result.template jacobian<OutputTangent::kNumParameters, VariableTangent::kNumParameters>(k, i, 0, kVariableOffset) * J_a;
           }
         }
 
@@ -142,15 +143,16 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
         return result;
 
       } else {
-        // Evaluation with tangent to group/variable Jacobians.
+        // Evaluation with tangent to parameter Jacobians.
         auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, StampedVariable::kNumParameters};
         SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
 
-        // Lift tangent to group Jacobians.
+        // Lift tangent to parameter Jacobians.
         for (auto i = s_idx; i <= e_idx; ++i) {
-          const auto J_a = JacobianAdapter<StampedVariable>(stamped_variables[i]);
+          const auto J_a = JacobianAdapter<Variable>(stamped_variables[i] + kVariableOffset);
           for (auto k = 0; k <= derivative; ++k) {
-            result.jacobian(k, i) = result.template jacobian<OutputTangent::kNumParameters, StampedVariableTangent::kNumParameters>(k, i, 0, 0) * J_a;
+            result.template jacobian<OutputTangent::kNumParameters, Variable::kNumParameters>(k, i, 0, kVariableOffset) =
+                result.template jacobian<OutputTangent::kNumParameters, VariableTangent::kNumParameters>(k, i, 0, kVariableOffset) * J_a;
           }
         }
 
