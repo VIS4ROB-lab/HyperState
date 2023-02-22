@@ -25,7 +25,7 @@ ContinuousState<TOutput, TVariable>::ContinuousState(const TemporalInterpolator<
 
 template <typename TOutput, typename TVariable>
 auto ContinuousState<TOutput, TVariable>::range() const -> Range {
-  const auto layout = interpolator()->layout(this->isUniform());
+  const auto layout = this->layout();
   DCHECK_LE(layout.outer_input_size, this->stamped_variables_.size());
   const auto v0_itr = std::next(this->stamped_variables_.cbegin(), layout.left_input_margin - 1);
   const auto vn_itr = std::next(this->stamped_variables_.crbegin(), layout.right_input_margin - 1);
@@ -81,6 +81,11 @@ auto ContinuousState<TOutput, TVariable>::setInterpolator(const TemporalInterpol
 }
 
 template <typename TOutput, typename TVariable>
+auto ContinuousState<TOutput, TVariable>::layout() const -> typename TemporalInterpolator<Scalar>::Layout {
+  return interpolator_->layout(this->is_uniform_);
+}
+
+template <typename TOutput, typename TVariable>
 auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index& derivative, JacobianType jacobian_type,  // NOLINT
                                                    const Scalar* const* stamped_variables) const -> Result<TOutput> {
   if (!stamped_variables) {
@@ -96,7 +101,7 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
     constexpr auto kVariableOffset = StampedVariable::kVariableOffset;
 
     // Fetch layout.
-    const auto layout = interpolator()->layout(this->isUniform());
+    const auto layout = this->layout();
     const auto s_idx = layout.left_input_padding;
     const auto e_idx = layout.left_input_padding + layout.inner_input_size - 1;
 
@@ -165,7 +170,7 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
 template <typename TOutput, typename TVariable>
 auto ContinuousState<TOutput, TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
   DCHECK(range().contains(time)) << "Range does not contain time.";
-  const auto layout = interpolator()->layout(this->isUniform());
+  const auto layout = this->layout();
 
   DCHECK_LE(layout.outer_input_size, this->stamped_variables_.size());
   const auto itr = this->stamped_variables_.upper_bound(time);

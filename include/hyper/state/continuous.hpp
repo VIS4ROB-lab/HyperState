@@ -73,6 +73,10 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   /// \param interpolator Interpolator.
   auto setInterpolator(const TemporalInterpolator<Scalar>*) -> void;
 
+  /// Retrieves the interpolator layout.
+  /// \return Layout.
+  auto layout() const -> TemporalInterpolator<Scalar>::Layout;
+
   /// Evaluates this.
   /// \param time Query time.
   /// \param derivative Query derivative.
