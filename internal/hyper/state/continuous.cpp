@@ -29,8 +29,10 @@ auto ContinuousState<TOutput, TVariable>::range() const -> Range {
   DCHECK_LE(layout.outer_input_size, this->stamped_variables_.size());
   const auto v0_itr = std::next(this->stamped_variables_.cbegin(), layout.left_input_margin - 1);
   const auto vn_itr = std::next(this->stamped_variables_.crbegin(), layout.right_input_margin - 1);
-  DCHECK_LT(v0_itr->time(), vn_itr->time());
-  return {v0_itr->time(), vn_itr->time()};
+  const auto t0 = v0_itr->time();
+  const auto tn = vn_itr->time();
+  DCHECK_LT(t0, tn);
+  return {t0, std::nexttoward(tn, t0)};
 }
 
 template <typename TOutput, typename TVariable>
