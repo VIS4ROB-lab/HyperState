@@ -31,7 +31,6 @@ class StateTests : public testing::Test {
   using State = typename std::tuple_element<0, TArgs>::type;
   using Interpolator = typename std::tuple_element<1, TArgs>::type;
 
-  using Index = typename State::Index;
   using Scalar = typename State::Scalar;
 
   using Variable = typename State::Variable;
@@ -44,19 +43,19 @@ class StateTests : public testing::Test {
 
   /// Set up.
   auto SetUp() -> void final {
-    state_ = State{&interpolator_};
-    interpolator_.setOrder(kDegree + 1);
+    auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
+    state_ = std::make_unique<State>(std::move(interpolator));
     setRandomState();
   }
 
   /// Sets a random state.
   auto setRandomState() -> void {
-    const auto num_inputs = state_.interpolator()->layout(state_.isUniform()).outer_input_size;
+    const auto num_inputs = state_->layout().outer_size;
     for (auto i = Index{0}; i < num_inputs + Eigen::internal::random<Index>(10, 20); ++i) {
       StampedVariable stamped_variable;
       stamped_variable.time() = 0.25 * i;
       stamped_variable.variable() = Variable::Random();
-      state_.elements().insert(stamped_variable);
+      state_->elements().insert(stamped_variable);
     }
   }
 
@@ -64,9 +63,9 @@ class StateTests : public testing::Test {
   /// \param degree Maximum derivative degree.
   /// \return True if derivatives are correct.
   auto checkDerivatives(const Index degree) -> void {
-    const auto time = state_.range().sample();
-    const auto result = state_.evaluate(time, degree);
-    const auto d_result = state_.evaluate(time + kInc, degree);
+    const auto time = state_->range().sample();
+    const auto result = state_->evaluate(time, degree);
+    const auto d_result = state_->evaluate(time + kInc, degree);
 
     for (Index i = 0; i < degree; ++i) {
       OutputTangent tau;
@@ -85,12 +84,12 @@ class StateTests : public testing::Test {
   auto checkJacobians(const Index degree) -> void {
     for (Index i = 0; i <= degree; ++i) {
       // Evaluate analytic Jacobian.
-      const auto time = state_.range().sample();
-      auto stamped_variables = state_.parameterBlocks(time);
-      const auto result = state_.evaluate(time, i, JacobianType::TANGENT_TO_TANGENT);
+      const auto time = state_->range().sample();
+      auto stamped_variables = state_->parameterBlocks(time);
+      const auto result = state_->evaluate(time, i, JacobianType::TANGENT_TO_TANGENT);
 
       JacobianX<Scalar> Jn_i;
-      if (state_.isUniform()) {
+      if (state_->isUniform()) {
         Jn_i.setZero(OutputTangent::kNumParameters, stamped_variables.size() * OutputTangent::kNumParameters);
       } else {
         Jn_i.setZero(OutputTangent::kNumParameters, stamped_variables.size() * StampedOutputTangent::kNumParameters);
@@ -102,10 +101,10 @@ class StateTests : public testing::Test {
 
           auto tmp = stamped_variables[j];
           stamped_variables[j] = d_input_j.data();
-          const auto d_result = state_.evaluate(time, i, JacobianType::NONE, stamped_variables.data());
+          const auto d_result = state_->evaluate(time, i, JacobianType::NONE, stamped_variables.data());
           stamped_variables[j] = tmp;
 
-          if (state_.isUniform()) {
+          if (state_->isUniform()) {
             if (i == 0) {
               Jn_i.col(j * OutputTangent::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
             } else {
@@ -126,8 +125,7 @@ class StateTests : public testing::Test {
   }
 
  private:
-  State state_;
-  Interpolator interpolator_;
+  std::unique_ptr<State> state_;
 };
 
 TYPED_TEST_SUITE_P(StateTests);

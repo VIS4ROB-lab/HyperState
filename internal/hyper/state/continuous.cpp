@@ -16,19 +16,21 @@ namespace hyper::state {
 using namespace variables;
 
 template <typename TOutput, typename TVariable>
-ContinuousState<TOutput, TVariable>::ContinuousState() = default;
+ContinuousState<TOutput, TVariable>::ContinuousState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator) {
+  swapInterpolator(interpolator);
+}
 
 template <typename TOutput, typename TVariable>
-ContinuousState<TOutput, TVariable>::ContinuousState(const TemporalInterpolator<Scalar>* interpolator) {
-  setInterpolator(interpolator);
+auto ContinuousState<TOutput, TVariable>::setUniform(bool flag) -> void {
+  Base::setUniform(flag);
+  layout_ = interpolator_->layout(flag);
 }
 
 template <typename TOutput, typename TVariable>
 auto ContinuousState<TOutput, TVariable>::range() const -> Range {
-  const auto layout = this->layout();
-  DCHECK_LE(layout.outer_input_size, this->stamped_variables_.size());
-  const auto v0_itr = std::next(this->stamped_variables_.cbegin(), layout.left_input_margin - 1);
-  const auto vn_itr = std::next(this->stamped_variables_.crbegin(), layout.right_input_margin - 1);
+  DCHECK_LE(layout_.outer_size, this->stamped_variables_.size());
+  const auto v0_itr = std::next(this->stamped_variables_.cbegin(), layout_.left_margin - 1);
+  const auto vn_itr = std::next(this->stamped_variables_.crbegin(), layout_.right_margin - 1);
   const auto t0 = v0_itr->time();
   const auto tn = vn_itr->time();
   DCHECK_LT(t0, tn);
@@ -72,19 +74,20 @@ auto ContinuousState<TOutput, TVariable>::parameterBlocks(const Time& time) cons
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::interpolator() const -> const TemporalInterpolator<Scalar>* {
-  return interpolator_;
+auto ContinuousState<TOutput, TVariable>::interpolator() const -> const TemporalInterpolator<Scalar>& {
+  return *interpolator_;
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::setInterpolator(const TemporalInterpolator<Scalar>* interpolator) -> void {
-  DCHECK(interpolator != nullptr);
-  interpolator_ = interpolator;
+auto ContinuousState<TOutput, TVariable>::swapInterpolator(std::unique_ptr<TemporalInterpolator<Scalar>>& interpolator) -> void {
+  CHECK(interpolator != nullptr);
+  layout_ = interpolator->layout(this->is_uniform_);
+  interpolator_.swap(interpolator);
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::layout() const -> typename TemporalInterpolator<Scalar>::Layout {
-  return interpolator_->layout(this->is_uniform_);
+auto ContinuousState<TOutput, TVariable>::layout() const -> const TemporalInterpolatorLayout& {
+  return layout_;
 }
 
 template <typename TOutput, typename TVariable>
@@ -103,29 +106,28 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
     constexpr auto kVariableOffset = StampedVariable::kVariableOffset;
 
     // Fetch layout.
-    const auto layout = this->layout();
-    const auto s_idx = layout.left_input_padding;
-    const auto e_idx = layout.left_input_padding + layout.inner_input_size - 1;
+    const auto s_idx = layout_.left_padding;
+    const auto e_idx = layout_.left_padding + layout_.inner_size - 1;
 
     // Compute normalized time.
-    const auto idx = layout.left_input_margin - 1;
+    const auto idx = layout_.left_margin - 1;
     const auto dt = time - stamped_variables[idx][kStampOffset];
     const auto i_dt = Scalar{1} / (stamped_variables[idx + 1][kStampOffset] - stamped_variables[idx][kStampOffset]);
     const auto ut = dt * i_dt;
 
     if (this->isUniform()) {
       // Evaluate uniform weights.
-      const auto weights = interpolator()->evaluate(ut, i_dt, derivative, nullptr, kStampOffset);
+      const auto weights = interpolator_->evaluate(ut, i_dt, derivative, nullptr, kStampOffset);
 
       if (jacobian_type != JacobianType::TANGENT_TO_PARAMETERS) {
         // Evaluation with tangent to tangent Jacobians.
-        auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, OutputTangent::kNumParameters};
+        auto result = Result<Output>{derivative, jacobian_type, layout_.outer_size, OutputTangent::kNumParameters};
         SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
         return result;
 
       } else {
         // Evaluation with tangent to parameter Jacobians.
-        auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, Variable::kNumParameters};
+        auto result = Result<Output>{derivative, jacobian_type, layout_.outer_size, Variable::kNumParameters};
         SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
 
         // Lift tangent to parameter Jacobians.
@@ -141,17 +143,17 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
       }
     } else {
       // Evaluate non-uniform weights.
-      const auto weights = interpolator()->evaluate(ut, i_dt, derivative, stamped_variables, kStampOffset);
+      const auto weights = interpolator_->evaluate(ut, i_dt, derivative, stamped_variables, kStampOffset);
 
       if (jacobian_type != JacobianType::TANGENT_TO_PARAMETERS) {
         // Evaluation with tangent to tangent Jacobians.
-        auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, StampedOutputTangent::kNumParameters};
+        auto result = Result<Output>{derivative, jacobian_type, layout_.outer_size, StampedOutputTangent::kNumParameters};
         SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
         return result;
 
       } else {
         // Evaluation with tangent to parameter Jacobians.
-        auto result = Result<Output>{derivative, jacobian_type, layout.outer_input_size, StampedVariable::kNumParameters};
+        auto result = Result<Output>{derivative, jacobian_type, layout_.outer_size, StampedVariable::kNumParameters};
         SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
 
         // Lift tangent to parameter Jacobians.
@@ -172,13 +174,12 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, const Index
 template <typename TOutput, typename TVariable>
 auto ContinuousState<TOutput, TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
   DCHECK(range().contains(time)) << "Range does not contain time.";
-  const auto layout = this->layout();
 
-  DCHECK_LE(layout.outer_input_size, this->stamped_variables_.size());
+  DCHECK_LE(layout_.outer_size, this->stamped_variables_.size());
   const auto itr = this->stamped_variables_.upper_bound(time);
-  const auto begin = std::prev(itr, layout.left_input_margin);
-  const auto end = std::next(itr, layout.right_input_margin);
-  return {begin, end, layout.outer_input_size};
+  const auto begin = std::prev(itr, layout_.left_margin);
+  const auto end = std::next(itr, layout_.right_margin);
+  return {begin, end, layout_.outer_size};
 }
 
 template class ContinuousState<Cartesian<double, 3>>;

@@ -20,7 +20,6 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   // Definitions.
   using Base = TemporalState<TOutput, TVariable>;
 
-  using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
 
   using Time = typename Base::Time;
@@ -35,15 +34,15 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   using OutputTangent = typename Base::OutputTangent;
   using StampedOutput = typename Base::StampedOutput;
   using StampedOutputTangent = typename Base::StampedOutputTangent;
-
   using StampedVariables = typename Base::StampedVariables;
-
-  /// Default constructor.
-  ContinuousState();
 
   /// Constructor from interpolator.
   /// \param interpolator Interpolator.
-  explicit ContinuousState(const TemporalInterpolator<Scalar>* interpolator);
+  explicit ContinuousState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator);
+
+  /// Updates the flag.
+  /// \param flag Flag.
+  auto setUniform(bool flag) -> void final;
 
   /// Evaluates the range.
   /// \return Range.
@@ -67,15 +66,15 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
 
   /// Interpolator accessor.
   /// \return Interpolator.
-  [[nodiscard]] auto interpolator() const -> const TemporalInterpolator<Scalar>*;
+  [[nodiscard]] auto interpolator() const -> const TemporalInterpolator<Scalar>&;
 
   /// Interpolator setter.
   /// \param interpolator Interpolator.
-  auto setInterpolator(const TemporalInterpolator<Scalar>*) -> void;
+  auto swapInterpolator(std::unique_ptr<TemporalInterpolator<Scalar>>& interpolator) -> void;
 
   /// Retrieves the interpolator layout.
   /// \return Layout.
-  auto layout() const -> TemporalInterpolator<Scalar>::Layout;
+  [[nodiscard]] auto layout() const -> const TemporalInterpolatorLayout&;
 
   /// Evaluates this.
   /// \param time Query time.
@@ -95,7 +94,8 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   /// \return Iterators and number of elements between them.
   auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index>;
 
-  const TemporalInterpolator<Scalar>* interpolator_;  ///< Interpolator.
+  TemporalInterpolatorLayout layout_;                           ///< Layout.
+  std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_;  ///< Interpolator.
 };
 
 }  // namespace hyper::state

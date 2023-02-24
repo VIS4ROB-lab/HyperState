@@ -5,13 +5,14 @@
 
 #include "hyper/state/forward.hpp"
 
+#include "hyper/state/definitions.hpp"
+
 namespace hyper::state {
 
 template <typename TScalar>
 class State {
  public:
   // Definitions.
-  using Index = Eigen::Index;
   using Scalar = TScalar;
 
   /// Virtual default destructor.

@@ -22,7 +22,6 @@ class TemporalState : public State<typename TVariable::Scalar> {
   // Definitions.
   using Base = State<typename TVariable::Scalar>;
 
-  using Index = typename Base::Index;
   using Scalar = typename Base::Scalar;
 
   using Time = Scalar;
@@ -48,13 +47,13 @@ class TemporalState : public State<typename TVariable::Scalar> {
 
   using StampedVariables = std::set<StampedVariable, StampedVariableCompare>;
 
-  /// Uniformity flag accessor.
-  /// \return Uniformity flag.
-  [[nodiscard]] auto isUniform() const -> bool { return is_uniform_; }
+  /// Flag accessor.
+  /// \return Flag.
+  [[nodiscard]] inline auto isUniform() const -> bool { return is_uniform_; }
 
-  /// Uniformity flag setter.
-  /// \param flag Uniformity flag.
-  auto setUniform(bool flag) -> void { is_uniform_ = flag; }
+  /// Updates the flag.
+  /// \param flag Flag.
+  virtual inline auto setUniform(bool flag) -> void { is_uniform_ = flag; }
 
   /// Evaluates the range.
   /// \return Range.
@@ -62,11 +61,11 @@ class TemporalState : public State<typename TVariable::Scalar> {
 
   /// Elements accessor.
   /// \return Elements.
-  auto elements() const -> const StampedVariables& { return stamped_variables_; }
+  inline auto elements() const -> const StampedVariables& { return stamped_variables_; }
 
   /// Elements modifier.
   /// \return Elements.
-  auto elements() -> StampedVariables& { return stamped_variables_; }
+  inline auto elements() -> StampedVariables& { return stamped_variables_; }
 
   /// Variable pointers accessor.
   /// \return Pointers to (stamped) variables.

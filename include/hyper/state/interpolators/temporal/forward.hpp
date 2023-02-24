@@ -5,6 +5,8 @@
 
 #include "hyper/state/forward.hpp"
 
+#include "hyper/state/definitions.hpp"
+
 namespace hyper::state {
 
 template <typename TScalar>
@@ -16,15 +18,13 @@ class PolynomialInterpolator;
 template <typename TScalar, int TOrder>
 class BasisInterpolator;
 
-template <typename TIndex>
 struct TemporalInterpolatorLayout {
-  const TIndex outer_input_size;
-  const TIndex inner_input_size;
-  const TIndex left_input_margin;
-  const TIndex right_input_margin;
-  const TIndex left_input_padding;
-  const TIndex right_input_padding;
-  const TIndex output_size;
+  Index outer_size;
+  Index inner_size;
+  Index left_margin;
+  Index right_margin;
+  Index left_padding;
+  Index right_padding;
 };
 
 }  // namespace hyper::state

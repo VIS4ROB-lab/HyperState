@@ -17,7 +17,7 @@ auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(const Index& order) ->
 
   for (Index i = 1; i < order; ++i) {
     for (Index j = degree - next; j < order; ++j) {
-      m(i, j) = static_cast<Scalar>(next - degree + j) * m(i - 1, j);
+      m(i, j) = static_cast<TScalar>(next - degree + j) * m(i - 1, j);
     }
     --next;
   }
@@ -31,12 +31,12 @@ auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const Scalar& ut, const Scalar& i_dt, const Index& derivative, const Scalar* const* inputs, const Index& idx) const
-    -> Weights {
+auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const TScalar& ut, const TScalar& i_dt, const Index& derivative, const TScalar* const* inputs, const Index& idx) const
+    -> MatrixX<TScalar> {
   DCHECK_LE(0, ut);
   DCHECK_LE(ut, 1);
 
-  using Polynomial = Matrix<Scalar, TOrder, Eigen::Dynamic>;
+  using Polynomial = Matrix<TScalar, TOrder, Eigen::Dynamic>;
 
   const auto order = this->order();
   const auto num_derivatives = derivative + 1;

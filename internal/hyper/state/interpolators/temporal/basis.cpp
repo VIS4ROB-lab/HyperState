@@ -117,11 +117,9 @@ auto nonUniformRecursion(const TIndex& k, const TScalar* const* inputs, const TI
 }  // namespace
 
 template <typename TScalar, int TOrder>
-BasisInterpolator<TScalar, TOrder>::BasisInterpolator() {
-  if constexpr (0 < TOrder) {
-    this->mixing_ = Mixing(TOrder);
-    this->polynomials_ = Base::Polynomials(TOrder);
-  }
+BasisInterpolator<TScalar, TOrder>::BasisInterpolator(const Index& order) {
+  CHECK_LE(0, order);
+  setOrder(order);
 }
 
 template <typename TScalar, int TOrder>
@@ -131,55 +129,39 @@ auto BasisInterpolator<TScalar, TOrder>::setOrder(const Index& order) -> void {
     this->polynomials_ = Base::Polynomials(order);
   } else {
     CHECK_EQ(order, TOrder);
+    this->mixing_ = Mixing(TOrder);
+    this->polynomials_ = Base::Polynomials(TOrder);
   }
 }
 
 template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::layout(bool uniform) const -> Layout {
+auto BasisInterpolator<TScalar, TOrder>::layout(bool uniform) const -> TemporalInterpolatorLayout {
   const auto order = this->order();
 
   if (uniform) {
     if (order % 2 == 0) {
       const auto margin = order / 2;
-      return {.outer_input_size = order,
-              .inner_input_size = order,
-              .left_input_margin = margin,
-              .right_input_margin = margin,
-              .left_input_padding = 0,
-              .right_input_padding = 0,
-              .output_size = order};
+      return {.outer_size = order, .inner_size = order, .left_margin = margin, .right_margin = margin, .left_padding = 0, .right_padding = 0};
     } else {
       const auto margin = (order - 1) / 2;
-      return {.outer_input_size = order,
-              .inner_input_size = order,
-              .left_input_margin = margin + 1,
-              .right_input_margin = margin,
-              .left_input_padding = 0,
-              .right_input_padding = 0,
-              .output_size = order};
+      return {.outer_size = order, .inner_size = order, .left_margin = margin + 1, .right_margin = margin, .left_padding = 0, .right_padding = 0};
     }
   } else {
     const auto degree = order - 1;
     const auto padding = (degree - 1) / 2;
-    return {.outer_input_size = 2 * degree,
-            .inner_input_size = order,
-            .left_input_margin = degree,
-            .right_input_margin = degree,
-            .left_input_padding = padding,
-            .right_input_padding = padding,
-            .output_size = order};
+    return {.outer_size = 2 * degree, .inner_size = order, .left_margin = degree, .right_margin = degree, .left_padding = padding, .right_padding = padding};
   }
 }
 
 template <typename TScalar, int TOrder>
 auto BasisInterpolator<TScalar, TOrder>::Mixing(const Index& order) -> OrderMatrix {
-  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * uniformRecursion<Scalar, Index, TOrder>(order);
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * uniformRecursion<TScalar, Index, TOrder>(order);
 }
 
 template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::mixing(const Scalar* const* inputs, const Index& idx) const -> OrderMatrix {
+auto BasisInterpolator<TScalar, TOrder>::mixing(const TScalar* const* inputs, const Index& idx) const -> OrderMatrix {
   const auto order = this->order();
-  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * nonUniformRecursion<Scalar, Index, TOrder>(order, inputs, idx);
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * nonUniformRecursion<TScalar, Index, TOrder>(order, inputs, idx);
 }
 
 template class BasisInterpolator<double, 4>;

@@ -15,15 +15,8 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   // Definitions.
   using Base = TemporalInterpolator<TScalar>;
 
-  using Index = typename Base::Index;
-
-  using Scalar = typename Base::Scalar;
-  using Layout = typename Base::Layout;
-
-  using OrderVector = Vector<Scalar, TOrder>;
-  using OrderMatrix = Matrix<Scalar, TOrder, TOrder>;
-
-  using Weights = typename Base::Weights;
+  using OrderVector = Vector<TScalar, TOrder>;
+  using OrderMatrix = Matrix<TScalar, TOrder, TOrder>;
 
   /// Computes polynomial coefficient matrix.
   /// \return Polynomial coefficient matrix.
@@ -41,7 +34,7 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   /// \param inputs Input pointers (to stamped inputs).
   /// \param idx Time index into inputs.
   /// \return Interpolation matrix.
-  [[nodiscard]] virtual auto mixing(const Scalar* const* inputs, const Index& idx) const -> OrderMatrix = 0;
+  [[nodiscard]] virtual auto mixing(const TScalar* const* inputs, const Index& idx) const -> OrderMatrix = 0;
 
   /// Evaluates this.
   /// \param ut Normalized time.
@@ -50,7 +43,7 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
   /// \param inputs Input pointers (to stamped inputs).
   /// \param idx Time index into inputs.
   /// \return Weights.
-  auto evaluate(const Scalar& ut, const Scalar& i_dt, const Index& derivative, const Scalar* const* inputs, const Index& idx) const -> Weights final;
+  auto evaluate(const TScalar& ut, const TScalar& i_dt, const Index& derivative, const TScalar* const* inputs, const Index& idx) const -> MatrixX<TScalar> final;
 
  protected:
   OrderMatrix mixing_;       ///< Cached mixing matrix.
