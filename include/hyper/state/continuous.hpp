@@ -50,11 +50,11 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
 
   /// Variable pointers accessor.
   /// \return Pointers to (stamped) variables.
-  [[nodiscard]] auto variables() const -> std::vector<StampedVariable*> final;
+  [[nodiscard]] auto variables() const -> std::vector<variables::Variable<Scalar>*> final;
 
   /// Time-based variable pointers accessor.
   /// \return Time-based pointers to (stamped) variables.
-  [[nodiscard]] auto variables(const Time& time) const -> std::vector<StampedVariable*> final;
+  [[nodiscard]] auto variables(const Time& time) const -> std::vector<variables::Variable<Scalar>*> final;
 
   /// Parameter blocks accessor.
   /// \return Pointers to parameter blocks.

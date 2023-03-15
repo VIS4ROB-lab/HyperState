@@ -69,11 +69,11 @@ class TemporalState : public State<typename TVariable::Scalar> {
 
   /// Variable pointers accessor.
   /// \return Pointers to (stamped) variables.
-  [[nodiscard]] virtual auto variables() const -> std::vector<StampedVariable*> = 0;
+  [[nodiscard]] virtual auto variables() const -> std::vector<variables::Variable<Scalar>*> = 0;
 
   /// Time-based variable pointers accessor.
   /// \return Time-based pointers to (stamped) variables.
-  [[nodiscard]] virtual auto variables(const Time& time) const -> std::vector<StampedVariable*> = 0;
+  [[nodiscard]] virtual auto variables(const Time& time) const -> std::vector<variables::Variable<Scalar>*> = 0;
 
   /// Parameter blocks accessor.
   /// \return Pointers to parameter blocks.

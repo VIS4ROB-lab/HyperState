@@ -38,8 +38,8 @@ auto ContinuousState<TOutput, TVariable>::range() const -> Range {
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::variables() const -> std::vector<StampedVariable*> {
-  std::vector<StampedVariable*> ptrs;
+auto ContinuousState<TOutput, TVariable>::variables() const -> std::vector<variables::Variable<Scalar>*> {
+  std::vector<variables::Variable<Scalar>*> ptrs;
   ptrs.reserve(this->stamped_variables_.size());
   std::transform(this->stamped_variables_.begin(), this->stamped_variables_.end(), std::back_inserter(ptrs),
                  [](const auto& element) { return const_cast<StampedVariable*>(&element); });
@@ -47,9 +47,9 @@ auto ContinuousState<TOutput, TVariable>::variables() const -> std::vector<Stamp
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::variables(const Time& time) const -> std::vector<StampedVariable*> {
+auto ContinuousState<TOutput, TVariable>::variables(const Time& time) const -> std::vector<variables::Variable<Scalar>*> {
   const auto& [begin, end, num_variables] = iterators(time);
-  std::vector<StampedVariable*> ptrs;
+  std::vector<variables::Variable<Scalar>*> ptrs;
   ptrs.reserve(num_variables);
   std::transform(begin, end, std::back_inserter(ptrs), [](const auto& element) { return const_cast<StampedVariable*>(&element); });
   return ptrs;
