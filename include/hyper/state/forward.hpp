@@ -69,13 +69,17 @@ class Result {
 
   inline auto value() -> Value& { return value_; }
   inline auto value() const -> const Value& { return value_; }
+  inline auto velocity() { return tangent(0); }
+  inline auto velocity() const { return tangent(0); }
+  inline auto acceleration() { return tangent(1); }
+  inline auto acceleration() const { return tangent(1); }
+  inline auto jerk() { return tangent(2); }
+  inline auto jerk() const { return tangent(2); }
 
   inline auto tangent(int k) { return Eigen::Map<Tangent>{storage_.data() + k * kNumTangentParameters}; }
   inline auto tangent(int k) const { return Eigen::Map<const Tangent>{storage_.data() + k * kNumTangentParameters}; }
-
   inline auto jacobian(int k) { return storage_.middleCols(degree_ + k * num_parameters_, num_parameters_); }
   inline auto jacobian(int k) const { return storage_.middleCols(degree_ + k * num_parameters_, num_parameters_); }
-
   inline auto jacobian(int k, int i) { return storage_.middleCols(degree_ + k * num_parameters_ + i * num_parameters_per_input_, num_parameters_per_input_); }
   inline auto jacobian(int k, int i) const { return storage_.middleCols(degree_ + k * num_parameters_ + i * num_parameters_per_input_, num_parameters_per_input_); }
 
@@ -91,7 +95,6 @@ class Result {
 
   inline auto tangents() { return storage_.leftCols(degree_); }
   inline auto tangents() const { return storage_.leftCols(degree_); }
-
   inline auto jacobians() { return storage_.rightCols((degree_ + 1) * num_parameters_); }
   inline auto jacobians() const { return storage_.rightCols((degree_ + 1) * num_parameters_); }
 

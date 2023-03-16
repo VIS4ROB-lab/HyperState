@@ -179,9 +179,9 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
 
   result.value() = Output{R, x};
   if (Derivative::VALUE < result.degree()) {
-    result.tangent(Derivative::VELOCITY - 1) = v;
+    result.velocity() = v;
     if (Derivative::VELOCITY < result.degree()) {
-      result.tangent(Derivative::ACCELERATION - 1) = a;
+      result.acceleration() = a;
     }
   }
 }
