@@ -8,23 +8,21 @@
 
 #include <glog/logging.h>
 
-#include "hyper/state/state.hpp"
+#include "hyper/state/forward.hpp"
+
+#include "hyper/state/range.hpp"
 #include "hyper/variables/jacobian.hpp"
 #include "hyper/variables/stamped.hpp"
 #include "hyper/variables/variable.hpp"
-#include "range.hpp"
 
 namespace hyper::state {
 
 template <typename TOutput, typename TVariable>
-class TemporalState : public State<typename TVariable::Scalar> {
+class TemporalState {
  public:
   // Definitions.
-  using Base = State<typename TVariable::Scalar>;
-
-  using Scalar = typename Base::Scalar;
-
-  using Time = Scalar;
+  using Time = typename TOutput::Scalar;
+  using Scalar = typename TOutput::Scalar;
   using Range = state::Range<Time, BoundaryPolicy::INCLUSIVE>;
 
   using Variable = TVariable;
@@ -34,8 +32,6 @@ class TemporalState : public State<typename TVariable::Scalar> {
 
   using Output = TOutput;
   using OutputTangent = variables::Tangent<Output>;
-  using StampedOutput = variables::Stamped<Output>;
-  using StampedOutputTangent = variables::Stamped<OutputTangent>;
 
   // Stamped variable compare.
   struct StampedVariableCompare {
@@ -46,6 +42,54 @@ class TemporalState : public State<typename TVariable::Scalar> {
   };
 
   using StampedVariables = std::set<StampedVariable, StampedVariableCompare>;
+
+  /// Constructor from uniformity flag and Jacobian type.
+  /// \param is_uniform Uniformity flag.
+  /// \param jacobian_type Jacobian type.
+  explicit TemporalState(bool is_uniform = true, JacobianType jacobian_type = JacobianType::TANGENT_TO_STAMPED_MANIFOLD)
+      : is_uniform_{is_uniform}, jacobian_type_{jacobian_type}, stamped_variables_{} {}
+
+  /// Destructor.
+  virtual ~TemporalState() = default;
+
+  /// Jacobian type accessor.
+  /// \return Jacobian type.
+  [[nodiscard]] auto jacobianType() const -> JacobianType { return jacobian_type_; }
+
+  /// Jacobian type setter.
+  /// \param jacobian_type Jacobian type.
+  inline auto setJacobianType(JacobianType jacobian_type) -> void { this->jacobian_type_ = jacobian_type; }
+
+  /// Retrieves the ambient input size.
+  /// \return Ambient input size.
+  [[nodiscard]] constexpr auto ambientInputSize() const { return StampedVariable::kNumParameters; }
+
+  /// Retrieves the ambient output size.
+  /// \return Ambient output size.
+  [[nodiscard]] constexpr auto ambientOutputSize() const { return Output::kNumParameters; }
+
+  /// Retrieves the local input size.
+  /// \return Local input size.
+  [[nodiscard]] inline auto localInputSize() const {
+    switch (this->jacobian_type_) {
+      case JacobianType::TANGENT_TO_TANGENT:
+        return VariableTangent::kNumParameters;
+      case JacobianType::TANGENT_TO_STAMPED_TANGENT:
+        return StampedVariableTangent::kNumParameters;
+      case JacobianType::TANGENT_TO_MANIFOLD:
+        return Variable::kNumParameters;
+      case JacobianType::TANGENT_TO_STAMPED_MANIFOLD:
+        return StampedVariable::kNumParameters;
+      default: {
+        LOG(FATAL) << "Unknown Jacobian type.";
+        return -1;
+      }
+    }
+  }
+
+  /// Retrieves the local output size.
+  /// \return Local output size.
+  [[nodiscard]] constexpr auto localOutputSize() const { return OutputTangent::kNumParameters; }
 
   /// Flag accessor.
   /// \return Flag.
@@ -86,14 +130,14 @@ class TemporalState : public State<typename TVariable::Scalar> {
   /// Evaluates this.
   /// \param time Query time.
   /// \param derivative Query derivative.
-  /// \param jacobian_type Requested type of Jacobian.
   /// \param stamped_variables Stamped variable pointers.
+  /// \param jacobian Jacobian flag.
   /// \return Result.
-  virtual auto evaluate(const Time& time, const Index& derivative, JacobianType jacobian_type = JacobianType::NONE,  // NOLINT
-                        const Scalar* const* stamped_variables = nullptr) const -> Result<TOutput> = 0;
+  virtual auto evaluate(const Time& time, int derivative, const Scalar* const* stamped_variables = nullptr, bool jacobian = false) const -> Result<TOutput> = 0;  // NOLINT
 
  protected:
-  bool is_uniform_{true};               ///< Uniformity flag.
+  bool is_uniform_;                     ///< Flag.
+  JacobianType jacobian_type_;          ///< Jacobian type.
   StampedVariables stamped_variables_;  ///< Stamped variables.
 };
 

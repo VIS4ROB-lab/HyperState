@@ -33,7 +33,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
   Tangent v = Tangent::Zero();
   Tangent a = Tangent::Zero();
 
-  if (result.jacobianType() == JacobianType::NONE) {
+  if (!result.hasJacobians()) {
     // Retrieves first input.
     const auto I_0 = I(s_idx);
 

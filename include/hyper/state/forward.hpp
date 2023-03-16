@@ -13,9 +13,6 @@
 
 namespace hyper::state {
 
-template <typename TScalar>
-class State;
-
 template <typename TLabel, typename TVariable>
 class LabeledState;
 
@@ -35,67 +32,77 @@ enum Derivative : Eigen::Index {
   JERK = 3,
 };
 
-enum class JacobianType { NONE, TANGENT_TO_TANGENT, TANGENT_TO_PARAMETERS };
+enum class JacobianType { TANGENT_TO_TANGENT, TANGENT_TO_MANIFOLD, TANGENT_TO_STAMPED_TANGENT, TANGENT_TO_STAMPED_MANIFOLD };
 
-template <typename TOutput>
+template <typename TValue>
 class Result {
  public:
   // Definitions.
-  using Index = Eigen::Index;
+  using Value = TValue;
+  using Tangent = variables::Tangent<TValue>;
 
-  using Value = TOutput;
-  using Tangent = variables::Tangent<TOutput>;
+  // Constants.
+  static constexpr auto kNumValueParameters = Value::kNumParameters;
+  static constexpr auto kNumTangentParameters = Tangent::kNumParameters;
 
-  Result(const Index& degree, JacobianType jacobian_type, const Index& num_inputs, const Index& num_input_parameters)
-      : degree_{degree}, jacobian_type_{jacobian_type}, num_inputs_{num_inputs}, num_input_parameters_{num_input_parameters}, num_parameters_{num_inputs * num_input_parameters} {
-    if (jacobian_type_ == JacobianType::NONE) {
-      matrix_.setZero(Tangent::kNumParameters, degree_);
+  Result(int degree, int num_inputs, int num_parameters_per_input, bool has_jacobians = false)
+      : value_{},
+        storage_{},
+        degree_{degree},
+        num_inputs_{num_inputs},
+        num_parameters_per_input_{num_parameters_per_input},
+        num_parameters_{num_inputs * num_parameters_per_input},
+        has_jacobians_{has_jacobians} {
+    if (has_jacobians) {
+      const auto order_ = degree_ + 1;
+      storage_.setZero(Eigen::NoChange, degree_ + order_ * num_parameters_);
     } else {
-      matrix_.setZero(Tangent::kNumParameters, degree_ + (degree_ + 1) * num_parameters_);
+      storage_.setZero(Eigen::NoChange, degree_);
     }
   }
 
-  [[nodiscard]] inline auto degree() const -> const Index& { return degree_; }
-  [[nodiscard]] inline auto jacobianType() const -> JacobianType { return jacobian_type_; }
+  inline auto degree() const { return degree_; }
+  inline auto numInputs() const { return num_inputs_; }
+  inline auto numParametersPerInput() const { return num_parameters_per_input_; }
+  inline auto numParameters() const { return num_parameters_; }
+  inline auto hasJacobians() const { return has_jacobians_; }
 
   inline auto value() -> Value& { return value_; }
   inline auto value() const -> const Value& { return value_; }
 
-  inline auto tangent(const Index& k) { return Eigen::Map<Tangent>{matrix_.data() + k * Tangent::kNumParameters}; }
-  inline auto tangent(const Index& k) const { return Eigen::Map<const Tangent>{matrix_.data() + k * Tangent::kNumParameters}; }
+  inline auto tangent(int k) { return Eigen::Map<Tangent>{storage_.data() + k * kNumTangentParameters}; }
+  inline auto tangent(int k) const { return Eigen::Map<const Tangent>{storage_.data() + k * kNumTangentParameters}; }
 
-  inline auto tangents() { return matrix_.leftCols(degree_); }
-  inline auto tangents() const { return matrix_.leftCols(degree_); }
+  inline auto jacobian(int k) { return storage_.middleCols(degree_ + k * num_parameters_, num_parameters_); }
+  inline auto jacobian(int k) const { return storage_.middleCols(degree_ + k * num_parameters_, num_parameters_); }
 
-  inline auto jacobian(const Index& k) { return matrix_.middleCols(degree_ + k * num_parameters_, num_parameters_); }
-  inline auto jacobian(const Index& k) const { return matrix_.middleCols(degree_ + k * num_parameters_, num_parameters_); }
-
-  inline auto jacobian(const Index& k, const Index& i) { return matrix_.middleCols(degree_ + k * num_parameters_ + i * num_input_parameters_, num_input_parameters_); }
-  inline auto jacobian(const Index& k, const Index& i) const { return matrix_.middleCols(degree_ + k * num_parameters_ + i * num_input_parameters_, num_input_parameters_); }
+  inline auto jacobian(int k, int i) { return storage_.middleCols(degree_ + k * num_parameters_ + i * num_parameters_per_input_, num_parameters_per_input_); }
+  inline auto jacobian(int k, int i) const { return storage_.middleCols(degree_ + k * num_parameters_ + i * num_parameters_per_input_, num_parameters_per_input_); }
 
   template <int NRows, int NCols>
-  inline auto jacobian(const Index& k, const Index& i, const Index& start_row, const Index& start_col) {
-    return matrix_.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
+  inline auto jacobian(int k, int i, int start_row, int start_col) {
+    return storage_.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_parameters_per_input_ + start_col);
   }
 
   template <int NRows, int NCols>
-  inline auto jacobian(const Index& k, const Index& i, const Index& start_row, const Index& start_col) const {
-    return matrix_.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_input_parameters_ + start_col);
+  inline auto jacobian(int k, int i, int start_row, int start_col) const {
+    return storage_.template block<NRows, NCols>(start_row, degree_ + k * num_parameters_ + i * num_parameters_per_input_ + start_col);
   }
 
-  inline auto jacobians() { return matrix_.rightCols((degree_ + 1) * num_parameters_); }
-  inline auto jacobians() const { return matrix_.rightCols((degree_ + 1) * num_parameters_); }
+  inline auto tangents() { return storage_.leftCols(degree_); }
+  inline auto tangents() const { return storage_.leftCols(degree_); }
 
- private:
-  Index degree_;
-  JacobianType jacobian_type_;
-
-  Index num_inputs_;
-  Index num_input_parameters_;
-  Index num_parameters_;
+  inline auto jacobians() { return storage_.rightCols((degree_ + 1) * num_parameters_); }
+  inline auto jacobians() const { return storage_.rightCols((degree_ + 1) * num_parameters_); }
 
   Value value_;
-  MatrixNX<Tangent> matrix_;
+  MatrixNX<Tangent> storage_;
+
+  int degree_;
+  int num_inputs_;
+  int num_parameters_per_input_;
+  int num_parameters_;
+  bool has_jacobians_;
 };
 
 }  // namespace hyper::state

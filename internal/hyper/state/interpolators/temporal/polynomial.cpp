@@ -26,7 +26,7 @@ auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(const Index& order) ->
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
+auto PolynomialInterpolator<TScalar, TOrder>::order() const -> int {
   return mixing_.rows();
 }
 

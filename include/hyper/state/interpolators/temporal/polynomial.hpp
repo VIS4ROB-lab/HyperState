@@ -24,7 +24,7 @@ class PolynomialInterpolator : public TemporalInterpolator<TScalar> {
 
   /// Order accessor.
   /// \return Order.
-  [[nodiscard]] auto order() const -> Index;
+  [[nodiscard]] auto order() const -> int;
 
   /// Order setter.
   /// \param order Order.

@@ -38,13 +38,13 @@ class StateTests : public testing::Test {
   using StampedVariable = typename State::StampedVariable;
   using StampedVariableTangent = typename State::StampedVariableTangent;
 
+  using Output = typename State::Output;
   using OutputTangent = typename State::OutputTangent;
-  using StampedOutputTangent = typename State::StampedOutputTangent;
 
   /// Set up.
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>(kDegree + 1);
-    state_ = std::make_unique<State>(std::move(interpolator));
+    state_ = std::make_unique<State>(std::move(interpolator), true, JacobianType::TANGENT_TO_TANGENT);
     setRandomState();
   }
 
@@ -86,14 +86,13 @@ class StateTests : public testing::Test {
       // Evaluate analytic Jacobian.
       const auto time = state_->range().sample();
       auto stamped_variables = state_->parameterBlocks(time);
-      const auto result = state_->evaluate(time, i, JacobianType::TANGENT_TO_TANGENT);
+      const auto result = state_->evaluate(time, i);
 
       JacobianX<Scalar> Jn_i;
-      if (state_->isUniform()) {
-        Jn_i.setZero(OutputTangent::kNumParameters, stamped_variables.size() * OutputTangent::kNumParameters);
-      } else {
-        Jn_i.setZero(OutputTangent::kNumParameters, stamped_variables.size() * StampedOutputTangent::kNumParameters);
-      }
+      const auto local_input_size = state_->localInputSize();
+      Jn_i.setZero(OutputTangent::kNumParameters, stamped_variables.size() * local_input_size);
+
+      std::cout << Jn_i << std::endl;
 
       for (auto j = std::size_t{0}; j < stamped_variables.size(); ++j) {
         for (Index k = 0; k < OutputTangent::kNumParameters; ++k) {
@@ -101,25 +100,21 @@ class StateTests : public testing::Test {
 
           auto tmp = stamped_variables[j];
           stamped_variables[j] = d_input_j.data();
-          const auto d_result = state_->evaluate(time, i, JacobianType::NONE, stamped_variables.data());
+          const auto d_result = state_->evaluate(time, i, stamped_variables.data(), false);
           stamped_variables[j] = tmp;
 
-          if (state_->isUniform()) {
-            if (i == 0) {
-              Jn_i.col(j * OutputTangent::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
-            } else {
-              Jn_i.col(j * OutputTangent::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
-            }
+          if (i == 0) {
+            Jn_i.col(j * local_input_size + k) = d_result.value().tMinus(result.value()) / kInc;
           } else {
-            if (i == 0) {
-              Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = d_result.value().tMinus(result.value()) / kInc;
-            } else {
-              Jn_i.col(j * StampedOutputTangent::kNumParameters + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
-            }
+            Jn_i.col(j * local_input_size + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)).transpose() / kInc;
           }
         }
       }
 
+      std::cout << Jn_i << std::endl;
+      std::cout << result.storage_ << std::endl;
+      std::cout << result.value() << std::endl;
+      std::cout << result.jacobians() << std::endl;
       EXPECT_TRUE(Jn_i.isApprox(result.jacobian(i), kTol));
     }
   }

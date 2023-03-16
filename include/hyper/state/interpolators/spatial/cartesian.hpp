@@ -44,7 +44,7 @@ class SpatialInterpolator<TVariable> final {
     }
 
     // Compute Jacobians.
-    if (result.jacobianType() != JacobianType::NONE) {
+    if (result.hasJacobians()) {
       // Jacobian lambda definition.
       auto J = [&result, &offs](const Index& k, const Index& i) {
         return result.template jacobian<Output::kNumParameters, Input::kNumParameters>(k, i, 0, offs);
