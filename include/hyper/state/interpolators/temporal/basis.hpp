@@ -21,11 +21,11 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   using OrderMatrix = typename Base::OrderMatrix;
 
   /// Default constructor.
-  BasisInterpolator(const Index& order = TOrder);
+  explicit BasisInterpolator(int order = TOrder);
 
   /// Order setter.
   /// \param order Order.
-  auto setOrder(const Index& order) -> void final;
+  auto setOrder(int order) -> void final;
 
   /// Retrieves the layout.
   /// \param uniform Uniformity flag.
@@ -34,13 +34,13 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
 
   /// Evaluates the (uniform) mixing matrix.
   /// \return Mixing matrix.
-  [[nodiscard]] static auto Mixing(const Index& order) -> OrderMatrix;
+  [[nodiscard]] static auto Mixing(int order) -> OrderMatrix;
 
   /// Evaluates the (non-uniform) mixing matrix.
   /// \param inputs Input pointers (to stamped inputs).
   /// \param idx Time index into inputs.
   /// \return Interpolation matrix.
-  [[nodiscard]] auto mixing(const TScalar* const* inputs, const Index& idx) const -> OrderMatrix final;
+  [[nodiscard]] auto mixing(const TScalar* const* inputs, int idx) const -> OrderMatrix final;
 };
 
 }  // namespace hyper::state

@@ -5,8 +5,6 @@
 
 #include "hyper/state/forward.hpp"
 
-#include "hyper/state/definitions.hpp"
-
 namespace hyper::state {
 
 template <typename TScalar>

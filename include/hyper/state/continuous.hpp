@@ -21,7 +21,6 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   using Base = TemporalState<TOutput, TVariable>;
 
   using Scalar = typename Base::Scalar;
-
   using Time = typename Base::Time;
   using Range = typename Base::Range;
 
@@ -92,7 +91,7 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   /// Retrieves the iterators for a time.
   /// \param time Query time.
   /// \return Iterators and number of elements between them.
-  auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index>;
+  auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, int>;
 
   TemporalInterpolatorLayout layout_;                           ///< Layout.
   std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_;  ///< Interpolator.

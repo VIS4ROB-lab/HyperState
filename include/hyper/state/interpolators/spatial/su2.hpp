@@ -4,8 +4,7 @@
 #pragma once
 
 #include "hyper/state/interpolators/forward.hpp"
-
-#include "hyper/variables/groups/su2.hpp"
+#include "hyper/variables/groups/forward.hpp"
 
 namespace hyper::state {
 
@@ -13,13 +12,14 @@ template <typename TScalar>
 class SpatialInterpolator<variables::SU2<TScalar>> final {
  public:
   // Definitions.
-  using Index = Eigen::Index;
   using Input = variables::SU2<TScalar>;
   using Output = variables::SU2<TScalar>;
 
   /// Evaluates this.
-  static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, const Index& s_idx, const Index& e_idx,
-                       const Index& offs) -> void;
+  static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs) -> void;
 };
+
+template <typename TScalar>
+using SU2Interpolator = SpatialInterpolator<variables::SU2<TScalar>>;
 
 }  // namespace hyper::state

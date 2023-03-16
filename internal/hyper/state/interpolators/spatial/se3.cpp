@@ -2,17 +2,15 @@
 /// the 'LICENSE' file, which is part of this repository.
 
 #include "hyper/state/interpolators/spatial/se3.hpp"
-#include "hyper/state/interpolators/spatial/cartesian.hpp"
-#include "hyper/variables/adapters.hpp"
-#include "hyper/variables/stamped.hpp"
+#include "hyper/variables/groups/se3.hpp"
 
 namespace hyper::state {
 
 using namespace variables;
 
 template <typename TScalar>
-auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, const Index& s_idx,
-                                                 const Index& e_idx, const Index& offs) -> void {
+auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs)
+    -> void {
   // Definitions.
   using Rotation = typename Output::Rotation;
   using Translation = typename Output::Translation;
@@ -23,7 +21,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
   using AngularJacobian = variables::JacobianNM<Angular>;
 
   // Input lambda definition.
-  auto I = [&inputs, &offs](const Index& i) {
+  auto I = [&inputs, &offs](int i) {
     return Eigen::Map<const Input>{inputs[i] + offs};
   };
 
@@ -37,7 +35,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
     // Retrieves first input.
     const auto I_0 = I(s_idx);
 
-    for (Index i = e_idx; s_idx < i; --i) {
+    for (auto i = e_idx; s_idx < i; --i) {
       const auto I_a = I(i - 1);
       const auto I_b = I(i);
       const auto w0_i = weights(i - s_idx, Derivative::VALUE);
@@ -74,15 +72,15 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
 
   } else {
     // Jacobian lambda definitions.
-    auto Jr = [&result, &offs](const Index& k, const Index& i) {
+    auto Jr = [&result, &offs](int k, int i) {
       return result.template jacobian<Angular::kNumParameters, Angular::kNumParameters>(k, i, Tangent::kAngularOffset, Tangent::kAngularOffset + offs);
     };
 
-    auto Jt = [&result, &offs](const Index& k, const Index& i) {
+    auto Jt = [&result, &offs](int k, int i) {
       return result.template jacobian<Linear::kNumParameters, Linear::kNumParameters>(k, i, Tangent::kLinearOffset, Tangent::kLinearOffset + offs);
     };
 
-    for (Index i = e_idx; s_idx < i; --i) {
+    for (auto i = e_idx; s_idx < i; --i) {
       const auto I_a = I(i - 1);
       const auto I_b = I(i);
       const auto w0_i = weights(i - s_idx, Derivative::VALUE);
@@ -123,7 +121,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
         Jt(Derivative::VELOCITY, i - 1).diagonal().array() = -w1_i;
 
         // Propagate velocity updates.
-        for (Index k = e_idx; i < k; --k) {
+        for (auto k = e_idx; i < k; --k) {
           Jr(Derivative::VELOCITY, k).noalias() += J_v_1 * Jr(Derivative::VALUE, k);
         }
 
@@ -148,7 +146,7 @@ auto SpatialInterpolator<SE3<TScalar>>::evaluate(Result<Output>& result, const E
           Jt(Derivative::ACCELERATION, i).diagonal().array() += w2_i;
 
           // Propagate acceleration updates.
-          for (Index k = e_idx; i < k; --k) {
+          for (auto k = e_idx; i < k; --k) {
             Jr(Derivative::ACCELERATION, k).noalias() += J_a_3 * Jr(Derivative::VALUE, k) + w1_i_i_R_d_ab_x * Jr(Derivative::VELOCITY, k);
           }
         }

@@ -137,9 +137,8 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, int derivat
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index> {
+auto ContinuousState<TOutput, TVariable>::iterators(const Time& time) const -> std::tuple<Iterator, Iterator, int> {
   DCHECK(range().contains(time)) << "Range does not contain time.";
-
   DCHECK_LE(layout_.outer_size, this->stamped_variables_.size());
   const auto itr = this->stamped_variables_.upper_bound(time);
   const auto begin = std::prev(itr, layout_.left_margin);

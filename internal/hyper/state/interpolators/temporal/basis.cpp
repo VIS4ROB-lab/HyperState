@@ -117,13 +117,13 @@ auto nonUniformRecursion(const TIndex& k, const TScalar* const* inputs, const TI
 }  // namespace
 
 template <typename TScalar, int TOrder>
-BasisInterpolator<TScalar, TOrder>::BasisInterpolator(const Index& order) {
+BasisInterpolator<TScalar, TOrder>::BasisInterpolator(int order) {
   CHECK_LE(0, order);
   setOrder(order);
 }
 
 template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::setOrder(const Index& order) -> void {
+auto BasisInterpolator<TScalar, TOrder>::setOrder(int order) -> void {
   if constexpr (TOrder < 0) {
     this->mixing_ = Mixing(order);
     this->polynomials_ = Base::Polynomials(order);
@@ -154,14 +154,14 @@ auto BasisInterpolator<TScalar, TOrder>::layout(bool uniform) const -> TemporalI
 }
 
 template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::Mixing(const Index& order) -> OrderMatrix {
-  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * uniformRecursion<TScalar, Index, TOrder>(order);
+auto BasisInterpolator<TScalar, TOrder>::Mixing(int order) -> OrderMatrix {
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * uniformRecursion<TScalar, int, TOrder>(order);
 }
 
 template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::mixing(const TScalar* const* inputs, const Index& idx) const -> OrderMatrix {
+auto BasisInterpolator<TScalar, TOrder>::mixing(const TScalar* const* inputs, int idx) const -> OrderMatrix {
   const auto order = this->order();
-  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * nonUniformRecursion<TScalar, Index, TOrder>(order, inputs, idx);
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * nonUniformRecursion<TScalar, int, TOrder>(order, inputs, idx);
 }
 
 template class BasisInterpolator<double, 4>;

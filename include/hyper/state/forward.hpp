@@ -25,7 +25,7 @@ class DiscreteState;
 template <typename TOutput, typename TVariable = TOutput>
 class ContinuousState;
 
-enum Derivative : Eigen::Index {
+enum Derivative {
   VALUE = 0,
   VELOCITY = 1,
   ACCELERATION = 2,
@@ -95,6 +95,7 @@ class Result {
   inline auto jacobians() { return storage_.rightCols((degree_ + 1) * num_parameters_); }
   inline auto jacobians() const { return storage_.rightCols((degree_ + 1) * num_parameters_); }
 
+ private:
   Value value_;
   MatrixNX<Tangent> storage_;
 

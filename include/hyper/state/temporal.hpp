@@ -60,13 +60,13 @@ class TemporalState {
   /// \param jacobian_type Jacobian type.
   inline auto setJacobianType(JacobianType jacobian_type) -> void { this->jacobian_type_ = jacobian_type; }
 
-  /// Retrieves the ambient input size.
-  /// \return Ambient input size.
-  [[nodiscard]] constexpr auto ambientInputSize() const { return StampedVariable::kNumParameters; }
+  /// Retrieves the (ambient) input size.
+  /// \return Input size.
+  [[nodiscard]] constexpr auto inputSize() const { return StampedVariable::kNumParameters; }
 
-  /// Retrieves the ambient output size.
-  /// \return Ambient output size.
-  [[nodiscard]] constexpr auto ambientOutputSize() const { return Output::kNumParameters; }
+  /// Retrieves the (ambient) output size.
+  /// \return Output size.
+  [[nodiscard]] constexpr auto outputSize() const { return Output::kNumParameters; }
 
   /// Retrieves the local input size.
   /// \return Local input size.
