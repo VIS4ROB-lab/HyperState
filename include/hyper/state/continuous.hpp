@@ -17,11 +17,13 @@ namespace hyper::state {
 template <typename TOutput, typename TVariable>
 class ContinuousState : public TemporalState<TOutput, TVariable> {
  public:
+  // Constants.
+  static constexpr auto kDefaultJacobianType = JacobianType::TANGENT_TO_STAMPED_MANIFOLD;
+
   // Definitions.
   using Base = TemporalState<TOutput, TVariable>;
 
   using Scalar = typename Base::Scalar;
-
   using Time = typename Base::Time;
   using Range = typename Base::Range;
 
@@ -32,13 +34,13 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
 
   using Output = typename Base::Output;
   using OutputTangent = typename Base::OutputTangent;
-  using StampedOutput = typename Base::StampedOutput;
-  using StampedOutputTangent = typename Base::StampedOutputTangent;
   using StampedVariables = typename Base::StampedVariables;
 
-  /// Constructor from interpolator.
+  /// Constructor from interpolator, uniformity flag and Jacobian type.
+  /// \param is_uniform Uniformity flag.
+  /// \param jacobian_type Jacobian type.
   /// \param interpolator Interpolator.
-  explicit ContinuousState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator);
+  explicit ContinuousState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator, bool is_uniform = true, JacobianType jacobian_type = kDefaultJacobianType);
 
   /// Updates the flag.
   /// \param flag Flag.
@@ -47,18 +49,6 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   /// Evaluates the range.
   /// \return Range.
   [[nodiscard]] auto range() const -> Range final;
-
-  /// Variable pointers accessor.
-  /// \return Pointers to (stamped) variables.
-  [[nodiscard]] auto variables() const -> std::vector<variables::Variable<Scalar>*> final;
-
-  /// Time-based variable pointers accessor.
-  /// \return Time-based pointers to (stamped) variables.
-  [[nodiscard]] auto variables(const Time& time) const -> std::vector<variables::Variable<Scalar>*> final;
-
-  /// Parameter blocks accessor.
-  /// \return Pointers to parameter blocks.
-  [[nodiscard]] auto parameterBlocks() const -> std::vector<Scalar*> final;
 
   /// Time-based parameter blocks accessor.
   /// \return Time-based pointers to parameter blocks.
@@ -77,13 +67,12 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   [[nodiscard]] auto layout() const -> const TemporalInterpolatorLayout&;
 
   /// Evaluates this.
-  /// \param time Query time.
-  /// \param derivative Query derivative.
-  /// \param jacobian_type Requested type of Jacobian.
-  /// \param stamped_variables Stamped variable pointers.
+  /// \param time Time.
+  /// \param derivative Derivative.
+  /// \param jacobian Flag.
+  /// \param stamped_variables External pointers.
   /// \return Result.
-  auto evaluate(const Time& time, const Index& derivative, JacobianType jacobian_type = JacobianType::NONE,  // NOLINT
-                const Scalar* const* stamped_variables = nullptr) const -> Result<TOutput> final;
+  auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_variables = nullptr) const -> Result<TOutput> final;  // NOLINT
 
  private:
   // Definitions.
@@ -92,7 +81,7 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   /// Retrieves the iterators for a time.
   /// \param time Query time.
   /// \return Iterators and number of elements between them.
-  auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, Index>;
+  auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, int>;
 
   TemporalInterpolatorLayout layout_;                           ///< Layout.
   std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_;  ///< Interpolator.

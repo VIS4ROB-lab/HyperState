@@ -14,19 +14,16 @@ using Scalar = double;
 using Interpolator = BasisInterpolator<Scalar, Eigen::Dynamic>;
 using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
-using Index = Eigen::Index;
-using IndexMatrix = std::map<Index, Matrix>;
-
 constexpr auto kTol = 1e-7;
 
 TEST(BasisInterpolatorTests, Theory) {
-  IndexMatrix theory;
+  std::map<int, Matrix> storage;
 
   Matrix M1 = Matrix::Identity(1, 1);
-  theory[1] = std::move(M1);
+  storage[1] = std::move(M1);
 
   Matrix M2 = Matrix::Identity(2, 2);
-  theory[2] = std::move(M2);
+  storage[2] = std::move(M2);
 
   Matrix M3 = Matrix::Zero(3, 3);
   M3(0, 0) = Scalar{1};
@@ -34,7 +31,7 @@ TEST(BasisInterpolatorTests, Theory) {
   M3(1, 1) = Scalar{1};
   M3(1, 2) = Scalar{-0.5};
   M3(2, 2) = Scalar{0.5};
-  theory[3] = std::move(M3);
+  storage[3] = std::move(M3);
 
   Matrix M4 = Matrix::Zero(4, 4);
   M4(0, 0) = Scalar{1};
@@ -47,16 +44,16 @@ TEST(BasisInterpolatorTests, Theory) {
   M4(1, 3) = Scalar{1.0 / 6.0};
   M4(2, 3) = Scalar{-2.0 / 6.0};
   M4(3, 3) = Scalar{1.0 / 6.0};
-  theory[4] = std::move(M4);
+  storage[4] = std::move(M4);
 
-  for (const auto& [k, M] : theory) {
+  for (const auto& [k, M] : storage) {
     EXPECT_TRUE(Interpolator::Mixing(k).isApprox(M, kTol));
   }
 }
 
 TEST(BasisInterpolatorTests, Duality) {
   constexpr auto kMaxDegree = 5;
-  for (Index i = 0; i < kMaxDegree; ++i) {
+  for (auto i = 0; i < kMaxDegree; ++i) {
     Interpolator interpolator{i + 1};
     const auto layout = interpolator.layout(false);
 

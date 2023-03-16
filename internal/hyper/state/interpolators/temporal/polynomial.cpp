@@ -8,15 +8,15 @@
 namespace hyper::state {
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(const Index& order) -> OrderMatrix {
+auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(int order) -> OrderMatrix {
   OrderMatrix m = OrderMatrix::Zero(order, order);
 
   m.row(0).setOnes();
   const auto degree = order - 1;
   auto next = degree;
 
-  for (Index i = 1; i < order; ++i) {
-    for (Index j = degree - next; j < order; ++j) {
+  for (auto i = 1; i < order; ++i) {
+    for (auto j = degree - next; j < order; ++j) {
       m(i, j) = static_cast<TScalar>(next - degree + j) * m(i - 1, j);
     }
     --next;
@@ -26,13 +26,12 @@ auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(const Index& order) ->
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::order() const -> Index {
+auto PolynomialInterpolator<TScalar, TOrder>::order() const -> int {
   return mixing_.rows();
 }
 
 template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const TScalar& ut, const TScalar& i_dt, const Index& derivative, const TScalar* const* inputs, const Index& idx) const
-    -> MatrixX<TScalar> {
+auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const TScalar& ut, const TScalar& i_dt, int derivative, const TScalar* const* inputs, int idx) const -> MatrixX<TScalar> {
   DCHECK_LE(0, ut);
   DCHECK_LE(ut, 1);
 
@@ -43,11 +42,11 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const TScalar& ut, const 
   Polynomial polynomial = Polynomial::Zero(order, num_derivatives);
 
   auto i_dt_i = TScalar{1};
-  for (Index i = 0; i < num_derivatives; ++i) {
+  for (auto i = 0; i < num_derivatives; ++i) {
     if (i < order) {
       auto ut_j = ut;
       polynomial(i, i) = i_dt_i * polynomials_(i, i);
-      for (Index j = i + 1; j < order; ++j) {
+      for (auto j = i + 1; j < order; ++j) {
         polynomial(j, i) = ut_j * i_dt_i * polynomials_(i, j);
         ut_j *= ut;
       }

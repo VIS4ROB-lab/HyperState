@@ -26,7 +26,7 @@ class TemporalInterpolator {
   /// \param inputs Input pointers (to stamped inputs).
   /// \param idx Time index into inputs.
   /// \return Weights.
-  virtual auto evaluate(const TScalar& ut, const TScalar& i_dt, const Index& derivative, const TScalar* const* inputs, const Index& idx) const -> MatrixX<TScalar> = 0;
+  virtual auto evaluate(const TScalar& ut, const TScalar& i_dt, int derivative, const TScalar* const* inputs, int idx) const -> MatrixX<TScalar> = 0;
 };
 
 }  // namespace hyper::state

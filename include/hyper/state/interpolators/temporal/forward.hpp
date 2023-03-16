@@ -5,8 +5,6 @@
 
 #include "hyper/state/forward.hpp"
 
-#include "hyper/state/definitions.hpp"
-
 namespace hyper::state {
 
 template <typename TScalar>
@@ -19,12 +17,12 @@ template <typename TScalar, int TOrder>
 class BasisInterpolator;
 
 struct TemporalInterpolatorLayout {
-  Index outer_size;
-  Index inner_size;
-  Index left_margin;
-  Index right_margin;
-  Index left_padding;
-  Index right_padding;
+  int outer_size;
+  int inner_size;
+  int left_margin;
+  int right_margin;
+  int left_padding;
+  int right_padding;
 };
 
 }  // namespace hyper::state
