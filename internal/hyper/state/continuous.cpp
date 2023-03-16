@@ -118,8 +118,8 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, int derivat
 
     // Evaluate output.
     auto result = Result<Output>{derivative, layout_.outer_size, this->localInputSize(), jacobian};
-    auto weights = interpolator_->evaluate(ut, i_dt, derivative, !this->is_uniform_ ? stamped_variables : nullptr, kStampOffset);
-    SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
+    const auto weights = interpolator_->evaluate(ut, i_dt, derivative, !this->is_uniform_ ? stamped_variables : nullptr, kStampOffset);
+    SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights.data(), stamped_variables, s_idx, e_idx, kVariableOffset);
 
     // Convert Jacobians.
     if (jacobian && (this->jacobian_type_ == JacobianType::TANGENT_TO_MANIFOLD || this->jacobian_type_ == JacobianType::TANGENT_TO_STAMPED_MANIFOLD)) {

@@ -44,7 +44,7 @@ class StateTests : public testing::Test {
   /// Set up.
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>();
-    state_ = std::make_unique<State>(std::move(interpolator), true, JacobianType::TANGENT_TO_STAMPED_MANIFOLD);
+    state_ = std::make_unique<State>(std::move(interpolator), true, JacobianType::TANGENT_TO_MANIFOLD);
     setRandomState();
   }
 

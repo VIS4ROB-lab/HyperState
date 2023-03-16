@@ -17,7 +17,7 @@ class SpatialInterpolator<variables::Cartesian<TScalar, TSize>> final {
   using Output = variables::Cartesian<TScalar, TSize>;
 
   /// Evaluates this.
-  static auto evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<Scalar>>& weights, const Scalar* const* inputs, int s_idx, int e_idx, int offs) -> void;
+  static auto evaluate(Result<Output>& result, const Scalar* weights, const Scalar* const* inputs, int s_idx, int e_idx, int offs) -> void;
 };
 
 template <typename TScalar, int TSize>

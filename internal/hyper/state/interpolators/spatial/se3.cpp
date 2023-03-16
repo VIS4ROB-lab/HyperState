@@ -9,8 +9,7 @@ namespace hyper::state {
 using namespace variables;
 
 template <typename TScalar>
-auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const Eigen::Ref<const MatrixX<TScalar>>& weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs)
-    -> void {
+auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs) -> void {
   // Definitions.
   using Rotation = typename Output::Rotation;
   using Translation = typename Output::Translation;
@@ -19,6 +18,11 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const Eigen::Ref
   using Angular = variables::Tangent<Rotation>;
   using Linear = variables::Tangent<Translation>;
   using AngularJacobian = variables::JacobianNM<Angular>;
+
+  // Map weights.
+  const auto n_rows = e_idx - s_idx + 1;
+  const auto n_cols = result.degree() + 1;
+  const auto W = Eigen::Map<const MatrixX<TScalar>>{weights, n_rows, n_cols};
 
   // Input lambda definition.
   auto I = [&inputs, &offs](int i) {
@@ -38,7 +42,7 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const Eigen::Ref
     for (auto i = e_idx; s_idx < i; --i) {
       const auto I_a = I(i - 1);
       const auto I_b = I(i);
-      const auto w0_i = weights(i - s_idx, Derivative::VALUE);
+      const auto w0_i = W(i - s_idx, Derivative::VALUE);
 
       const auto R_ab = I_a.rotation().gInv().gPlus(I_b.rotation());
       const auto d_ab = R_ab.gLog();
@@ -50,14 +54,14 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const Eigen::Ref
       if (Derivative::VALUE < result.degree()) {
         const auto i_R = R.gInv().gAdj();
         const auto i_R_d_ab = (i_R * d_ab).eval();
-        const auto w1_i = weights(i - s_idx, Derivative::VELOCITY);
+        const auto w1_i = W(i - s_idx, Derivative::VELOCITY);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
 
         v.angular() += w1_i_i_R_d_ab;
         v.linear() += w1_i * x_ab;
 
         if (Derivative::VELOCITY < result.degree()) {
-          const auto w2_i = weights(i - s_idx, Derivative::ACCELERATION);
+          const auto w2_i = W(i - s_idx, Derivative::ACCELERATION);
           a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());
           a.linear() += w2_i * x_ab;
         }
@@ -83,7 +87,7 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const Eigen::Ref
     for (auto i = e_idx; s_idx < i; --i) {
       const auto I_a = I(i - 1);
       const auto I_b = I(i);
-      const auto w0_i = weights(i - s_idx, Derivative::VALUE);
+      const auto w0_i = W(i - s_idx, Derivative::VALUE);
 
       AngularJacobian J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = I_a.rotation().gInv().gPlus(I_b.rotation());
@@ -106,7 +110,7 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const Eigen::Ref
       if (Derivative::VALUE < result.degree()) {
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto i_R_d_ab_x = i_R_d_ab.hat();
-        const auto w1_i = weights(i - s_idx, Derivative::VELOCITY);
+        const auto w1_i = W(i - s_idx, Derivative::VELOCITY);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
 
         v.angular() += w1_i_i_R_d_ab;
@@ -127,7 +131,7 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const Eigen::Ref
 
         // Acceleration update.
         if (Derivative::VELOCITY < result.degree()) {
-          const auto w2_i = weights(i - s_idx, Derivative::ACCELERATION);
+          const auto w2_i = W(i - s_idx, Derivative::ACCELERATION);
           const auto w1_i_i_R_d_ab_x = w1_i_i_R_d_ab.hat();
 
           a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());

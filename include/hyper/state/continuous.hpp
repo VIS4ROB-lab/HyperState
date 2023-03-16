@@ -38,7 +38,7 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   /// \param jacobian_type Jacobian type.
   /// \param interpolator Interpolator.
   explicit ContinuousState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator, bool is_uniform = true,
-                           JacobianType jacobian_type = JacobianType::TANGENT_TO_STAMPED_MANIFOLD);
+                           JacobianType jacobian_type = JacobianType::TANGENT_TO_MANIFOLD);
 
   /// Updates the flag.
   /// \param flag Flag.

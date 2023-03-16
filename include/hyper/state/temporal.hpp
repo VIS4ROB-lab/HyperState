@@ -46,15 +46,14 @@ class TemporalState {
   /// Constructor from uniformity flag and Jacobian type.
   /// \param is_uniform Uniformity flag.
   /// \param jacobian_type Jacobian type.
-  explicit TemporalState(bool is_uniform = true, JacobianType jacobian_type = JacobianType::TANGENT_TO_STAMPED_MANIFOLD)
-      : is_uniform_{is_uniform}, jacobian_type_{jacobian_type}, stamped_variables_{} {}
+  explicit TemporalState(bool is_uniform, JacobianType jacobian_type) : is_uniform_{is_uniform}, jacobian_type_{jacobian_type}, stamped_variables_{} {}
 
   /// Destructor.
   virtual ~TemporalState() = default;
 
   /// Jacobian type accessor.
   /// \return Jacobian type.
-  [[nodiscard]] auto jacobianType() const -> JacobianType { return jacobian_type_; }
+  [[nodiscard]] inline auto jacobianType() const -> JacobianType { return jacobian_type_; }
 
   /// Jacobian type setter.
   /// \param jacobian_type Jacobian type.
@@ -136,7 +135,7 @@ class TemporalState {
   virtual auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_variables = nullptr) const -> Result<TOutput> = 0;  // NOLINT
 
  protected:
-  bool is_uniform_;                     ///< Flag.
+  bool is_uniform_;                     ///< Uniformity flag.
   JacobianType jacobian_type_;          ///< Jacobian type.
   StampedVariables stamped_variables_;  ///< Stamped variables.
 };
