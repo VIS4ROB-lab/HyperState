@@ -78,12 +78,12 @@ class ContinuousState : public TemporalState<TOutput, TVariable> {
   [[nodiscard]] auto layout() const -> const TemporalInterpolatorLayout&;
 
   /// Evaluates this.
-  /// \param time Query time.
-  /// \param derivative Query derivative.
-  /// \param stamped_variables Stamped variable pointers.
-  /// \param jacobian Jacobian flag.
+  /// \param time Time.
+  /// \param derivative Derivative.
+  /// \param jacobian Flag.
+  /// \param stamped_variables External pointers.
   /// \return Result.
-  auto evaluate(const Time& time, int derivative, const Scalar* const* stamped_variables = nullptr, bool jacobian = false) const -> Result<TOutput> final;  // NOLINT
+  auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_variables = nullptr) const -> Result<TOutput> final;  // NOLINT
 
  private:
   // Definitions.

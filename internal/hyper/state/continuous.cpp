@@ -92,14 +92,15 @@ auto ContinuousState<TOutput, TVariable>::layout() const -> const TemporalInterp
 }
 
 template <typename TOutput, typename TVariable>
-auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, int derivative, const Scalar* const* stamped_variables, bool jacobian) const -> Result<TOutput> {
+auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, int derivative, bool jacobian, const Scalar* const* stamped_variables) const -> Result<TOutput> {
   if (!stamped_variables) {
     const auto& [begin, end, num_variables] = iterators(time);
     std::vector<const Scalar*> ptrs;
     ptrs.reserve(num_variables);
     std::transform(begin, end, std::back_inserter(ptrs), [](const auto& element) { return element.data(); });
     DCHECK_EQ(ptrs.size(), num_variables);
-    return evaluate(time, derivative, ptrs.data(), jacobian);
+    return evaluate(time, derivative, jacobian, ptrs.data());
+
   } else {
     // Constants.
     constexpr auto kStampOffset = StampedVariable::kStampOffset;
@@ -115,24 +116,13 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, int derivat
     const auto i_dt = Scalar{1} / (stamped_variables[idx + 1][kStampOffset] - stamped_variables[idx][kStampOffset]);
     const auto ut = dt * i_dt;
 
-    // Evaluate weights.
-    const auto weights = interpolator_->evaluate(ut, i_dt, derivative, !this->is_uniform_ ? stamped_variables : nullptr, kStampOffset);
-
     // Evaluate output.
-    if (this->jacobian_type_ == JacobianType::TANGENT_TO_TANGENT || this->jacobian_type_ == JacobianType::TANGENT_TO_STAMPED_TANGENT) {
-      // Evaluation with tangent to (stamped) tangent Jacobians.
-      const auto num_parameters = this->jacobian_type_ == JacobianType::TANGENT_TO_TANGENT ? VariableTangent::kNumParameters : StampedVariableTangent::kNumParameters;
-      auto result = Result<Output>{derivative, layout_.outer_size, num_parameters, jacobian};
-      SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
-      return result;
+    auto result = Result<Output>{derivative, layout_.outer_size, this->localInputSize(), jacobian};
+    auto weights = interpolator_->evaluate(ut, i_dt, derivative, !this->is_uniform_ ? stamped_variables : nullptr, kStampOffset);
+    SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
 
-    } else {
-      // Evaluation with tangent to (stamped) manifold Jacobians.
-      const auto num_parameters = this->jacobian_type_ == JacobianType::TANGENT_TO_MANIFOLD ? Variable::kNumParameters : StampedVariable::kNumParameters;
-      auto result = Result<Output>{derivative, layout_.outer_size, num_parameters, jacobian};
-      SpatialInterpolator<TOutput, TVariable>::evaluate(result, weights, stamped_variables, s_idx, e_idx, kVariableOffset);
-
-      // Lift tangent to parameter Jacobians.
+    // Convert Jacobians.
+    if (jacobian && (this->jacobian_type_ == JacobianType::TANGENT_TO_MANIFOLD || this->jacobian_type_ == JacobianType::TANGENT_TO_STAMPED_MANIFOLD)) {
       for (auto i = s_idx; i <= e_idx; ++i) {
         const auto J_a = JacobianAdapter<Variable>(stamped_variables[i] + kVariableOffset);
         for (auto k = 0; k <= derivative; ++k) {
@@ -140,9 +130,9 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, int derivat
               result.template jacobian<OutputTangent::kNumParameters, VariableTangent::kNumParameters>(k, i, 0, kVariableOffset) * J_a;
         }
       }
-
-      return result;
     }
+
+    return result;
   }
 }
 

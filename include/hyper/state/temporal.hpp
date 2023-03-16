@@ -128,12 +128,12 @@ class TemporalState {
   [[nodiscard]] virtual auto parameterBlocks(const Time& time) const -> std::vector<Scalar*> = 0;
 
   /// Evaluates this.
-  /// \param time Query time.
-  /// \param derivative Query derivative.
-  /// \param stamped_variables Stamped variable pointers.
-  /// \param jacobian Jacobian flag.
+  /// \param time Time.
+  /// \param derivative Derivative.
+  /// \param jacobian Flag.
+  /// \param stamped_variables External pointers.
   /// \return Result.
-  virtual auto evaluate(const Time& time, int derivative, const Scalar* const* stamped_variables = nullptr, bool jacobian = false) const -> Result<TOutput> = 0;  // NOLINT
+  virtual auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_variables = nullptr) const -> Result<TOutput> = 0;  // NOLINT
 
  protected:
   bool is_uniform_;                     ///< Flag.

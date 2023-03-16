@@ -55,9 +55,9 @@ class Result {
         has_jacobians_{has_jacobians} {
     if (has_jacobians) {
       const auto order_ = degree_ + 1;
-      storage_.setZero(Eigen::NoChange, degree_ + order_ * num_parameters_);
+      storage_.setZero(kNumTangentParameters, degree_ + order_ * num_parameters_);
     } else {
-      storage_.setZero(Eigen::NoChange, degree_);
+      storage_.setZero(kNumTangentParameters, degree_);
     }
   }
 
