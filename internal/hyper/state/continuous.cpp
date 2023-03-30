@@ -7,7 +7,6 @@
 
 #include "hyper/matrix.hpp"
 #include "hyper/state/continuous.hpp"
-#include "hyper/variables/adapters.hpp"
 #include "hyper/variables/groups/se3.hpp"
 #include "hyper/variables/stamped.hpp"
 
@@ -97,7 +96,7 @@ auto ContinuousState<TOutput, TVariable>::evaluate(const Time& time, int derivat
     // Convert Jacobians.
     if (jacobian && (this->jacobian_type_ == JacobianType::TANGENT_TO_MANIFOLD || this->jacobian_type_ == JacobianType::TANGENT_TO_STAMPED_MANIFOLD)) {
       for (auto i = s_idx; i <= e_idx; ++i) {
-        const auto J_a = JacobianAdapter<Variable>(stamped_variables[i] + kVariableOffset);
+        const auto J_a = Eigen::Map<const Variable>{stamped_variables[i] + kVariableOffset}.tMinusJacobian();
         for (auto k = 0; k <= derivative; ++k) {
           result.template jacobian<OutputTangent::kNumParameters, Variable::kNumParameters>(k, i, 0, kVariableOffset) =
               result.template jacobian<OutputTangent::kNumParameters, VariableTangent::kNumParameters>(k, i, 0, kVariableOffset) * J_a;

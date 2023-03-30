@@ -9,7 +9,7 @@
 
 #include "hyper/state/continuous.hpp"
 #include "hyper/state/interpolators/interpolators.hpp"
-#include "hyper/variables/adapters.hpp"
+#include "hyper/variables/groups/se3.hpp"
 
 namespace hyper::state::tests {
 
@@ -72,7 +72,7 @@ class StateTests : public testing::Test {
       if (i == 0) {
         tau = d_result.value().tMinus(result.value()) / kInc;
       } else {
-        tau = (d_result.tangent(i - 1) - result.tangent(i - 1)) / kInc;
+        tau = d_result.tangent(i - 1).tMinus(result.tangent(i - 1)) / kInc;
       }
       EXPECT_TRUE(tau.isApprox(result.tangent(i), kTol));
     }
@@ -104,13 +104,13 @@ class StateTests : public testing::Test {
           if (i == 0) {
             Jn_i.col(j * local_input_size + k) = d_result.value().tMinus(result.value()) / kInc;
           } else {
-            Jn_i.col(j * local_input_size + k) = (d_result.tangent(i - 1) - result.tangent(i - 1)) / kInc;
+            Jn_i.col(j * local_input_size + k) = d_result.tangent(i - 1).tMinus(result.tangent(i - 1)) / kInc;
           }
         }
 
         // Convert Jacobians.
         if (state_->jacobianType() == JacobianType::TANGENT_TO_MANIFOLD || state_->jacobianType() == JacobianType::TANGENT_TO_STAMPED_MANIFOLD) {
-          const auto J_a = variables::JacobianAdapter<Variable>(stamped_variables[j] + StampedVariable::kVariableOffset);
+          const auto J_a = Eigen::Map<Variable>{stamped_variables[j] + StampedVariable::kVariableOffset}.tMinusJacobian();
           Jn_i.template block<OutputTangent::kNumParameters, Variable::kNumParameters>(0, j * local_input_size + StampedVariable::kVariableOffset) =
               Jn_i.template block<OutputTangent::kNumParameters, VariableTangent::kNumParameters>(0, j * local_input_size + StampedVariable::kVariableOffset) * J_a;
         }
