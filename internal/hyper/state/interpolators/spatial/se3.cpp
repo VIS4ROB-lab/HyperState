@@ -2,7 +2,7 @@
 /// the 'LICENSE' file, which is part of this repository.
 
 #include "hyper/state/interpolators/spatial/se3.hpp"
-#include "hyper/variables/groups/se3.hpp"
+#include "hyper/variables/se3.hpp"
 
 namespace hyper::state {
 
@@ -17,7 +17,7 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
 
   using Angular = variables::Tangent<Rotation>;
   using Linear = variables::Tangent<Translation>;
-  using AngularJacobian = variables::JacobianNM<Angular>;
+  using AngularJacobian = hyper::JacobianNM<Angular>;
 
   // Map weights.
   const auto n_rows = e_idx - s_idx + 1;

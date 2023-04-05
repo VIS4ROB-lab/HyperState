@@ -2,7 +2,7 @@
 /// the 'LICENSE' file, which is part of this repository.
 
 #include "hyper/state/interpolators/spatial/su2.hpp"
-#include "hyper/variables/groups/su2.hpp"
+#include "hyper/variables/su2.hpp"
 
 namespace hyper::state {
 
@@ -12,7 +12,7 @@ template <typename TScalar>
 auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs) -> void {
   // Definitions.
   using Tangent = variables::Tangent<Output>;
-  using Jacobian = variables::JacobianNM<Tangent>;
+  using Jacobian = hyper::JacobianNM<Tangent>;
 
   // Map weights.
   const auto n_rows = e_idx - s_idx + 1;

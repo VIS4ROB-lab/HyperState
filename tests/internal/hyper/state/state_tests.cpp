@@ -9,14 +9,14 @@
 
 #include "hyper/state/continuous.hpp"
 #include "hyper/state/interpolators/interpolators.hpp"
-#include "hyper/variables/groups/se3.hpp"
+#include "hyper/variables/se3.hpp"
 
 namespace hyper::state::tests {
 
 using namespace variables;
 
 using Interpolator = BasisInterpolator<double, 4>;
-using StateTestTypes = ::testing::Types<std::tuple<ContinuousState<Position<double>>, Interpolator>, std::tuple<ContinuousState<SE3<double>>, Interpolator>,
+using StateTestTypes = ::testing::Types<std::tuple<ContinuousState<R3<double>>, Interpolator>, std::tuple<ContinuousState<SE3<double>>, Interpolator>,
                                         std::tuple<ContinuousState<SU2<double>>, Interpolator>>;
 
 template <typename TArgs>

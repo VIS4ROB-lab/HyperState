@@ -4,7 +4,7 @@
 #pragma once
 
 #include "hyper/state/interpolators/forward.hpp"
-#include "hyper/variables/groups/forward.hpp"
+#include "hyper/variables/forward.hpp"
 
 namespace hyper::state {
 

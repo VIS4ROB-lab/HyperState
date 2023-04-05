@@ -8,8 +8,9 @@
 
 #include <glog/logging.h>
 
-#include "hyper/variables/groups/forward.hpp"
-#include "hyper/variables/jacobian.hpp"
+#include "hyper/variables/forward.hpp"
+
+#include "hyper/jacobian.hpp"
 
 namespace hyper::state {
 
