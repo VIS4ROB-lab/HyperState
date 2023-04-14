@@ -33,13 +33,10 @@ class StateTests : public testing::Test {
 
   using Scalar = typename State::Scalar;
 
-  using Variable = typename State::Variable;
-  using VariableTangent = typename State::VariableTangent;
-  using StampedVariable = typename State::StampedVariable;
-  using StampedVariableTangent = typename State::StampedVariableTangent;
-
-  using Output = typename State::Output;
-  using OutputTangent = typename State::OutputTangent;
+  using Element = typename State::Element;
+  using ElementTangent = typename State::ElementTangent;
+  using StampedElement = typename State::StampedElement;
+  using StampedElementTangent = typename State::StampedElementTangent;
 
   /// Set up.
   auto SetUp() -> void final {
@@ -52,10 +49,10 @@ class StateTests : public testing::Test {
   auto setRandomState() -> void {
     const auto num_inputs = state_->layout().outer_size;
     for (auto i = 0; i < num_inputs + Eigen::internal::random<int>(10, 20); ++i) {
-      StampedVariable stamped_variable;
-      stamped_variable.time() = 0.25 * i;
-      stamped_variable.variable() = Variable::Random();
-      state_->elements().insert(stamped_variable);
+      StampedElement stamped_element;
+      stamped_element.time() = 0.25 * i;
+      stamped_element.variable() = Element::Random();
+      state_->stampedElements().insert(stamped_element);
     }
   }
 
@@ -68,7 +65,7 @@ class StateTests : public testing::Test {
     const auto d_result = state_->evaluate(time + kInc, degree);
 
     for (auto i = 0; i < degree; ++i) {
-      OutputTangent tau;
+      ElementTangent tau;
       if (i == 0) {
         tau = d_result.value().tMinus(result.value()) / kInc;
       } else {
@@ -85,34 +82,34 @@ class StateTests : public testing::Test {
     for (auto i = 0; i <= degree; ++i) {
       // Evaluate analytic Jacobian.
       const auto time = state_->range().sample();
-      auto stamped_variables = state_->parameterBlocks(time);
       const auto result = state_->evaluate(time, i, true);
+      auto parameter_blocks = state_->parameterBlocks(time);
 
       JacobianX<Scalar> Jn_i;
-      const auto local_input_size = state_->localInputSize();
-      Jn_i.setZero(OutputTangent::kNumParameters, stamped_variables.size() * local_input_size);
+      const auto tangent_input_size = state_->tangentInputSize();
+      Jn_i.setZero(ElementTangent::kNumParameters, parameter_blocks.size() * tangent_input_size);
 
-      for (auto j = std::size_t{0}; j < stamped_variables.size(); ++j) {
-        for (auto k = 0; k < VariableTangent::kNumParameters; ++k) {
-          auto d_input_j = Eigen::Map<StampedVariable>{stamped_variables[j]}.tPlus(kInc * StampedVariableTangent::Unit(k));
+      for (auto j = std::size_t{0}; j < parameter_blocks.size(); ++j) {
+        for (auto k = 0; k < ElementTangent::kNumParameters; ++k) {
+          auto d_input_j = Eigen::Map<StampedElement>{parameter_blocks[j]}.tPlus(kInc * StampedElementTangent::Unit(k));
 
-          auto tmp = stamped_variables[j];
-          stamped_variables[j] = d_input_j.data();
-          const auto d_result = state_->evaluate(time, i, false, stamped_variables.data());
-          stamped_variables[j] = tmp;
+          auto tmp = parameter_blocks[j];
+          parameter_blocks[j] = d_input_j.data();
+          const auto d_result = state_->evaluate(time, i, false, parameter_blocks.data());
+          parameter_blocks[j] = tmp;
 
           if (i == 0) {
-            Jn_i.col(j * local_input_size + k) = d_result.value().tMinus(result.value()) / kInc;
+            Jn_i.col(j * tangent_input_size + k) = d_result.value().tMinus(result.value()) / kInc;
           } else {
-            Jn_i.col(j * local_input_size + k) = d_result.tangent(i - 1).tMinus(result.tangent(i - 1)) / kInc;
+            Jn_i.col(j * tangent_input_size + k) = d_result.tangent(i - 1).tMinus(result.tangent(i - 1)) / kInc;
           }
         }
 
         // Convert Jacobians.
         if (state_->jacobianType() == JacobianType::TANGENT_TO_MANIFOLD || state_->jacobianType() == JacobianType::TANGENT_TO_STAMPED_MANIFOLD) {
-          const auto J_a = Eigen::Map<Variable>{stamped_variables[j] + StampedVariable::kVariableOffset}.tMinusJacobian();
-          Jn_i.template block<OutputTangent::kNumParameters, Variable::kNumParameters>(0, j * local_input_size + StampedVariable::kVariableOffset) =
-              Jn_i.template block<OutputTangent::kNumParameters, VariableTangent::kNumParameters>(0, j * local_input_size + StampedVariable::kVariableOffset) * J_a;
+          const auto J_a = Eigen::Map<Element>{parameter_blocks[j] + StampedElement::kVariableOffset}.tMinusJacobian();
+          Jn_i.template block<ElementTangent::kNumParameters, Element::kNumParameters>(0, j * tangent_input_size + StampedElement::kVariableOffset) =
+              Jn_i.template block<ElementTangent::kNumParameters, ElementTangent::kNumParameters>(0, j * tangent_input_size + StampedElement::kVariableOffset) * J_a;
         }
       }
 

@@ -14,16 +14,16 @@
 
 namespace hyper::state {
 
-template <typename TLabel, typename TVariable>
+template <typename TLabel, typename TElement>
 class LabeledState;
 
-template <typename TOutput, typename TVariable = TOutput>
+template <typename TElement>
 class TemporalState;
 
-template <typename TOutput>
+template <typename TElement>
 class DiscreteState;
 
-template <typename TOutput, typename TVariable = TOutput>
+template <typename TElement>
 class ContinuousState;
 
 enum Derivative {

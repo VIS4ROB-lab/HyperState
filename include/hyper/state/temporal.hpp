@@ -17,36 +17,39 @@
 
 namespace hyper::state {
 
-template <typename TOutput, typename TVariable>
+template <typename TElement>
 class TemporalState {
  public:
+  // Constants.
+  static constexpr auto kStatePartitionIndex = 0;
+  static constexpr auto kNumPartitions = kStatePartitionIndex + 1;
+
+  static constexpr auto kDefaultJacobianType = JacobianType::TANGENT_TO_STAMPED_MANIFOLD;
+
   // Definitions.
-  using Time = typename TOutput::Scalar;
-  using Scalar = typename TOutput::Scalar;
+  using Time = typename TElement::Scalar;
+  using Scalar = typename TElement::Scalar;
   using Range = state::Range<Time, BoundaryPolicy::INCLUSIVE>;
 
-  using Variable = TVariable;
-  using VariableTangent = variables::Tangent<TVariable>;
-  using StampedVariable = variables::Stamped<TVariable>;
-  using StampedVariableTangent = variables::Stamped<VariableTangent>;
+  using Element = TElement;
+  using ElementTangent = variables::Tangent<TElement>;
+  using StampedElement = variables::Stamped<TElement>;
+  using StampedElementTangent = variables::Stamped<ElementTangent>;
 
-  using Output = TOutput;
-  using OutputTangent = variables::Tangent<Output>;
-
-  // Stamped variable compare.
-  struct StampedVariableCompare {
+  // Stamped element compare.
+  struct StampedElementCompare {
     using is_transparent = std::true_type;
-    auto operator()(const StampedVariable& lhs, const StampedVariable& rhs) const -> bool { return lhs.time() < rhs.time(); }
-    auto operator()(const StampedVariable& lhs, const Time& rhs) const -> bool { return lhs.time() < rhs; }
-    auto operator()(const Time& lhs, const StampedVariable& rhs) const -> bool { return lhs < rhs.time(); }
+    auto operator()(const StampedElement& lhs, const StampedElement& rhs) const -> bool { return lhs.time() < rhs.time(); }
+    auto operator()(const StampedElement& lhs, const Time& rhs) const -> bool { return lhs.time() < rhs; }
+    auto operator()(const Time& lhs, const StampedElement& rhs) const -> bool { return lhs < rhs.time(); }
   };
 
-  using StampedVariables = std::set<StampedVariable, StampedVariableCompare>;
+  using StampedElements = std::set<StampedElement, StampedElementCompare>;
 
   /// Constructor from uniformity flag and Jacobian type.
   /// \param is_uniform Uniformity flag.
   /// \param jacobian_type Jacobian type.
-  explicit TemporalState(bool is_uniform, JacobianType jacobian_type) : is_uniform_{is_uniform}, jacobian_type_{jacobian_type}, stamped_variables_{} {}
+  explicit TemporalState(bool is_uniform, JacobianType jacobian_type) : is_uniform_{is_uniform}, jacobian_type_{jacobian_type}, stamped_elements_{} {}
 
   /// Destructor.
   virtual ~TemporalState() = default;
@@ -61,24 +64,24 @@ class TemporalState {
 
   /// Retrieves the (ambient) input size.
   /// \return Input size.
-  [[nodiscard]] constexpr auto inputSize() const { return StampedVariable::kNumParameters; }
+  [[nodiscard]] constexpr auto ambientInputSize() const { return StampedElement::kNumParameters; }
 
   /// Retrieves the (ambient) output size.
   /// \return Output size.
-  [[nodiscard]] constexpr auto outputSize() const { return Output::kNumParameters; }
+  [[nodiscard]] constexpr auto ambientOutputSize() const { return Element::kNumParameters; }
 
   /// Retrieves the local input size.
   /// \return Local input size.
-  [[nodiscard]] inline auto localInputSize() const {
+  [[nodiscard]] inline auto tangentInputSize() const {
     switch (this->jacobian_type_) {
       case JacobianType::TANGENT_TO_TANGENT:
-        return VariableTangent::kNumParameters;
+        return ElementTangent::kNumParameters;
       case JacobianType::TANGENT_TO_STAMPED_TANGENT:
-        return StampedVariableTangent::kNumParameters;
+        return StampedElementTangent::kNumParameters;
       case JacobianType::TANGENT_TO_MANIFOLD:
-        return Variable::kNumParameters;
+        return Element::kNumParameters;
       case JacobianType::TANGENT_TO_STAMPED_MANIFOLD:
-        return StampedVariable::kNumParameters;
+        return StampedElement::kNumParameters;
       default: {
         LOG(FATAL) << "Unknown Jacobian type.";
         return -1;
@@ -88,7 +91,7 @@ class TemporalState {
 
   /// Retrieves the local output size.
   /// \return Local output size.
-  [[nodiscard]] constexpr auto localOutputSize() const { return OutputTangent::kNumParameters; }
+  [[nodiscard]] constexpr auto tangentOutputSize() const { return ElementTangent::kNumParameters; }
 
   /// Flag accessor.
   /// \return Flag.
@@ -104,28 +107,33 @@ class TemporalState {
 
   /// Elements accessor.
   /// \return Elements.
-  inline auto elements() const -> const StampedVariables& { return stamped_variables_; }
+  inline auto stampedElements() const -> const StampedElements& { return stamped_elements_; }
 
   /// Elements modifier.
   /// \return Elements.
-  inline auto elements() -> StampedVariables& { return stamped_variables_; }
+  inline auto stampedElements() -> StampedElements& { return const_cast<StampedElements&>(std::as_const(*this).stampedElements()); }
+
+  /// Time-based partition accessor.
+  /// \param time Query time.
+  /// \return Time-based partition.
+  [[nodiscard]] virtual auto partition(const Time& time) const -> variables::Partition<Scalar*> = 0;
 
   /// Time-based parameter blocks accessor.
-  /// \return Time-based pointers to parameter blocks.
+  /// \return Time-based parameter blocks.
   [[nodiscard]] virtual auto parameterBlocks(const Time& time) const -> std::vector<Scalar*> = 0;
 
   /// Evaluates this.
   /// \param time Time.
   /// \param derivative Derivative.
   /// \param jacobian Flag.
-  /// \param stamped_variables External pointers.
+  /// \param stamped_elements External pointers.
   /// \return Result.
-  virtual auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_variables = nullptr) const -> Result<TOutput> = 0;  // NOLINT
+  virtual auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_elements = nullptr) const -> Result<TElement> = 0;  // NOLINT
 
  protected:
-  bool is_uniform_;                     ///< Uniformity flag.
-  JacobianType jacobian_type_;          ///< Jacobian type.
-  StampedVariables stamped_variables_;  ///< Stamped variables.
+  bool is_uniform_;                   ///< Uniformity flag.
+  JacobianType jacobian_type_;        ///< Jacobian type.
+  StampedElements stamped_elements_;  ///< Stamped elements.
 };
 
 }  // namespace hyper::state
