@@ -130,7 +130,7 @@ auto ContinuousState<TElement>::iterators(const Time& time) const -> std::tuple<
   return {begin, end, layout_.outer_size};
 }
 
-template class ContinuousState<Cartesian<double, 3>>;
+template class ContinuousState<R3<double>>;
 template class ContinuousState<SU2<double>>;
 template class ContinuousState<SE3<double>>;
 

@@ -4,7 +4,6 @@
 #pragma once
 
 #include "hyper/state/interpolators/forward.hpp"
-#include "hyper/variables/forward.hpp"
 
 namespace hyper::state {
 
@@ -19,8 +18,5 @@ class SpatialInterpolator<variables::SU2<TScalar>> final {
   /// Evaluates this.
   static auto evaluate(Result<Output>& result, const Scalar* weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs) -> void;
 };
-
-template <typename TScalar>
-using SU2Interpolator = SpatialInterpolator<variables::SU2<TScalar>>;
 
 }  // namespace hyper::state

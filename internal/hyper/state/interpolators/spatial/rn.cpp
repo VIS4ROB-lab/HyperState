@@ -1,13 +1,13 @@
 /// This file is subject to the terms and conditions defined in
 /// the 'LICENSE' file, which is part of this repository.
 
-#include "hyper/state/interpolators/spatial/cartesian.hpp"
-#include "hyper/variables/cartesian.hpp"
+#include "hyper/state/interpolators/spatial/rn.hpp"
+#include "hyper/variables/rn.hpp"
 
 namespace hyper::state {
 
-template <typename TScalar, int TSize>
-auto CartesianInterpolator<TScalar, TSize>::evaluate(Result<Output>& result, const TScalar* weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs) -> void {
+template <typename TScalar, int N>
+auto RnInterpolator<TScalar, N>::evaluate(Result<Output>& result, const TScalar* weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs) -> void {
   // Map weights.
   const auto n_rows = e_idx - s_idx + 1;
   const auto n_cols = result.degree() + 1;
@@ -49,6 +49,6 @@ auto CartesianInterpolator<TScalar, TSize>::evaluate(Result<Output>& result, con
   }
 }
 
-template class SpatialInterpolator<variables::Cartesian<double, 3>>;
+template class SpatialInterpolator<variables::R3<double>>;
 
 }  // namespace hyper::state
