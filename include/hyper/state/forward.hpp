@@ -10,7 +10,7 @@
 
 #include "hyper/variables/forward.hpp"
 
-#include "hyper/jacobian.hpp"
+#include "hyper/matrix.hpp"
 
 namespace hyper::state {
 

@@ -10,7 +10,7 @@
 
 #include "hyper/state/forward.hpp"
 
-#include "hyper/jacobian.hpp"
+#include "hyper/matrix.hpp"
 #include "hyper/state/range.hpp"
 #include "hyper/variables/stamped.hpp"
 #include "hyper/variables/variable.hpp"
