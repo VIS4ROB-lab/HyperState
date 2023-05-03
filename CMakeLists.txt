@@ -22,7 +22,7 @@ add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCE_FILES})
 add_library(Hyper::State ALIAS ${PROJECT_NAME})
 
 # Fetch (external) content.
-FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG ed79c43884dcaa45b3f70547a9edd6ef576b2978)
+FetchContent_Declare(HyperVariables GIT_REPOSITORY https://github.com/VIS4ROB-lab/HyperVariables.git GIT_TAG b93a79f0e42fa1b11cc0e7233247aeb465e32dd1)
 FetchContent_MakeAvailable(HyperVariables)
 
 # Find Eigen target if not present.
