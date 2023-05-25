@@ -16,8 +16,8 @@ namespace hyper::state::tests {
 using namespace variables;
 
 using Interpolator = BasisInterpolator<double, 4>;
-using StateTestTypes = ::testing::Types<std::tuple<ContinuousState<R3<double>>, Interpolator>, std::tuple<ContinuousState<SE3<double>>, Interpolator>,
-                                        std::tuple<ContinuousState<SU2<double>>, Interpolator>>;
+using StateTestTypes = ::testing::Types<std::tuple<ContinuousState<R3<double>>, Interpolator>, std::tuple<ContinuousState<SU2<double>>, Interpolator>,
+                                        std::tuple<ContinuousState<SE3<double>>, Interpolator>>;
 
 template <typename TArgs>
 class StateTests : public testing::Test {

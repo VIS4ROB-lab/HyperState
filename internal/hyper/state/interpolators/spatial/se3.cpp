@@ -18,6 +18,7 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
   using Angular = variables::Tangent<Rotation>;
   using Linear = variables::Tangent<Translation>;
   using AngularJacobian = hyper::JacobianNM<Angular>;
+  // using LinearJacobian = hyper::JacobianNM<Linear>;
 
   // Map weights.
   const auto n_rows = e_idx - s_idx + 1;
@@ -29,50 +30,57 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
     return Eigen::Map<const Input>{inputs[i] + offs};
   };
 
-  // Allocate accumulators.
-  Rotation R = Rotation::Identity();
-  Translation x = Translation::Zero();
-  Tangent v = Tangent::Zero();
-  Tangent a = Tangent::Zero();
+  // Initialize result.
+  auto& x = result.value();
+  x = Output{Rotation::Identity(), Translation::Zero()};
+  if (0 < result.degree()) {
+    result.velocity().setZero();
+    if (1 < result.degree()) {
+      result.acceleration().setZero();
+    }
+  }
 
   if (!result.hasJacobians()) {
-    // Retrieves first input.
-    const auto I_0 = I(s_idx);
+    for (auto j = e_idx; s_idx < j; --j) {
+      const auto i = j - 1;
+      const auto k = j - s_idx;
 
-    for (auto i = e_idx; s_idx < i; --i) {
-      const auto I_a = I(i - 1);
-      const auto I_b = I(i);
-      const auto w0_i = W(i - s_idx, Derivative::VALUE);
+      const auto w_0 = W(k, 0);
+      const auto I_i = I(i);
+      const auto I_j = I(j);
+      const Rotation R_ij = I(i).rotation().gInv().gPlus(I(j).rotation());
+      const Translation x_ij = I_j.translation() - I_i.translation();
+      const Angular d_i = R_ij.gLog();
+      const Angular w_i = w_0 * d_i;
+      const Rotation R_i = w_i.gExp();
 
-      const auto R_ab = I_a.rotation().gInv().gPlus(I_b.rotation());
-      const auto d_ab = R_ab.gLog();
-      const auto x_ab = Translation{I_b.translation() - I_a.translation()};
-      const auto w_ab = Angular{w0_i * d_ab};
-      const auto R_i = w_ab.gExp();
-      const auto x_i = Translation{w0_i * x_ab};
+      if (0 < result.degree()) {
+        const auto w_1 = W(k, 1);
+        const auto i_R = x.rotation().gInv();
+        const Angular i_R_d_i = i_R.act(d_i);
+        const Angular v_i = w_1 * i_R_d_i;
 
-      if (Derivative::VALUE < result.degree()) {
-        const auto i_R = R.gInv().gAdj();
-        const auto i_R_d_ab = (i_R * d_ab).eval();
-        const auto w1_i = W(i - s_idx, Derivative::VELOCITY);
-        const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
+        auto v = result.velocity();
+        v.angular().noalias() += v_i;
+        v.linear().noalias() += w_1 * x_ij;
 
-        v.angular() += w1_i_i_R_d_ab;
-        v.linear() += w1_i * x_ab;
-
-        if (Derivative::VELOCITY < result.degree()) {
-          const auto w2_i = W(i - s_idx, Derivative::ACCELERATION);
-          a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());
-          a.linear() += w2_i * x_ab;
+        if (1 < result.degree()) {
+          const auto w_2 = W(k, 2);
+          auto a = result.acceleration();
+          a.angular().noalias() += w_2 * i_R_d_i + v_i.cross(result.velocity().angular());
+          a.linear().noalias() += w_2 * x_ij;
         }
       }
 
-      R = R_i * R;
-      x = x_i + x;
+      // Update value.
+      x.rotation() = R_i * x.rotation();
+      x.translation() += w_0 * x_ij;
     }
 
-    R = I_0.rotation() * R;
-    x = I_0.translation() + x;
+    // Update value.
+    const auto I_s = I(s_idx);
+    x.rotation() = I_s.rotation() * x.rotation();
+    x.translation() += I_s.translation();
 
   } else {
     // Jacobian lambda definitions.
@@ -87,7 +95,7 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
     for (auto i = e_idx; s_idx < i; --i) {
       const auto I_a = I(i - 1);
       const auto I_b = I(i);
-      const auto w0_i = W(i - s_idx, Derivative::VALUE);
+      const auto w0_i = W(i - s_idx, 0);
 
       AngularJacobian J_R_i_w_ab, J_d_ab_R_ab;
       const auto R_ab = I_a.rotation().gInv().gPlus(I_b.rotation());
@@ -97,22 +105,23 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
       const auto R_i = w_ab.gExp(J_R_i_w_ab.data());
       const auto x_i = Translation{w0_i * x_ab};
 
-      const auto i_R = R.gInv().gAdj();
+      const auto i_R = x.rotation().gInv().gAdj();
       const auto i_R_ab = R_ab.gInv().gAdj();
 
       const auto J_x_0 = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
 
       // Update left value Jacobian.
-      Jr(Derivative::VALUE, i - 1).noalias() = -J_x_0 * i_R_ab;
-      Jt(Derivative::VALUE, i - 1).diagonal().array() = -w0_i;
+      Jr(0, i - 1).noalias() = -J_x_0 * i_R_ab;
+      Jt(0, i - 1).diagonal().array() = -w0_i;
 
       // Velocity update.
-      if (Derivative::VALUE < result.degree()) {
+      if (0 < result.degree()) {
         const auto i_R_d_ab = (i_R * d_ab).eval();
         const auto i_R_d_ab_x = i_R_d_ab.hat();
-        const auto w1_i = W(i - s_idx, Derivative::VELOCITY);
+        const auto w1_i = W(i - s_idx, 1);
         const auto w1_i_i_R_d_ab = (w1_i * i_R_d_ab).eval();
 
+        auto v = result.velocity();
         v.angular() += w1_i_i_R_d_ab;
         v.linear() += w1_i * x_ab;
 
@@ -121,19 +130,20 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
         const auto J_v_1 = (w1_i * i_R_d_ab_x).eval();
 
         // Update left velocity Jacobians.
-        Jr(Derivative::VELOCITY, i - 1).noalias() = -J_v_0 * i_R_ab;
-        Jt(Derivative::VELOCITY, i - 1).diagonal().array() = -w1_i;
+        Jr(1, i - 1).noalias() = -J_v_0 * i_R_ab;
+        Jt(1, i - 1).diagonal().array() = -w1_i;
 
         // Propagate velocity updates.
-        for (auto k = e_idx; i < k; --k) {
-          Jr(Derivative::VELOCITY, k).noalias() += J_v_1 * Jr(Derivative::VALUE, k);
+        for (auto n = e_idx; i < n; --n) {
+          Jr(1, n).noalias() += J_v_1 * Jr(0, n);
         }
 
         // Acceleration update.
-        if (Derivative::VELOCITY < result.degree()) {
-          const auto w2_i = W(i - s_idx, Derivative::ACCELERATION);
+        if (1 < result.degree()) {
+          const auto w2_i = W(i - s_idx, 2);
           const auto w1_i_i_R_d_ab_x = w1_i_i_R_d_ab.hat();
 
+          auto a = result.acceleration();
           a.angular() += w2_i * i_R_d_ab + w1_i_i_R_d_ab.cross(v.angular());
           a.linear() += w2_i * x_ab;
 
@@ -144,45 +154,39 @@ auto SE3Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
           const auto J_a_3 = (J_a_2 - v_x * J_v_1).eval();
 
           // Update acceleration Jacobians.
-          Jr(Derivative::ACCELERATION, i - 1).noalias() = -J_a_0 * i_R_ab + J_a_1 * Jr(Derivative::VELOCITY, i - 1);
-          Jt(Derivative::ACCELERATION, i - 1).diagonal().array() = -w2_i;
-          Jr(Derivative::ACCELERATION, i).noalias() += (J_a_0 + J_a_1 * J_v_0) + (J_a_2 + J_a_1 * J_v_1) * Jr(Derivative::VALUE, i) + w1_i_i_R_d_ab_x * Jr(Derivative::VELOCITY, i);
-          Jt(Derivative::ACCELERATION, i).diagonal().array() += w2_i;
+          Jr(2, i - 1).noalias() = -J_a_0 * i_R_ab + J_a_1 * Jr(1, i - 1);
+          Jt(2, i - 1).diagonal().array() = -w2_i;
+          Jr(2, i).noalias() += (J_a_0 + J_a_1 * J_v_0) + (J_a_2 + J_a_1 * J_v_1) * Jr(0, i) + w1_i_i_R_d_ab_x * Jr(1, i);
+          Jt(2, i).diagonal().array() += w2_i;
 
           // Propagate acceleration updates.
-          for (auto k = e_idx; i < k; --k) {
-            Jr(Derivative::ACCELERATION, k).noalias() += J_a_3 * Jr(Derivative::VALUE, k) + w1_i_i_R_d_ab_x * Jr(Derivative::VELOCITY, k);
+          for (auto n = e_idx; i < n; --n) {
+            Jr(2, n).noalias() += J_a_3 * Jr(0, n) + w1_i_i_R_d_ab_x * Jr(1, n);
           }
         }
 
         // Update right velocity Jacobian.
-        Jr(Derivative::VELOCITY, i).noalias() += J_v_0 + J_v_1 * Jr(Derivative::VALUE, i);
-        Jt(Derivative::VELOCITY, i).diagonal().array() += w1_i;
+        Jr(1, i).noalias() += J_v_0 + J_v_1 * Jr(0, i);
+        Jt(1, i).diagonal().array() += w1_i;
       }
 
       // Update right value Jacobian.
-      Jr(Derivative::VALUE, i).noalias() += J_x_0;
-      Jt(Derivative::VALUE, i).diagonal().array() += w0_i;
+      Jr(0, i).noalias() += J_x_0;
+      Jt(0, i).diagonal().array() += w0_i;
 
-      // Value update.
-      R = R_i * R;
-      x = x_i + x;
+      // Update value.
+      x.rotation() = R_i * x.rotation();
+      x.translation() += x_i;
     }
 
-    Jr(Derivative::VALUE, s_idx).noalias() += R.gInv().gAdj();
-    Jt(Derivative::VALUE, s_idx).diagonal().array() += TScalar{1};
+    // Update value Jacobian.
+    Jr(0, s_idx).noalias() += x.rotation().gInv().gAdj();
+    Jt(0, s_idx).diagonal().array() += TScalar{1};
 
-    const auto I_a = I(s_idx);
-    R = I_a.rotation() * R;
-    x = I_a.translation() + x;
-  }
-
-  result.value() = Output{R, x};
-  if (Derivative::VALUE < result.degree()) {
-    result.velocity() = v;
-    if (Derivative::VELOCITY < result.degree()) {
-      result.acceleration() = a;
-    }
+    // Update value.
+    const auto I_s = I(s_idx);
+    x.rotation() = I_s.rotation() * x.rotation();
+    x.translation() += I_s.translation();
   }
 }
 
