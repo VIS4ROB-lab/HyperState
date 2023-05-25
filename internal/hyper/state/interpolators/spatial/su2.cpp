@@ -73,18 +73,18 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
       const auto j = i + 1;
       const auto k = j - s_idx;
 
-      Jacobian J_inv, J_plus_i, J_plus_j, J_log, J_exp;
+      Jacobian J_inv, J_i_R_i, J_R_j, J_d_i, J_w_i;
       const auto w_0 = W(k, 0);
-      const auto R_ij = I(i).gInv(J_inv.data()).gPlus(I(j), J_plus_i.data(), J_plus_j.data());
-      const Tangent d_i = R_ij.gLog(J_log.data());
+      const auto R_ij = I(i).gInv(J_inv.data()).gPlus(I(j), J_i_R_i.data(), J_R_j.data());
+      const Tangent d_i = R_ij.gLog(J_d_i.data());
       const Tangent w_i = w_0 * d_i;
-      const auto R_i = w_i.gExp(J_exp.data());
+      const auto R_i = w_i.gExp(J_w_i.data());
 
       // Partial value Jacobians.
-      const Jacobian J_R_i = result.value() * J_exp * w_0 * J_log;
+      const Jacobian J_x_i = result.value() * J_w_i * w_0 * J_d_i;
 
       // Update left value Jacobian.
-      Jr(0, i).noalias() += J_R_i * J_plus_i * J_inv;
+      Jr(0, i).noalias() += J_x_i * J_i_R_i * J_inv;
 
       // Velocity update.
       if (0 < result.degree()) {
@@ -119,7 +119,7 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
       }
 
       // Update right value Jacobian.
-      Jr(0, j).noalias() = J_R_i * J_plus_j;
+      Jr(0, j).noalias() = J_x_i * J_R_j;
 
       // Update value.
       result.value() *= R_i;
@@ -193,39 +193,36 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
       const auto i = j - 1;
       const auto k = j - s_idx;
 
-      const auto I_a = I(i);
-      const auto I_b = I(j);
-      const auto w0_i = W(k, 0);
+      Jacobian J_inv, J_i_R_i, J_R_j, J_d_i, J_w_i;
+      const auto w_0 = W(k, 0);
+      const auto R_ij = I(i).gInv(J_inv.data()).gPlus(I(j), J_i_R_i.data(), J_R_j.data());
+      const Tangent d_i = R_ij.gLog(J_d_i.data());
+      const Tangent w_i = w_0 * d_i;
+      const auto R_i = w_i.gExp(J_w_i.data());
 
-      Jacobian J_R_i_w_ab, J_d_ab_R_ab;
-      const auto R_ab = I_a.gInv().gPlus(I_b);
-      const auto d_ab = R_ab.gLog(J_d_ab_R_ab.data());
-      const auto w_ab = Tangent{w0_i * d_ab};
-      const auto R_i = w_ab.gExp(J_R_i_w_ab.data());
+      const auto i_R = result.value().gInv();
 
-      const auto i_R = result.value().gInv().gAdj();
-      const auto i_R_ab = R_ab.gInv().gAdj();
-
-      const auto J_x_0 = (i_R * J_R_i_w_ab * w0_i * J_d_ab_R_ab).eval();
+      const Jacobian J_i_R = i_R.gAdj();
+      const Jacobian J_R_i = J_i_R_i * J_inv;
+      const Jacobian J_x_i = (J_i_R * J_w_i * w_0 * J_d_i).eval();
 
       // Update left value Jacobian.
-      Jr(0, i).noalias() = -J_x_0 * i_R_ab;
+      Jr(0, i).noalias() = J_x_i * J_R_i;
 
       // Velocity update.
       if (0 < result.degree()) {
-        const auto i_R_d_ab = (i_R * d_ab).eval();
-        const auto i_R_d_ab_x = i_R_d_ab.hat();
-        const auto w1_i = W(k, 1);
-        const auto v_i = (w1_i * i_R_d_ab).eval();
+        const auto w_1 = W(k, 1);
+        const Tangent i_R_d_i = i_R.act(d_i);
+        const Tangent v_i = w_1 * i_R_d_i;
+        result.velocity().noalias() += v_i;
 
-        result.velocity() += v_i;
-
-        const auto i_R_J_d_ab_R_ab = (i_R * J_d_ab_R_ab).eval();
-        const auto J_v_0 = (w1_i * i_R_J_d_ab_R_ab).eval();
-        const auto J_v_1 = (w1_i * i_R_d_ab_x).eval();
+        const Jacobian J_i_R_d_i = J_i_R * J_d_i;
+        const Jacobian i_R_d_i_x = i_R_d_i.hat();
+        const Jacobian J_v_0 = w_1 * J_i_R_d_i;
+        const Jacobian J_v_1 = w_1 * i_R_d_i_x;
 
         // Update left velocity Jacobians.
-        Jr(1, i).noalias() = -J_v_0 * i_R_ab;
+        Jr(1, i).noalias() = J_v_0 * J_R_i;
 
         // Propagate velocity updates.
         for (auto n = e_idx; j < n; --n) {
@@ -234,27 +231,26 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
 
         // Acceleration update.
         if (1 < result.degree()) {
-          const auto w2_i = W(k, 2);
-          const auto w1_i_i_R_d_ab_x = v_i.hat();
+          const auto w_2 = W(k, 2);
+          result.acceleration() += w_2 * i_R_d_i + v_i.cross(result.velocity());
 
-          result.acceleration() += w2_i * i_R_d_ab + v_i.cross(result.velocity());
-
+          const auto v_i_x = v_i.hat();
           const auto v_x = result.velocity().hat();
-          const auto J_a_0 = (w2_i * i_R_J_d_ab_R_ab).eval();
-          const auto J_a_1 = (w1_i_i_R_d_ab_x - v_x).eval();
-          const auto J_a_2 = (w2_i * i_R_d_ab_x).eval();
+          const auto J_a_0 = (w_2 * J_i_R_d_i).eval();
+          const auto J_a_1 = (v_i_x - v_x).eval();
+          const auto J_a_2 = (w_2 * i_R_d_i_x).eval();
           const auto J_a_3 = (J_a_2 - v_x * J_v_1).eval();
 
           // Update left acceleration Jacobians.
-          Jr(2, i).noalias() = -J_a_0 * i_R_ab + J_a_1 * Jr(1, i);
+          Jr(2, i).noalias() = J_a_0 * J_R_i + J_a_1 * Jr(1, i);
 
           // Propagate acceleration updates.
           for (auto n = e_idx; j < n; --n) {
-            Jr(2, n).noalias() += J_a_3 * Jr(0, n) + w1_i_i_R_d_ab_x * Jr(1, n);
+            Jr(2, n).noalias() += J_a_3 * Jr(0, n) + v_i_x * Jr(1, n);
           }
 
           // Update right acceleration Jacobians.
-          Jr(2, j).noalias() += (J_a_0 + J_a_1 * J_v_0) + (J_a_2 + J_a_1 * J_v_1) * Jr(0, j) + w1_i_i_R_d_ab_x * Jr(1, j);
+          Jr(2, j).noalias() += (J_a_0 + J_a_1 * J_v_0) + (J_a_2 + J_a_1 * J_v_1) * Jr(0, j) + v_i_x * Jr(1, j);
         }
 
         // Update right velocity Jacobian.
@@ -262,7 +258,7 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
       }
 
       // Update right value Jacobian.
-      Jr(0, j).noalias() += J_x_0;
+      Jr(0, j).noalias() += J_x_i;
 
       // Update value.
       result.value() = R_i * result.value();
