@@ -11,11 +11,11 @@ namespace hyper::state {
 /// uniform and non-uniform separation between bases and
 /// arbitrary representation degree/order. We recommend using
 /// odd degree splines due to symmetry.
-template <typename TScalar, int TOrder>
-class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
+template <int TOrder>
+class BasisInterpolator final : public PolynomialInterpolator<TOrder> {
  public:
   // Definitions.
-  using Base = PolynomialInterpolator<TScalar, TOrder>;
+  using Base = PolynomialInterpolator<TOrder>;
 
   using OrderVector = typename Base::OrderVector;
   using OrderMatrix = typename Base::OrderMatrix;
@@ -40,7 +40,7 @@ class BasisInterpolator final : public PolynomialInterpolator<TScalar, TOrder> {
   /// \param inputs Input pointers (to stamped inputs).
   /// \param idx Time index into inputs.
   /// \return Interpolation matrix.
-  [[nodiscard]] auto mixing(const TScalar* const* inputs, int idx) const -> OrderMatrix final;
+  [[nodiscard]] auto mixing(const Scalar* const* inputs, int idx) const -> OrderMatrix final;
 };
 
 }  // namespace hyper::state

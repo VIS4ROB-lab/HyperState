@@ -8,7 +8,6 @@
 
 namespace hyper::state {
 
-template <typename TScalar>
 class TemporalInterpolator {
  public:
   /// Default destructor.
@@ -26,7 +25,7 @@ class TemporalInterpolator {
   /// \param inputs Input pointers (to stamped inputs).
   /// \param idx Time index into inputs.
   /// \return Weights.
-  virtual auto evaluate(const TScalar& ut, const TScalar& i_dt, int derivative, const TScalar* const* inputs, int idx) const -> MatrixX<TScalar> = 0;
+  virtual auto evaluate(const Scalar& ut, const Scalar& i_dt, int derivative, const Scalar* const* inputs, int idx) const -> MatrixX = 0;
 };
 
 }  // namespace hyper::state

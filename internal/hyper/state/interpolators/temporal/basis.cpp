@@ -10,17 +10,17 @@ namespace hyper::state {
 namespace {
 
 /// Evaluates low-level coefficients.
-template <typename TScalar, typename TIndex, int TRows, int TCols = TRows != Eigen::Dynamic ? (TRows - 1) : Eigen::Dynamic>
-auto uniformCoefficients(const TIndex& k) -> std::pair<Matrix<TScalar, TRows, TCols>, Matrix<TScalar, TRows, TCols>> {
-  using Matrix = Matrix<TScalar, TRows, TCols>;
+template <typename TIndex, int TRows, int TCols = TRows != Eigen::Dynamic ? (TRows - 1) : Eigen::Dynamic>
+auto uniformCoefficients(const TIndex& k) -> std::pair<Matrix<TRows, TCols>, Matrix<TRows, TCols>> {
+  using Matrix = Matrix<TRows, TCols>;
 
   Matrix Ak = Matrix::Zero(k, k - 1);
   Matrix Bk = Matrix::Zero(k, k - 1);
 
   for (TIndex i = 0; i < k - 1; ++i) {
-    const auto a_i = TScalar{1} / static_cast<TScalar>(k - 1);
-    Ak(i, i) = static_cast<TScalar>(i + 1) * a_i;
-    Ak(i + 1, i) = static_cast<TScalar>(k - 2 - i) * a_i;
+    const auto a_i = Scalar{1} / static_cast<Scalar>(k - 1);
+    Ak(i, i) = static_cast<Scalar>(i + 1) * a_i;
+    Ak(i + 1, i) = static_cast<Scalar>(k - 2 - i) * a_i;
     Bk(i, i) = -a_i;
     Bk(i + 1, i) = a_i;
   }
@@ -29,25 +29,23 @@ auto uniformCoefficients(const TIndex& k) -> std::pair<Matrix<TScalar, TRows, TC
 }
 
 /// Evaluates the weight precursor (i.e. non-cumulative matrix).
-template <typename TScalar, typename TIndex, int K>
-auto uniformRecursion(const TIndex& k) -> Matrix<TScalar, K, K> {  // NOLINT
-  using Matrix = Matrix<TScalar, K, K>;
-
+template <typename TIndex, int K>
+auto uniformRecursion(const TIndex& k) -> Matrix<K, K> {  // NOLINT
   if (k == 1) {
-    Matrix matrix = Matrix::Ones(1, 1);
+    Matrix<K, K> matrix = Matrix<K, K>::Ones(1, 1);
     return matrix;
   } else if (k == 2) {
-    Matrix matrix{k, k};
-    matrix(0, 0) = TScalar{1};
-    matrix(1, 0) = TScalar{0};
-    matrix(0, 1) = TScalar{-1};
-    matrix(1, 1) = TScalar{1};
+    Matrix<K, K> matrix{k, k};
+    matrix(0, 0) = Scalar{1};
+    matrix(1, 0) = Scalar{0};
+    matrix(0, 1) = Scalar{-1};
+    matrix(1, 1) = Scalar{1};
     return matrix;
   } else {
-    const auto [Ak, Bk] = uniformCoefficients<TScalar, TIndex, K>(k);
-    const auto Mk = uniformRecursion<TScalar, TIndex, ((K > 1) ? (K - 1) : Eigen::Dynamic)>(k - 1);
-    Matrix AkMk{k, k};
-    Matrix BkMk{k, k};
+    const auto [Ak, Bk] = uniformCoefficients<TIndex, K>(k);
+    const auto Mk = uniformRecursion<TIndex, ((K > 1) ? (K - 1) : Eigen::Dynamic)>(k - 1);
+    Matrix<K, K> AkMk{k, k};
+    Matrix<K, K> BkMk{k, k};
     AkMk.topLeftCorner(k, k - 1) = Ak * Mk;
     AkMk.col(k - 1).setZero();
     BkMk.col(0).setZero();
@@ -57,27 +55,25 @@ auto uniformRecursion(const TIndex& k) -> Matrix<TScalar, K, K> {  // NOLINT
 }
 
 /// Evaluates low-level coefficients.
-template <typename TScalar, typename TIndex>
-auto coefficient(const TIndex& i, const TIndex& j, const TScalar* const* inputs, const TIndex& idx) -> std::pair<TScalar, TScalar> {
+template <typename TIndex>
+auto coefficient(const TIndex& i, const TIndex& j, const Scalar* const* inputs, const TIndex& idx) -> std::pair<Scalar, Scalar> {
   const auto v2 = inputs[j - 2][idx];
   const auto v1 = inputs[j - 1][idx];
   const auto vi = inputs[i][idx];
   const auto vij = inputs[i + j - 1][idx];
-  const auto i_t = TScalar{1} / (vij - vi);
+  const auto i_t = Scalar{1} / (vij - vi);
   return {(v2 - vi) * i_t, (v1 - v2) * i_t};
 }
 
 /// Evaluates low-level coefficient matrices.
-template <typename TScalar, typename TIndex, int TRows, int TCols = TRows != Eigen::Dynamic ? (TRows - 1) : Eigen::Dynamic>
-auto coefficients(const TIndex& k, const TScalar* const* inputs, const TIndex& idx) -> std::pair<Matrix<TScalar, TRows, TCols>, Matrix<TScalar, TRows, TCols>> {
-  using Matrix = Matrix<TScalar, TRows, TCols>;
-
-  Matrix Ak = Matrix::Zero(k, k - 1);
-  Matrix Bk = Matrix::Zero(k, k - 1);
+template <typename TIndex, int TRows, int TCols = TRows != Eigen::Dynamic ? (TRows - 1) : Eigen::Dynamic>
+auto coefficients(const TIndex& k, const Scalar* const* inputs, const TIndex& idx) -> std::pair<Matrix<TRows, TCols>, Matrix<TRows, TCols>> {
+  Matrix<TRows, TCols> Ak = Matrix<TRows, TCols>::Zero(k, k - 1);
+  Matrix<TRows, TCols> Bk = Matrix<TRows, TCols>::Zero(k, k - 1);
 
   for (TIndex i = 0; i < k - 1; ++i) {
-    const auto [a, b] = coefficient<TScalar, TIndex>(i, k, inputs, idx);
-    Ak(i, i) = TScalar{1} - a;
+    const auto [a, b] = coefficient<TIndex>(i, k, inputs, idx);
+    Ak(i, i) = Scalar{1} - a;
     Ak(i + 1, i) = a;
     Bk(i, i) = -b;
     Bk(i + 1, i) = b;
@@ -87,25 +83,23 @@ auto coefficients(const TIndex& k, const TScalar* const* inputs, const TIndex& i
 }
 
 /// Evaluates the weight precursor (i.e. non-cumulative matrix).
-template <typename TScalar, typename TIndex, int K>
-auto nonUniformRecursion(const TIndex& k, const TScalar* const* inputs, const TIndex& idx) -> Matrix<TScalar, K, K> {  // NOLINT
-  using Matrix = Matrix<TScalar, K, K>;
-
+template <typename TIndex, int K>
+auto nonUniformRecursion(const TIndex& k, const Scalar* const* inputs, const TIndex& idx) -> Matrix<K, K> {  // NOLINT
   if (k == 1) {
-    Matrix matrix = Matrix::Ones(1, 1);
+    Matrix<K, K> matrix = Matrix<K, K>::Ones(1, 1);
     return matrix;
   } else if (k == 2) {
-    Matrix matrix{k, k};
-    matrix(0, 0) = TScalar{1};
-    matrix(1, 0) = TScalar{0};
-    matrix(0, 1) = TScalar{-1};
-    matrix(1, 1) = TScalar{1};
+    Matrix<K, K> matrix{k, k};
+    matrix(0, 0) = Scalar{1};
+    matrix(1, 0) = Scalar{0};
+    matrix(0, 1) = Scalar{-1};
+    matrix(1, 1) = Scalar{1};
     return matrix;
   } else {  // Recursion.
-    const auto [Ak, Bk] = coefficients<TScalar, TIndex, K>(k, inputs, idx);
-    const auto Mk = nonUniformRecursion<TScalar, TIndex, ((K > 1) ? (K - 1) : Eigen::Dynamic)>(k - 1, inputs, idx);
-    Matrix AkMk{k, k};
-    Matrix BkMk{k, k};
+    const auto [Ak, Bk] = coefficients<TIndex, K>(k, inputs, idx);
+    const auto Mk = nonUniformRecursion<TIndex, ((K > 1) ? (K - 1) : Eigen::Dynamic)>(k - 1, inputs, idx);
+    Matrix<K, K> AkMk{k, k};
+    Matrix<K, K> BkMk{k, k};
     AkMk.topLeftCorner(k, k - 1) = Ak * Mk;
     AkMk.col(k - 1).setZero();
     BkMk.col(0).setZero();
@@ -116,14 +110,14 @@ auto nonUniformRecursion(const TIndex& k, const TScalar* const* inputs, const TI
 
 }  // namespace
 
-template <typename TScalar, int TOrder>
-BasisInterpolator<TScalar, TOrder>::BasisInterpolator(int order) {
+template <int TOrder>
+BasisInterpolator<TOrder>::BasisInterpolator(int order) {
   CHECK_LE(0, order);
   setOrder(order);
 }
 
-template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::setOrder(int order) -> void {
+template <int TOrder>
+auto BasisInterpolator<TOrder>::setOrder(int order) -> void {
   if constexpr (TOrder < 0) {
     this->mixing_ = Mixing(order);
     this->polynomials_ = Base::Polynomials(order);
@@ -134,8 +128,8 @@ auto BasisInterpolator<TScalar, TOrder>::setOrder(int order) -> void {
   }
 }
 
-template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::layout(bool uniform) const -> TemporalInterpolatorLayout {
+template <int TOrder>
+auto BasisInterpolator<TOrder>::layout(bool uniform) const -> TemporalInterpolatorLayout {
   const auto order = this->order();
 
   if (uniform) {
@@ -153,18 +147,18 @@ auto BasisInterpolator<TScalar, TOrder>::layout(bool uniform) const -> TemporalI
   }
 }
 
-template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::Mixing(int order) -> OrderMatrix {
-  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * uniformRecursion<TScalar, int, TOrder>(order);
+template <int TOrder>
+auto BasisInterpolator<TOrder>::Mixing(int order) -> OrderMatrix {
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * uniformRecursion<int, TOrder>(order);
 }
 
-template <typename TScalar, int TOrder>
-auto BasisInterpolator<TScalar, TOrder>::mixing(const TScalar* const* inputs, int idx) const -> OrderMatrix {
+template <int TOrder>
+auto BasisInterpolator<TOrder>::mixing(const Scalar* const* inputs, int idx) const -> OrderMatrix {
   const auto order = this->order();
-  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * nonUniformRecursion<TScalar, int, TOrder>(order, inputs, idx);
+  return OrderMatrix::Ones(order, order).template triangularView<Eigen::Upper>() * nonUniformRecursion<int, TOrder>(order, inputs, idx);
 }
 
-template class BasisInterpolator<double, 4>;
-template class BasisInterpolator<double, Eigen::Dynamic>;
+template class BasisInterpolator<4>;
+template class BasisInterpolator<Eigen::Dynamic>;
 
 }  // namespace hyper::state

@@ -20,8 +20,6 @@ class ContinuousState : public TemporalState<TElement> {
   // Definitions.
   using Base = TemporalState<TElement>;
 
-  using Scalar = typename Base::Scalar;
-  using Time = typename Base::Time;
   using Range = typename Base::Range;
 
   using Element = typename Base::Element;
@@ -34,7 +32,7 @@ class ContinuousState : public TemporalState<TElement> {
   /// \param is_uniform Uniformity flag.
   /// \param jacobian_type Jacobian type.
   /// \param interpolator Interpolator.
-  explicit ContinuousState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator, bool is_uniform = true, JacobianType jacobian_type = Base::kDefaultJacobianType);
+  explicit ContinuousState(std::unique_ptr<TemporalInterpolator>&& interpolator, bool is_uniform = true, JacobianType jacobian_type = Base::kDefaultJacobianType);
 
   /// Updates the flag.
   /// \param flag Flag.
@@ -47,7 +45,7 @@ class ContinuousState : public TemporalState<TElement> {
   /// Time-based partition accessor.
   /// \param time Query time.
   /// \return Time-based partition.
-  [[nodiscard]] auto partition(const Time& time) const -> variables::Partition<Scalar*> final;
+  [[nodiscard]] auto partition(const Time& time) const -> Partition<Scalar*> final;
 
   /// Time-based parameter blocks accessor.
   /// \param time Query time.
@@ -56,11 +54,11 @@ class ContinuousState : public TemporalState<TElement> {
 
   /// Interpolator accessor.
   /// \return Interpolator.
-  [[nodiscard]] auto interpolator() const -> const TemporalInterpolator<Scalar>&;
+  [[nodiscard]] auto interpolator() const -> const TemporalInterpolator&;
 
   /// Interpolator setter.
   /// \param interpolator Interpolator.
-  auto swapInterpolator(std::unique_ptr<TemporalInterpolator<Scalar>>& interpolator) -> void;
+  auto swapInterpolator(std::unique_ptr<TemporalInterpolator>& interpolator) -> void;
 
   /// Retrieves the interpolator layout.
   /// \return Layout.
@@ -83,8 +81,8 @@ class ContinuousState : public TemporalState<TElement> {
   /// \return Iterators and number of elements between them.
   auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, int>;
 
-  TemporalInterpolatorLayout layout_;                           ///< Layout.
-  std::unique_ptr<TemporalInterpolator<Scalar>> interpolator_;  ///< Interpolator.
+  TemporalInterpolatorLayout layout_;                   ///< Layout.
+  std::unique_ptr<TemporalInterpolator> interpolator_;  ///< Interpolator.
 };
 
 }  // namespace hyper::state

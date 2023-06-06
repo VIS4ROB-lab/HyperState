@@ -15,7 +15,7 @@ namespace hyper::state {
 using namespace variables;
 
 template <typename TElement>
-ContinuousState<TElement>::ContinuousState(std::unique_ptr<TemporalInterpolator<Scalar>>&& interpolator, bool is_uniform, const JacobianType jacobian_type)
+ContinuousState<TElement>::ContinuousState(std::unique_ptr<TemporalInterpolator>&& interpolator, bool is_uniform, const JacobianType jacobian_type)
     : Base{is_uniform, jacobian_type}, layout_{}, interpolator_{} {
   swapInterpolator(interpolator);
 }
@@ -59,12 +59,12 @@ auto ContinuousState<TElement>::parameterBlocks(const Time& time) const -> std::
 }
 
 template <typename TElement>
-auto ContinuousState<TElement>::interpolator() const -> const TemporalInterpolator<Scalar>& {
+auto ContinuousState<TElement>::interpolator() const -> const TemporalInterpolator& {
   return *interpolator_;
 }
 
 template <typename TElement>
-auto ContinuousState<TElement>::swapInterpolator(std::unique_ptr<TemporalInterpolator<Scalar>>& interpolator) -> void {
+auto ContinuousState<TElement>::swapInterpolator(std::unique_ptr<TemporalInterpolator>& interpolator) -> void {
   CHECK(interpolator != nullptr);
   layout_ = interpolator->layout(this->is_uniform_);
   interpolator_.swap(interpolator);
@@ -130,8 +130,8 @@ auto ContinuousState<TElement>::iterators(const Time& time) const -> std::tuple<
   return {begin, end, layout_.outer_size};
 }
 
-template class ContinuousState<R3<double>>;
-template class ContinuousState<SU2<double>>;
-template class ContinuousState<SE3<double>>;
+template class ContinuousState<R3>;
+template class ContinuousState<SU2>;
+template class ContinuousState<SE3>;
 
 }  // namespace hyper::state

@@ -15,9 +15,9 @@ namespace hyper::state::tests {
 
 using namespace variables;
 
-using Interpolator = BasisInterpolator<double, 4>;
-using StateTestTypes = ::testing::Types<std::tuple<ContinuousState<R3<double>>, Interpolator>, std::tuple<ContinuousState<SU2<double>>, Interpolator>,
-                                        std::tuple<ContinuousState<SE3<double>>, Interpolator>>;
+using Interpolator = BasisInterpolator<4>;
+using StateTestTypes =
+    ::testing::Types<std::tuple<ContinuousState<R3>, Interpolator>, std::tuple<ContinuousState<SU2>, Interpolator>, std::tuple<ContinuousState<SE3>, Interpolator>>;
 
 template <typename TArgs>
 class StateTests : public testing::Test {
@@ -30,8 +30,6 @@ class StateTests : public testing::Test {
   // Definitions.
   using State = typename std::tuple_element<0, TArgs>::type;
   using Interpolator = typename std::tuple_element<1, TArgs>::type;
-
-  using Scalar = typename State::Scalar;
 
   using Element = typename State::Element;
   using ElementTangent = typename State::ElementTangent;
@@ -85,7 +83,7 @@ class StateTests : public testing::Test {
       const auto result = state_->evaluate(time, i, true);
       auto parameter_blocks = state_->parameterBlocks(time);
 
-      JacobianX<Scalar> Jn_i;
+      JacobianX Jn_i;
       const auto tangent_input_size = state_->tangentInputSize();
       Jn_i.setZero(ElementTangent::kNumParameters, parameter_blocks.size() * tangent_input_size);
 

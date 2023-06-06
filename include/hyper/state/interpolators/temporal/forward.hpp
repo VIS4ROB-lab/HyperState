@@ -7,15 +7,6 @@
 
 namespace hyper::state {
 
-template <typename TScalar>
-class TemporalInterpolator;
-
-template <typename TScalar, int TOrder>
-class PolynomialInterpolator;
-
-template <typename TScalar, int TOrder>
-class BasisInterpolator;
-
 struct TemporalInterpolatorLayout {
   int outer_size;
   int inner_size;
@@ -24,5 +15,13 @@ struct TemporalInterpolatorLayout {
   int left_padding;
   int right_padding;
 };
+
+class TemporalInterpolator;
+
+template <int TOrder>
+class PolynomialInterpolator;
+
+template <int TOrder>
+class BasisInterpolator;
 
 }  // namespace hyper::state

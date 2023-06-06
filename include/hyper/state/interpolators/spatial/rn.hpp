@@ -7,13 +7,12 @@
 
 namespace hyper::state {
 
-template <typename TScalar, int N>
-class SpatialInterpolator<variables::Rn<TScalar, N>> final {
+template <int N>
+class SpatialInterpolator<variables::Rn<N>> final {
  public:
   // Definitions.
-  using Scalar = TScalar;
-  using Input = variables::Rn<TScalar, N>;
-  using Output = variables::Rn<TScalar, N>;
+  using Input = variables::Rn<N>;
+  using Output = variables::Rn<N>;
 
   /// Evaluates this.
   static auto evaluate(Result<Output>& result, const Scalar* weights, const Scalar* const* inputs, int s_idx, int e_idx, int offs) -> void;

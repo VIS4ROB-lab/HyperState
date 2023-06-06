@@ -9,8 +9,7 @@ namespace hyper::state {
 using namespace variables;
 
 #if HYPER_COMPILE_WITH_GLOBAL_LIE_GROUP_DERIVATIVES
-template <typename TScalar>
-auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs) -> void {
+auto SU2Interpolator::evaluate(Result<Output>& result, const Scalar* weights, const Scalar* const* inputs, int s_idx, int e_idx, int offs) -> void {
   // Definitions.
   using Tangent = variables::Tangent<Output>;
   using Jacobian = hyper::JacobianNM<Tangent>;
@@ -18,7 +17,7 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
   // Map weights.
   const auto n_rows = e_idx - s_idx + 1;
   const auto n_cols = result.degree() + 1;
-  const auto W = Eigen::Map<const MatrixX<TScalar>>{weights, n_rows, n_cols};
+  const auto W = Eigen::Map<const MatrixX>{weights, n_rows, n_cols};
 
   // Input lambda definition.
   auto I = [&inputs, &offs](int i) {
@@ -127,8 +126,7 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
   }
 }
 #else
-template <typename TScalar>
-auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* weights, const TScalar* const* inputs, int s_idx, int e_idx, int offs) -> void {
+auto SU2Interpolator::evaluate(Result<Output>& result, const Scalar* weights, const Scalar* const* inputs, int s_idx, int e_idx, int offs) -> void {
   // Definitions.
   using Tangent = variables::Tangent<Output>;
   using Jacobian = hyper::JacobianNM<Tangent>;
@@ -136,7 +134,7 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
   // Map weights.
   const auto n_rows = e_idx - s_idx + 1;
   const auto n_cols = result.degree() + 1;
-  const auto W = Eigen::Map<const MatrixX<TScalar>>{weights, n_rows, n_cols};
+  const auto W = Eigen::Map<const MatrixX>{weights, n_rows, n_cols};
 
   // Input lambda definition.
   auto I = [&inputs, &offs](int i) {
@@ -272,7 +270,5 @@ auto SU2Interpolator<TScalar>::evaluate(Result<Output>& result, const TScalar* w
   }
 }
 #endif
-
-template class SpatialInterpolator<SU2<double>>;
 
 }  // namespace hyper::state

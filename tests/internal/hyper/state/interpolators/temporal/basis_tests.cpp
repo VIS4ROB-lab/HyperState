@@ -10,22 +10,20 @@
 
 namespace hyper::state::tests {
 
-using Scalar = double;
-using Interpolator = BasisInterpolator<Scalar, Eigen::Dynamic>;
-using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+using Interpolator = BasisInterpolator<Eigen::Dynamic>;
 
 constexpr auto kTol = 1e-7;
 
 TEST(BasisInterpolatorTests, Theory) {
-  std::map<int, Matrix> storage;
+  std::map<int, MatrixX> storage;
 
-  Matrix M1 = Matrix::Identity(1, 1);
+  MatrixX M1 = MatrixX::Identity(1, 1);
   storage[1] = std::move(M1);
 
-  Matrix M2 = Matrix::Identity(2, 2);
+  MatrixX M2 = MatrixX::Identity(2, 2);
   storage[2] = std::move(M2);
 
-  Matrix M3 = Matrix::Zero(3, 3);
+  MatrixX M3 = MatrixX::Zero(3, 3);
   M3(0, 0) = Scalar{1};
   M3(1, 0) = Scalar{0.5};
   M3(1, 1) = Scalar{1};
@@ -33,7 +31,7 @@ TEST(BasisInterpolatorTests, Theory) {
   M3(2, 2) = Scalar{0.5};
   storage[3] = std::move(M3);
 
-  Matrix M4 = Matrix::Zero(4, 4);
+  MatrixX M4 = MatrixX::Zero(4, 4);
   M4(0, 0) = Scalar{1};
   M4(1, 0) = Scalar{5.0 / 6.0};
   M4(2, 0) = Scalar{1.0 / 6.0};
@@ -57,7 +55,7 @@ TEST(BasisInterpolatorTests, Duality) {
     Interpolator interpolator{i + 1};
     const auto layout = interpolator.layout(false);
 
-    using Times = std::vector<Scalar>;
+    using Times = std::vector<Time>;
     Times times(layout.outer_size);
     std::iota(times.begin(), times.end(), 1 - layout.left_margin);
 

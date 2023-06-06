@@ -7,8 +7,8 @@
 
 namespace hyper::state {
 
-template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(int order) -> OrderMatrix {
+template <int TOrder>
+auto PolynomialInterpolator<TOrder>::Polynomials(int order) -> OrderMatrix {
   OrderMatrix m = OrderMatrix::Zero(order, order);
 
   m.row(0).setOnes();
@@ -17,7 +17,7 @@ auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(int order) -> OrderMat
 
   for (auto i = 1; i < order; ++i) {
     for (auto j = degree - next; j < order; ++j) {
-      m(i, j) = static_cast<TScalar>(next - degree + j) * m(i - 1, j);
+      m(i, j) = static_cast<Scalar>(next - degree + j) * m(i - 1, j);
     }
     --next;
   }
@@ -25,23 +25,23 @@ auto PolynomialInterpolator<TScalar, TOrder>::Polynomials(int order) -> OrderMat
   return m;
 }
 
-template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::order() const -> int {
+template <int TOrder>
+auto PolynomialInterpolator<TOrder>::order() const -> int {
   return mixing_.rows();
 }
 
-template <typename TScalar, int TOrder>
-auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const TScalar& ut, const TScalar& i_dt, int derivative, const TScalar* const* inputs, int idx) const -> MatrixX<TScalar> {
+template <int TOrder>
+auto PolynomialInterpolator<TOrder>::evaluate(const Scalar& ut, const Scalar& i_dt, int derivative, const Scalar* const* inputs, int idx) const -> MatrixX {
   DCHECK_LE(0, ut);
   DCHECK_LE(ut, 1);
 
-  using Polynomial = Matrix<TScalar, TOrder, Eigen::Dynamic>;
+  using Polynomial = Matrix<TOrder, Eigen::Dynamic>;
 
   const auto order = this->order();
   const auto num_derivatives = derivative + 1;
   Polynomial polynomial = Polynomial::Zero(order, num_derivatives);
 
-  auto i_dt_i = TScalar{1};
+  auto i_dt_i = Scalar{1};
   for (auto i = 0; i < num_derivatives; ++i) {
     if (i < order) {
       auto ut_j = ut;
@@ -61,7 +61,7 @@ auto PolynomialInterpolator<TScalar, TOrder>::evaluate(const TScalar& ut, const 
   }
 }
 
-template class PolynomialInterpolator<double, 4>;
-template class PolynomialInterpolator<double, Eigen::Dynamic>;
+template class PolynomialInterpolator<4>;
+template class PolynomialInterpolator<Eigen::Dynamic>;
 
 }  // namespace hyper::state

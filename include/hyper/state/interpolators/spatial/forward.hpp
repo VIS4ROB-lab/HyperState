@@ -8,16 +8,14 @@
 
 namespace hyper::state {
 
-template <typename TOutput, typename TInput = TOutput>
+template <typename TGroup>
 class SpatialInterpolator;
 
-template <typename TScalar, int N>
-using RnInterpolator = SpatialInterpolator<variables::Rn<TScalar, N>>;
+template <int N>
+using RnInterpolator = SpatialInterpolator<variables::Rn<N>>;
 
-template <typename TScalar>
-using SU2Interpolator = SpatialInterpolator<variables::SU2<TScalar>>;
+using SU2Interpolator = SpatialInterpolator<variables::SU2>;
 
-template <typename TScalar>
-using SE3Interpolator = SpatialInterpolator<variables::SE3<TScalar>>;
+using SE3Interpolator = SpatialInterpolator<variables::SE3>;
 
 }  // namespace hyper::state

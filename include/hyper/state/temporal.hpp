@@ -27,8 +27,6 @@ class TemporalState {
   static constexpr auto kDefaultJacobianType = JacobianType::TANGENT_TO_STAMPED_MANIFOLD;
 
   // Definitions.
-  using Time = typename TElement::Scalar;
-  using Scalar = typename TElement::Scalar;
   using Range = state::Range<Time, BoundaryPolicy::INCLUSIVE>;
 
   using Element = TElement;
@@ -116,7 +114,7 @@ class TemporalState {
   /// Time-based partition accessor.
   /// \param time Query time.
   /// \return Time-based partition.
-  [[nodiscard]] virtual auto partition(const Time& time) const -> variables::Partition<Scalar*> = 0;
+  [[nodiscard]] virtual auto partition(const Time& time) const -> Partition<Scalar*> = 0;
 
   /// Time-based parameter blocks accessor.
   /// \return Time-based parameter blocks.

@@ -20,8 +20,8 @@ concept Real = Integral<T> || Float<T>;
 /// Boundary policy enum.
 enum class BoundaryPolicy { INCLUSIVE, LOWER_INCLUSIVE_ONLY, UPPER_INCLUSIVE_ONLY, EXCLUSIVE };
 
-template <typename Type, BoundaryPolicy boundary_policy>
-  requires Integral<Type> || Real<Type>
+template <typename T, BoundaryPolicy boundary_policy>
+  requires Integral<T> || Real<T>
 class Range {
  public:
   /// Retrieves the boundary policy.
@@ -30,31 +30,31 @@ class Range {
 
   /// Returns the lower bound (considering the boundaries).
   /// \return Lower bound of this range.
-  auto lowerBound() const -> Type;
+  auto lowerBound() const -> T;
 
   /// Returns the upper bound (considering the boundaries).
   /// \return Upper bound of this range.
-  auto upperBound() const -> Type;
+  auto upperBound() const -> T;
 
   /// Checks whether a type is smaller than the range.
   /// \param type Query type.
   /// \return True if type compares smaller.
-  auto isSmaller(const Type& type) const -> bool;
+  auto isSmaller(const T& type) const -> bool;
 
   /// Checks whether a type is greater than the range.
   /// \param type Query type.
   /// \return True if type compares greater.
-  auto isGreater(const Type& type) const -> bool;
+  auto isGreater(const T& type) const -> bool;
 
   /// Checks whether value if contained in range.
   /// \param type Query type.
   /// \return True if type is contained.
-  inline auto contains(const Type& type) const -> bool { return !isSmaller(type) && !isGreater(type); }
+  inline auto contains(const T& type) const -> bool { return !isSmaller(type) && !isGreater(type); }
 
   /// Determines the size/length of the range.
   /// \param type Query type.
   /// \return Size of the range (according to boundary policy).
-  auto size() const -> Type;
+  auto size() const -> T;
 
   /// Determines if the range is empty.
   /// (i.e. lower bound is larger than upper bound).
@@ -64,15 +64,15 @@ class Range {
   /// Samples a range by a sampling rate.
   /// \param rate Sampling rate.
   /// \return Samples.
-  auto sample(const Type& rate) const -> std::vector<Type> {
+  auto sample(const T& rate) const -> std::vector<T> {
     // Allocate memory;
-    std::vector<Type> samples;
+    std::vector<T> samples;
     samples.reserve(std::ceil(rate * size()));
 
     // Fetch lower bound.
     const auto lower_bound = lowerBound();
     const auto upper_bound = upperBound();
-    const auto inverse_rate = Type{1} / rate;
+    const auto inverse_rate = T{1} / rate;
 
     // Generate samples.
     auto i = std::size_t{0};
@@ -89,15 +89,15 @@ class Range {
 
   /// Retrieves a random sample contained inside the range.
   /// \return Random sample.
-  auto sample() const -> Type {
-    return lowerBound() + Type(std::rand()) / Type(RAND_MAX) * size();  // NOLINT
+  auto sample() const -> T {
+    return lowerBound() + T(std::rand()) / T(RAND_MAX) * size();  // NOLINT
   }
 
   /// Retrieves the closest sample in the range.
   /// \param type Query type.
   /// \return Closest sample.
-  [[nodiscard]] auto closest(const Type& type) const -> Type {
-    Type closest_sample;
+  [[nodiscard]] auto closest(const T& type) const -> T {
+    T closest_sample;
     if (isSmaller(type)) {
       closest_sample = lowerBound();
     } else if (isGreater(type)) {
@@ -147,78 +147,90 @@ class Range {
     }
   }
 
-  Type lower;
-  Type upper;
+  T lower;
+  T upper;
 };
 
 namespace internal {
 
-template <typename Type>
+template <typename T>
 struct BoundaryPolicyEvaluator {
   template <BoundaryPolicy boundary_policy>
-  static inline auto LowerBound(const Range<Type, boundary_policy>& range) -> Type {
+  static inline auto LowerBound(const Range<T, boundary_policy>& range) -> T {
     if constexpr (boundary_policy == BoundaryPolicy::LOWER_INCLUSIVE_ONLY || boundary_policy == BoundaryPolicy::INCLUSIVE) {
       return range.lower;
     } else {
-      return std::nextafter(range.lower, std::numeric_limits<Type>::max());
+      return std::nextafter(range.lower, std::numeric_limits<T>::max());
     }
   }
 
   template <BoundaryPolicy boundary_policy>
-  static inline auto UpperBound(const Range<Type, boundary_policy>& range) -> Type {
+  static inline auto UpperBound(const Range<T, boundary_policy>& range) -> T {
     if constexpr (boundary_policy == BoundaryPolicy::UPPER_INCLUSIVE_ONLY || boundary_policy == BoundaryPolicy::INCLUSIVE) {
       return range.upper;
     } else {
-      return std::nextafter(range.upper, -std::numeric_limits<Type>::max());
+      return std::nextafter(range.upper, -std::numeric_limits<T>::max());
     }
   }
 
   template <BoundaryPolicy boundary_policy>
-  static inline auto IsSmaller(const Range<Type, boundary_policy>& range, const Type& type) -> bool {
+  static inline auto IsSmaller(const Range<T, boundary_policy>& range, const T& type) -> bool {
     return type < LowerBound(range);
   }
 
   template <BoundaryPolicy boundary_policy>
-  static inline auto IsGreater(const Range<Type, boundary_policy>& range, const Type& type) -> bool {
+  static inline auto IsGreater(const Range<T, boundary_policy>& range, const T& type) -> bool {
     return UpperBound(range) < type;
   }
 
   template <BoundaryPolicy boundary_policy>
-  static inline auto Size(const Range<Type, boundary_policy>& range) -> Type {
+  static inline auto Size(const Range<T, boundary_policy>& range) -> T {
     return UpperBound(range) - LowerBound(range);
   }
 };
 
 }  // namespace internal
 
-template <typename Type, BoundaryPolicy boundary_policy>
-  requires Integral<Type> || Real<Type>
-auto Range<Type, boundary_policy>::lowerBound() const -> Type {
-  return internal::BoundaryPolicyEvaluator<Type>::LowerBound(*this);
+template <typename T, BoundaryPolicy boundary_policy>
+  requires Integral<T> || Real<T>
+auto Range<T, boundary_policy>::lowerBound() const -> T {
+  return internal::BoundaryPolicyEvaluator<T>::LowerBound(*this);
 }
 
-template <typename Type, BoundaryPolicy boundary_policy>
-  requires Integral<Type> || Real<Type>
-auto Range<Type, boundary_policy>::upperBound() const -> Type {
-  return internal::BoundaryPolicyEvaluator<Type>::UpperBound(*this);
+template <typename T, BoundaryPolicy boundary_policy>
+  requires Integral<T> || Real<T>
+auto Range<T, boundary_policy>::upperBound() const -> T {
+  return internal::BoundaryPolicyEvaluator<T>::UpperBound(*this);
 }
 
-template <typename Type, BoundaryPolicy boundary_policy>
-  requires Integral<Type> || Real<Type>
-auto Range<Type, boundary_policy>::isSmaller(const Type& type) const -> bool {
-  return internal::BoundaryPolicyEvaluator<Type>::IsSmaller(*this, type);
+template <typename T, BoundaryPolicy boundary_policy>
+  requires Integral<T> || Real<T>
+auto Range<T, boundary_policy>::isSmaller(const T& type) const -> bool {
+  return internal::BoundaryPolicyEvaluator<T>::IsSmaller(*this, type);
 }
 
-template <typename Type, BoundaryPolicy boundary_policy>
-  requires Integral<Type> || Real<Type>
-auto Range<Type, boundary_policy>::isGreater(const Type& type) const -> bool {
-  return internal::BoundaryPolicyEvaluator<Type>::IsGreater(*this, type);
+template <typename T, BoundaryPolicy boundary_policy>
+  requires Integral<T> || Real<T>
+auto Range<T, boundary_policy>::isGreater(const T& type) const -> bool {
+  return internal::BoundaryPolicyEvaluator<T>::IsGreater(*this, type);
 }
 
-template <typename Type, BoundaryPolicy boundary_policy>
-  requires Integral<Type> || Real<Type>
-auto Range<Type, boundary_policy>::size() const -> Type {
-  return internal::BoundaryPolicyEvaluator<Type>::Size(*this);
+template <typename T, BoundaryPolicy boundary_policy>
+  requires Integral<T> || Real<T>
+auto Range<T, boundary_policy>::size() const -> T {
+  return internal::BoundaryPolicyEvaluator<T>::Size(*this);
 }
+
+template <typename T>
+using InclusiveRange = Range<T, BoundaryPolicy::INCLUSIVE>;
+
+template <typename T>
+using LowerInclusiveOnlyRange = Range<T, BoundaryPolicy::LOWER_INCLUSIVE_ONLY>;
+
+template <typename T>
+using UpperInclusiveOnlyRange = Range<T, BoundaryPolicy::UPPER_INCLUSIVE_ONLY>;
+
+template <typename T>
+using ExclusiveRange = Range<T, BoundaryPolicy::EXCLUSIVE>;
 
 }  // namespace hyper::state
