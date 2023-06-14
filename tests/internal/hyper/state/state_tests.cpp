@@ -31,15 +31,15 @@ class StateTests : public testing::Test {
   using State = typename std::tuple_element<0, TArgs>::type;
   using Interpolator = typename std::tuple_element<1, TArgs>::type;
 
-  using Element = typename State::Element;
-  using ElementTangent = typename State::ElementTangent;
-  using StampedElement = typename State::StampedElement;
-  using StampedElementTangent = typename State::StampedElementTangent;
+  using Group = typename State::Group;
+  using GroupTangent = variables::Tangent<Group>;
+  using StampedGroup = variables::Stamped<Group>;
+  using StampedGroupTangent = variables::Stamped<GroupTangent>;
 
   /// Set up.
   auto SetUp() -> void final {
     auto interpolator = std::make_unique<Interpolator>();
-    state_ = std::make_unique<State>(std::move(interpolator), true, JacobianType::TANGENT_TO_MANIFOLD);
+    state_ = std::make_unique<State>(std::move(interpolator), true, Jacobian::TANGENT_TO_GROUP);
     setRandomState();
   }
 
@@ -47,10 +47,10 @@ class StateTests : public testing::Test {
   auto setRandomState() -> void {
     const auto num_inputs = state_->layout().outer_size;
     for (auto i = 0; i < num_inputs + Eigen::internal::random<int>(10, 20); ++i) {
-      StampedElement stamped_element;
-      stamped_element.time() = 0.25 * i;
-      stamped_element.variable() = Element::Random();
-      state_->stampedElements().insert(stamped_element);
+      StampedGroup stamped_parameter;
+      stamped_parameter.time() = 0.25 * i;
+      stamped_parameter.variable() = Group::Random();
+      state_->stampedParameters().insert(stamped_parameter);
     }
   }
 
@@ -63,7 +63,7 @@ class StateTests : public testing::Test {
     const auto d_result = state_->evaluate(time + kInc, degree);
 
     for (auto i = 0; i < degree; ++i) {
-      ElementTangent tau;
+      GroupTangent tau;
       if (i == 0) {
         tau = d_result.value().tMinus(result.value()) / kInc;
       } else {
@@ -85,11 +85,11 @@ class StateTests : public testing::Test {
 
       JacobianX Jn_i;
       const auto tangent_input_size = state_->tangentInputSize();
-      Jn_i.setZero(ElementTangent::kNumParameters, parameter_blocks.size() * tangent_input_size);
+      Jn_i.setZero(GroupTangent::kNumParameters, parameter_blocks.size() * tangent_input_size);
 
       for (auto j = std::size_t{0}; j < parameter_blocks.size(); ++j) {
-        for (auto k = 0; k < ElementTangent::kNumParameters; ++k) {
-          auto d_input_j = Eigen::Map<StampedElement>{parameter_blocks[j]}.tPlus(kInc * StampedElementTangent::Unit(k));
+        for (auto k = 0; k < GroupTangent::kNumParameters; ++k) {
+          auto d_input_j = Eigen::Map<StampedGroup>{parameter_blocks[j]}.tPlus(kInc * StampedGroupTangent::Unit(k));
 
           auto tmp = parameter_blocks[j];
           parameter_blocks[j] = d_input_j.data();
@@ -104,10 +104,10 @@ class StateTests : public testing::Test {
         }
 
         // Convert Jacobians.
-        if (state_->jacobianType() == JacobianType::TANGENT_TO_MANIFOLD || state_->jacobianType() == JacobianType::TANGENT_TO_STAMPED_MANIFOLD) {
-          const auto J_a = Eigen::Map<Element>{parameter_blocks[j] + StampedElement::kVariableOffset}.tMinusJacobian();
-          Jn_i.template block<ElementTangent::kNumParameters, Element::kNumParameters>(0, j * tangent_input_size + StampedElement::kVariableOffset) =
-              Jn_i.template block<ElementTangent::kNumParameters, ElementTangent::kNumParameters>(0, j * tangent_input_size + StampedElement::kVariableOffset) * J_a;
+        if (state_->jacobian() == Jacobian::TANGENT_TO_GROUP || state_->jacobian() == Jacobian::TANGENT_TO_STAMPED_GROUP) {
+          const auto J_a = Eigen::Map<Group>{parameter_blocks[j] + StampedGroup::kVariableOffset}.tMinusJacobian();
+          Jn_i.template block<GroupTangent::kNumParameters, Group::kNumParameters>(0, j * tangent_input_size + StampedGroup::kVariableOffset) =
+              Jn_i.template block<GroupTangent::kNumParameters, GroupTangent::kNumParameters>(0, j * tangent_input_size + StampedGroup::kVariableOffset) * J_a;
         }
       }
 

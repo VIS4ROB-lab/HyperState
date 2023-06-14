@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace hyper::state {
+namespace hyper {
 
 template <typename T>
 concept Integral = std::is_integral_v<T>;
@@ -233,4 +233,4 @@ using UpperInclusiveOnlyRange = Range<T, BoundaryPolicy::UPPER_INCLUSIVE_ONLY>;
 template <typename T>
 using ExclusiveRange = Range<T, BoundaryPolicy::EXCLUSIVE>;
 
-}  // namespace hyper::state
+}  // namespace hyper

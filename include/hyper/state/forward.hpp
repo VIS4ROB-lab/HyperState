@@ -18,6 +18,8 @@
 
 namespace hyper::state {
 
+enum class Jacobian { TANGENT_TO_TANGENT, TANGENT_TO_GROUP, TANGENT_TO_STAMPED_TANGENT, TANGENT_TO_STAMPED_GROUP };
+
 template <typename TLabel, typename TElement>
 class LabeledState;
 
@@ -29,15 +31,6 @@ class DiscreteState;
 
 template <typename TElement>
 class ContinuousState;
-
-enum Derivative {
-  VALUE = 0,
-  VELOCITY = 1,
-  ACCELERATION = 2,
-  JERK = 3,
-};
-
-enum class JacobianType { TANGENT_TO_TANGENT, TANGENT_TO_MANIFOLD, TANGENT_TO_STAMPED_TANGENT, TANGENT_TO_STAMPED_MANIFOLD };
 
 template <typename TValue>
 class Result {

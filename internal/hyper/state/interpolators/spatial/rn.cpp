@@ -26,10 +26,10 @@ auto RnInterpolator<N>::evaluate(Result<Output>& result, const Scalar* weights, 
   }
 
   // Compute value and derivatives.
-  if (result.degree() == Derivative::VALUE) {
-    result.value() = values * W.col(Derivative::VALUE);
+  if (result.degree() == 0) {
+    result.value() = values * W.col(0);
   } else {
-    result.value() = values * W.col(Derivative::VALUE);
+    result.value() = values * W.col(0);
     result.tangents() = values * W.rightCols(result.degree());
   }
 

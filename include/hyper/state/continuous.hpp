@@ -3,36 +3,19 @@
 
 #pragma once
 
-#include <memory>
-#include <set>
-// #include <boost/container/flat_set.hpp>
-// #include <absl/container/btree_set.h>
-
 #include "hyper/state/interpolators/interpolators.hpp"
 #include "hyper/state/temporal.hpp"
-#include "hyper/variables/stamped.hpp"
 
 namespace hyper::state {
 
-template <typename TElement>
-class ContinuousState : public TemporalState<TElement> {
+template <typename TGroup>
+class ContinuousState : public TemporalState<TGroup> {
  public:
-  // Definitions.
-  using Base = TemporalState<TElement>;
-
-  using Range = typename Base::Range;
-
-  using Element = typename Base::Element;
-  using ElementTangent = typename Base::ElementTangent;
-  using StampedElement = typename Base::StampedElement;
-  using StampedElementTangent = typename Base::StampedElementTangent;
-  using StampedElements = typename Base::StampedElements;
-
   /// Constructor from interpolator, uniformity flag and Jacobian type.
-  /// \param is_uniform Uniformity flag.
-  /// \param jacobian_type Jacobian type.
+  /// \param uniform Uniform.
+  /// \param jacobian Jacobian.
   /// \param interpolator Interpolator.
-  explicit ContinuousState(std::unique_ptr<TemporalInterpolator>&& interpolator, bool is_uniform = true, JacobianType jacobian_type = Base::kDefaultJacobianType);
+  explicit ContinuousState(std::unique_ptr<TemporalInterpolator>&& interpolator, bool uniform = true, Jacobian jacobian = Jacobian::TANGENT_TO_STAMPED_GROUP);
 
   /// Updates the flag.
   /// \param flag Flag.
@@ -40,7 +23,7 @@ class ContinuousState : public TemporalState<TElement> {
 
   /// Evaluates the range.
   /// \return Range.
-  [[nodiscard]] auto range() const -> Range final;
+  [[nodiscard]] auto range() const -> InclusiveRange<Scalar> final;
 
   /// Time-based partition accessor.
   /// \param time Query time.
@@ -68,17 +51,17 @@ class ContinuousState : public TemporalState<TElement> {
   /// \param time Time.
   /// \param derivative Derivative.
   /// \param jacobian Flag.
-  /// \param stamped_elements External pointers.
+  /// \param stamped_parameters External pointers.
   /// \return Result.
-  auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_elements = nullptr) const -> Result<TElement> final;  // NOLINT
+  auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_parameters = nullptr) const -> Result<TGroup> final;  // NOLINT
 
  private:
   // Definitions.
-  using Iterator = typename StampedElements::const_iterator;
+  using Iterator = typename TemporalState<TGroup>::StampedParameters::const_iterator;
 
   /// Retrieves the iterators for a time.
   /// \param time Query time.
-  /// \return Iterators and number of elements between them.
+  /// \return Iterators and number of parameters between them.
   auto iterators(const Time& time) const -> std::tuple<Iterator, Iterator, int>;
 
   TemporalInterpolatorLayout layout_;                   ///< Layout.

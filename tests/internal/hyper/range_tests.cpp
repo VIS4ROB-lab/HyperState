@@ -5,9 +5,9 @@
 #include <Eigen/Core>
 
 #include "hyper/definitions.hpp"
-#include "hyper/state/range.hpp"
+#include "hyper/range.hpp"
 
-namespace hyper::state::tests {
+namespace hyper::tests {
 
 constexpr auto kItr = 10;
 
@@ -177,4 +177,4 @@ TEST(RangeTests, Closest) {
   }
 }
 
-}  // namespace hyper::state::tests
+}  // namespace hyper::tests
