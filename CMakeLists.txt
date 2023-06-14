@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 find_package(ament_cmake REQUIRED)
+
+find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(hyper_variables REQUIRED)
 
 file(GLOB_RECURSE PROJECT_SOURCE_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/include/*.hpp ${PROJECT_SOURCE_DIR}/internal/*.cpp)
@@ -15,8 +18,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-ament_target_dependencies(${PROJECT_NAME} hyper_variables)
-ament_export_dependencies(hyper_variables)
+ament_target_dependencies(${PROJECT_NAME} hyper_variables rclcpp geometry_msgs)
+ament_export_dependencies(hyper_variables rclcpp geometry_msgs)
 
 install(
         DIRECTORY include/

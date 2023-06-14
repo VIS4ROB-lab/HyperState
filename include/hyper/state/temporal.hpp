@@ -8,17 +8,16 @@
 
 #include <glog/logging.h>
 
-#include "hyper/state/forward.hpp"
-
 #include "hyper/matrix.hpp"
 #include "hyper/state/range.hpp"
+#include "hyper/state/state.hpp"
 #include "hyper/variables/stamped.hpp"
 #include "hyper/variables/variable.hpp"
 
 namespace hyper::state {
 
 template <typename TElement>
-class TemporalState {
+class TemporalState : public State {
  public:
   // Constants.
   static constexpr auto kStatePartitionIndex = 0;
@@ -47,18 +46,18 @@ class TemporalState {
   /// Constructor from uniformity flag and Jacobian type.
   /// \param is_uniform Uniformity flag.
   /// \param jacobian_type Jacobian type.
-  explicit TemporalState(bool is_uniform, JacobianType jacobian_type) : is_uniform_{is_uniform}, jacobian_type_{jacobian_type}, stamped_elements_{} {}
+  explicit TemporalState(bool is_uniform, JacobianType jacobian_type);
 
   /// Destructor.
-  virtual ~TemporalState() = default;
+  ~TemporalState() override;
 
   /// Jacobian type accessor.
   /// \return Jacobian type.
-  [[nodiscard]] inline auto jacobianType() const -> JacobianType { return jacobian_type_; }
+  [[nodiscard]] auto jacobianType() const -> JacobianType;
 
   /// Jacobian type setter.
   /// \param jacobian_type Jacobian type.
-  inline auto setJacobianType(JacobianType jacobian_type) -> void { this->jacobian_type_ = jacobian_type; }
+  auto setJacobianType(JacobianType jacobian_type) -> void;
 
   /// Retrieves the (ambient) input size.
   /// \return Input size.
@@ -70,22 +69,7 @@ class TemporalState {
 
   /// Retrieves the local input size.
   /// \return Local input size.
-  [[nodiscard]] inline auto tangentInputSize() const {
-    switch (this->jacobian_type_) {
-      case JacobianType::TANGENT_TO_TANGENT:
-        return ElementTangent::kNumParameters;
-      case JacobianType::TANGENT_TO_STAMPED_TANGENT:
-        return StampedElementTangent::kNumParameters;
-      case JacobianType::TANGENT_TO_MANIFOLD:
-        return Element::kNumParameters;
-      case JacobianType::TANGENT_TO_STAMPED_MANIFOLD:
-        return StampedElement::kNumParameters;
-      default: {
-        LOG(FATAL) << "Unknown Jacobian type.";
-        return -1;
-      }
-    }
-  }
+  [[nodiscard]] auto tangentInputSize() const -> int;
 
   /// Retrieves the local output size.
   /// \return Local output size.
@@ -105,11 +89,11 @@ class TemporalState {
 
   /// Elements accessor.
   /// \return Elements.
-  inline auto stampedElements() const -> const StampedElements& { return stamped_elements_; }
+  auto stampedElements() const -> const StampedElements&;
 
   /// Elements modifier.
   /// \return Elements.
-  inline auto stampedElements() -> StampedElements& { return const_cast<StampedElements&>(std::as_const(*this).stampedElements()); }
+  auto stampedElements() -> StampedElements&;
 
   /// Time-based partition accessor.
   /// \param time Query time.
@@ -127,6 +111,9 @@ class TemporalState {
   /// \param stamped_elements External pointers.
   /// \return Result.
   virtual auto evaluate(const Time& time, int derivative, bool jacobian = false, const Scalar* const* stamped_elements = nullptr) const -> Result<TElement> = 0;  // NOLINT
+
+  /// Publishes this.
+  auto publish() -> void final;
 
  protected:
   bool is_uniform_;                   ///< Uniformity flag.
